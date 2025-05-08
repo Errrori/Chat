@@ -1,8 +1,6 @@
 #include <drogon/drogon.h>
 #include <csignal>
 
-#include "CorsMiddleware.h"
-
 void SignalHandler(int signals)
 {
 	drogon::app().quit();
@@ -24,7 +22,7 @@ int main()
 {
 	signal(SIGINT, SignalHandler);
 	signal(SIGTERM, SignalHandler);
-	drogon::app().setLogLevel(trantor::Logger::kTrace)
+	drogon::app().setLogLevel(trantor::Logger::kInfo)
 		.loadConfigFile("config.json").setThreadNum(16);
 
 	drogon::app().registerHandler("/auth/register",
@@ -53,8 +51,6 @@ int main()
 		{ drogon::Options });
 
 	std::cout << "Server start!\n";
-	drogon::app().registerMiddleware(std::make_shared<CorsMiddleware>());
-
 	drogon::app().run();
 
 }

@@ -1,6 +1,6 @@
 #include "DebugRoute.h"
-#include "Users.h"
-#include "Utils.h"
+#include "../Users.h"
+#include "../Utils.h"
 
 void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -9,6 +9,7 @@ void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
     auto db = DatabaseManager::GetDbClient();
     Json::Value response;
     response["code"] = 200;
+    response["message"] = "success to get database";
 
     std::string sql = "SELECT * FROM users LIMIT 100;";
 
@@ -227,15 +228,15 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
 void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    std::cout << "访问批量导入用户接口\n";
+    std::cout << "access import_users\n";
     Json::Value response;
     response["code"] = 200;
-    response["message"] = "批量导入用户完成";
+    response["message"] = "success import";
     
     auto jsonBody = req->getJsonObject();
     if (!jsonBody || !(*jsonBody)["users"].isArray()) {
         response["code"] = 400;
-        response["message"] = "无效的请求数据，需要提供users数组";
+        response["message"] = "invalid import，need to provide users vector";
         auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
         resp->setStatusCode(drogon::k400BadRequest);
         callback(resp);
@@ -248,14 +249,13 @@ void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
     
     for (int i = 0; i < users.size(); i++) {
         const Json::Value& user = users[i];
-        
-        // 验证用户数据
+
         if (!user.isMember("username") || !user["username"].isString() || user["username"].asString().empty() ||
             !user.isMember("password") || !user["password"].isString() || user["password"].asString().empty()) {
             
             Json::Value failedUser;
             failedUser["index"] = i;
-            failedUser["reason"] = "用户名或密码为空或格式不正确";
+            failedUser["reason"] = "username or password is empty";
             if (user.isMember("username")) failedUser["username"] = user["username"];
             failedUsers.append(failedUser);
             continue;
@@ -265,13 +265,12 @@ void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
         std::string password = user["password"].asString();
         std::string uid = user.isMember("uid") && user["uid"].isString() && !user["uid"].asString().empty() 
             ? user["uid"].asString() : Utils::GenerateUid();
-        
-        // 检查用户名是否已存在
+
         if (Users::FindUserByUid(uid)) {
             Json::Value failedUser;
             failedUser["index"] = i;
             failedUser["username"] = name;
-            failedUser["reason"] = "用户名已存在";
+            failedUser["reason"] = "username already existed";
             failedUsers.append(failedUser);
             continue;
         }
@@ -288,7 +287,7 @@ void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
             Json::Value failedUser;
             failedUser["index"] = i;
             failedUser["username"] = name;
-            failedUser["reason"] = "添加用户失败";
+            failedUser["reason"] = "fail to add user";
             failedUsers.append(failedUser);
         }
     }

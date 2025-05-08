@@ -20,3 +20,13 @@ add_executable(${PROJECT_NAME}
 find_package(Drogon REQUIRED)
 # 链接 Drogon 库
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
+
+
+# 添加jwt-cpp库
+add_subdirectory(third_party/jwt-cpp)
+include_directories(third_party/jwt-cpp/include)
+# 添加picojson的包含路径
+include_directories(third_party/jwt-cpp/include/picojson)
+
+# 在您的目标链接中添加jwt-cpp
+target_link_libraries(${PROJECT_NAME} jwt-cpp::jwt-cpp)

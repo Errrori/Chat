@@ -1,6 +1,6 @@
 #include "Authentication.h"
-#include "Users.h"
-#include "Utils.h"
+#include "../Users.h"
+#include "../Utils.h"
 
 void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -102,17 +102,22 @@ void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 		resp->addHeader("content-type", "application/json");
 		std::cout << "error to verify\n";
 		callback(resp);
+		return;
 	}
-	else
-	{
-		Json::Value data;
-		data["message"] = "Login success";
-		data["token"] = "this is a monkey token";
-		data["code"] = 200;
-		data["uid"] = s_data["uid"].asString();
-		auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
-		resp->addHeader("content-type", "application/json");
-		callback(resp);
-	}
+
+	auto uid = s_data["uid"].asString();
+	Json::Value send_data;
+	send_data["message"] = "Login success";
+	send_data["code"] = 200;
+	send_data["uid"] = uid;
+
+	Utils::UserInfo info{name,uid};
+	auto token = Utils::GenJWT(info);
+	send_data["token"] = token;
+
+	auto resp = drogon::HttpResponse::newHttpJsonResponse(send_data);
+	resp->addHeader("content-type", "application/json");
+	callback(resp);
+	
 }
 

@@ -1,8 +1,6 @@
 #pragma once
 #include <drogon/WebSocketController.h>
 
-static const std::string s_token{ "this is a monkey token" };
-
 class Websocket :public drogon::WebSocketController<Websocket>
 {
 public:

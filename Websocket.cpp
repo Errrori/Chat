@@ -1,5 +1,7 @@
 #include "Websocket.h"
 
+#include "Utils.h"
+
 using namespace drogon;
 
 void Websocket::handleNewMessage(const WebSocketConnectionPtr& ws, std::string&& msg, const WebSocketMessageType& type)
@@ -30,13 +32,14 @@ void Websocket::handleNewConnection(const HttpRequestPtr& req, const WebSocketCo
         token = req->getParameter("token");
     }
 
-    if (token != s_token)
+    Utils::UserInfo info;
+    if (!Utils::VerifyJWT(token,info))
     {
         ws->send("fail to verify token");
         ws->shutdown();
         return;
     }
-    ws->send("Connection built success,hello client");
+    ws->send("Connection built success.Welcome: "+info.username);
 }
 
 void Websocket::handleConnectionClosed(const WebSocketConnectionPtr& ws)

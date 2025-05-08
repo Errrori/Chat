@@ -2,6 +2,8 @@
 #include <drogon/drogon.h>
 #include <drogon/orm/DbClient.h>
 
+
+
 namespace Authentication
 {
 	class Controller:public drogon::HttpController<Controller>

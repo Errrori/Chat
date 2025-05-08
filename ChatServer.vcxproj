@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\vcpkg\installed\x64-windows\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\vcpkg\installed\x64-windows\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -132,20 +132,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Authentication.cpp" />
-    <ClCompile Include="CorsMiddleware.cpp" />
+    <ClCompile Include="Auth\Authentication.cpp" />
+    <ClCompile Include="Auth\CorsMiddleware.cpp" />
     <ClCompile Include="DatabaseManager.cpp" />
-    <ClCompile Include="DebugRoute.cpp" />
+    <ClCompile Include="Auth\DebugRoute.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Users.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Websocket.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Authentication.h" />
-    <ClInclude Include="CorsMiddleware.h" />
+    <ClInclude Include="Auth\Authentication.h" />
+    <ClInclude Include="Auth\CorsMiddleware.h" />
     <ClInclude Include="DatabaseManager.h" />
-    <ClInclude Include="DebugRoute.h" />
+    <ClInclude Include="Auth\DebugRoute.h" />
     <ClInclude Include="Users.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Websocket.h" />
