@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS测试客户端</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .response {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CORS测试客户端</h1>
+    <p>此页面用于测试服务器的CORS（跨域资源共享）功能</p>
+    
+    <div class="container">
+        <!-- 服务器配置 -->
+        <div class="card">
+            <h2>服务器配置</h2>
+            <div class="form-group">
+                <label for="serverUrl">服务器URL：</label>
+                <input type="text" id="serverUrl" value="http://localhost:10086" />
+            </div>
+        </div>
+
+        <!-- 预检请求测试 -->
+        <div class="card">
+            <h2>预检请求测试 (OPTIONS)</h2>
+            <p>测试服务器是否正确响应OPTIONS预检请求</p>
+            <button onclick="testPreflight()">发送预检请求</button>
+            <div class="response" id="preflightResponse"></div>
+        </div>
+
+        <!-- GET请求测试 -->
+        <div class="card">
+            <h2>GET请求测试</h2>
+            <p>测试GET请求的CORS响应</p>
+            <div class="form-group">
+                <label for="getEndpoint">端点：</label>
+                <input type="text" id="getEndpoint" value="/get_user" />
+            </div>
+            <div class="form-group">
+                <label for="getParams">参数 (JSON)：</label>
+                <input type="text" id="getParams" value='{"uid": "d9bc041d-9c5c-4196-82d2-e8da12eb31ee"}' />
+            </div>
+            <button onclick="testGet()">发送GET请求</button>
+            <div class="response" id="getResponse"></div>
+        </div>
+
+        <!-- POST请求测试 -->
+        <div class="card">
+            <h2>POST请求测试</h2>
+            <p>测试POST请求的CORS响应</p>
+            <div class="form-group">
+                <label for="postEndpoint">端点：</label>
+                <input type="text" id="postEndpoint" value="/auth/login" />
+            </div>
+            <div class="form-group">
+                <label for="postData">数据 (JSON)：</label>
+                <input type="text" id="postData" value='{"name": "B", "password": "123", "uid": "d9bc041d-9c5c-4196-82d2-e8da12eb31ee"}' />
+            </div>
+            <button onclick="testPost()">发送POST请求</button>
+            <div class="response" id="postResponse"></div>
+        </div>
+
+        <!-- 自定义请求测试 -->
+        <div class="card">
+            <h2>自定义请求测试</h2>
+            <p>测试自定义HTTP方法和头部的CORS响应</p>
+            <div class="form-group">
+                <label for="customMethod">HTTP方法：</label>
+                <select id="customMethod">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                    <option value="OPTIONS">OPTIONS</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="customEndpoint">端点：</label>
+                <input type="text" id="customEndpoint" value="/db_info" />
+            </div>
+            <div class="form-group">
+                <label for="customHeaders">自定义头部 (JSON)：</label>
+                <input type="text" id="customHeaders" value='{"Content-Type": "application/json", "Authorization": "Bearer test-token"}' />
+            </div>
+            <div class="form-group">
+                <label for="customData">数据 (JSON)：</label>
+                <input type="text" id="customData" value='{}' />
+            </div>
+            <button onclick="testCustom()">发送自定义请求</button>
+            <div class="response" id="customResponse"></div>
+        </div>
+    </div>
+
+    <script>
+        // 辅助函数：格式化JSON
+        function formatJSON(json) {
+            try {
+                return JSON.stringify(JSON.parse(json), null, 2);
+            } catch (e) {
+                return json;
+            }
+        }
+
+        // 辅助函数：显示响应
+        function displayResponse(elementId, response, headers) {
+            const element = document.getElementById(elementId);
+            let content = '';
+            
+            // 显示响应头
+            content += '<strong>响应头:</strong><pre>';
+            headers.forEach((value, key) => {
+                content += `${key}: ${value}\n`;
+            });
+            content += '</pre>';
+            
+            // 显示响应体
+            content += '<strong>响应体:</strong><pre>';
+            try {
+                content += formatJSON(response);
+            } catch (e) {
+                content += response;
+            }
+            content += '</pre>';
+            
+            element.innerHTML = content;
+        }
+
+        // 测试预检请求
+        async function testPreflight() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const responseElement = document.getElementById('preflightResponse');
+            responseElement.innerHTML = '正在发送请求...';
+            
+            try {
+                // 创建一个自定义请求，触发预检
+                const response = await fetch(`${serverUrl}/db_info`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type, Authorization',
+                        'Origin': window.location.origin
+                    }
+                });
+                
+                // 显示响应
+                displayResponse('preflightResponse', 'OPTIONS请求成功', response.headers);
+            } catch (error) {
+                responseElement.innerHTML = `<pre>错误: ${error.message}</pre>`;
+            }
+        }
+
+        // 测试GET请求
+        async function testGet() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const endpoint = document.getElementById('getEndpoint').value;
+            const paramsInput = document.getElementById('getParams').value;
+            const responseElement = document.getElementById('getResponse');
+            responseElement.innerHTML = '正在发送请求...';
+            
+            try {
+                // 解析参数
+                const params = JSON.parse(paramsInput);
+                const queryString = Object.keys(params)
+                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+                    .join('&');
+                
+                // 发送GET请求
+                const response = await fetch(`${serverUrl}${endpoint}?${queryString}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const responseText = await response.text();
+                displayResponse('getResponse', responseText, response.headers);
+            } catch (error) {
+                responseElement.innerHTML = `<pre>错误: ${error.message}</pre>`;
+            }
+        }
+
+        // 测试POST请求
+        async function testPost() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const endpoint = document.getElementById('postEndpoint').value;
+            const dataInput = document.getElementById('postData').value;
+            const responseElement = document.getElementById('postResponse');
+            responseElement.innerHTML = '正在发送请求...';
+            
+            try {
+                // 发送POST请求
+                const response = await fetch(`${serverUrl}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: dataInput
+                });
+                
+                const responseText = await response.text();
+                displayResponse('postResponse', responseText, response.headers);
+            } catch (error) {
+                responseElement.innerHTML = `<pre>错误: ${error.message}</pre>`;
+            }
+        }
+
+        // 测试自定义请求
+        async function testCustom() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const method = document.getElementById('customMethod').value;
+            const endpoint = document.getElementById('customEndpoint').value;
+            const headersInput = document.getElementById('customHeaders').value;
+            const dataInput = document.getElementById('customData').value;
+            const responseElement = document.getElementById('customResponse');
+            responseElement.innerHTML = '正在发送请求...';
+            
+            try {
+                // 解析头部和数据
+                const headers = JSON.parse(headersInput);
+                const requestOptions = {
+                    method: method,
+                    headers: headers
+                };
+                
+                // 如果不是GET或OPTIONS请求，添加请求体
+                if (method !== 'GET' && method !== 'OPTIONS') {
+                    requestOptions.body = dataInput;
+                }
+                
+                // 发送请求
+                const response = await fetch(`${serverUrl}${endpoint}`, requestOptions);
+                
+                const responseText = await response.text();
+                displayResponse('customResponse', responseText, response.headers);
+            } catch (error) {
+                responseElement.innerHTML = `<pre>错误: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

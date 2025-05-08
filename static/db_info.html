@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户数据</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .data-table tr:hover {
+            background-color: #ddd;
+        }
+        .info-bar {
+            background-color: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .error {
+            color: white;
+            background-color: #f44336;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.3);
+            border-radius: 50%;
+            border-top-color: #4CAF50;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>用户数据表</h1>
+        <div id="data-container">
+            <p>加载中... <span class="loading"></span></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('data-container');
+            
+            // 添加超时处理
+            const timeout = setTimeout(() => {
+                container.innerHTML = '<div class="error">请求超时，请检查服务器是否正常运行。</div>';
+            }, 10000); // 10秒超时
+            
+            fetch('/db_info')
+                .then(response => {
+                    clearTimeout(timeout);
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('收到数据:', data);
+                    
+                    if (data.code === 200) {
+                        // 修改这里：直接使用data.data作为用户数组
+                        const users = Array.isArray(data.data) ? data.data : [];
+                        const totalCount = data.total || users.length;
+                        
+                        if (!users || users.length === 0) {
+                            container.innerHTML = '<div class="info-bar">数据库中没有用户数据</div>';
+                            return;
+                        }
+                        
+                        // 创建信息栏
+                        let html = `<div class="info-bar">共 ${totalCount} 条用户记录</div>`;
+                        
+                        // 创建表格
+                        html += '<table class="data-table">';
+                        html += '<thead><tr>';
+                        html += '<th>ID</th><th>用户名</th><th>密码</th><th>UID</th><th>创建时间</th>';
+                        html += '</tr></thead><tbody>';
+                        
+                        users.forEach(user => {
+                            html += '<tr>';
+                            html += `<td>${user.id}</td>`;
+                            html += `<td>${user.name || '<空>'}</td>`;
+                            html += `<td>${user.password || '<空>'}</td>`;
+                            html += `<td>${user.uid}</td>`;
+                            html += `<td>${user.create_time}</td>`;
+                            html += '</tr>';
+                        });
+                        
+                        html += '</tbody></table>';
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = `<div class="error">错误: ${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    clearTimeout(timeout);
+                    console.error('获取数据库信息失败:', error);
+                    container.innerHTML = 
+                        `<div class="error">
+                            <p>获取数据库信息失败: ${error.message}</p>
+                            <p>请检查:</p>
+                            <ul>
+                                <li>服务器是否正常运行</li>
+                                <li>数据库连接是否正常</li>
+                                <li>查看服务器日志获取更多信息</li>
+                            </ul>
+                        </div>`;
+                });
+        });
+    </script>
+</body>
+</html>
