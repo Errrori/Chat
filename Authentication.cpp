@@ -15,29 +15,42 @@ void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& re
 		name = (*data)["username"].asString();
 		password = (*data)["password"].asString();
 
-		if (name.empty()) std::cout << "username is empty!\n";
-		if (password.empty()) std::cout << "password is empty!\n";
-
+		if (name.empty()||password.empty())
+		{
+			Json::Value data;
+			data["code"] = 400;
+			data["message"] = "name or password is empty";
+			auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
+			resp->addHeader("content-type", "application/json");
+			callback(resp);
+			return;
+		}
 
 		auto uid = Utils::GenerateUid();
 		if (!Users::AddUser(name, password, uid))
 		{
-			auto resp = drogon::HttpResponse::newHttpResponse();
-			resp->setStatusCode(drogon::HttpStatusCode::k404NotFound);
+			Json::Value data;
+			data["code"] = 501;
+			data["message"] = "Server Database error: can not add user";
+			auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
+			resp->addHeader("content-type", "application/json");
 			callback(resp);
 			return;
 		}
 		Json::Value data;
 		data["uid"] = uid;
+		data["code"] = 200;
 		auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
-		resp->setStatusCode(drogon::HttpStatusCode::k200OK);
 		resp->addHeader("content-type", "application/json");
 		callback(resp);
 	}
 	else
 	{
-		auto resp = drogon::HttpResponse::newHttpResponse();
-		resp->setStatusCode(drogon::HttpStatusCode::k500InternalServerError);
+		Json::Value data;
+		data["code"] = 400;
+		data["message"] = "request body is empty";
+		auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
+		resp->addHeader("content-type", "application/json");
 		callback(resp);
 	}
 
@@ -50,24 +63,24 @@ void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 	std::cout << "data is : " << req->bodyData() << std::endl;
 	std::string name;	
 	std::string password;
-	std::string uid;
 	auto data = req->getJsonObject();
 	if (data) {
 		name = (*data)["username"].asString();
 		password = (*data)["password"].asString();
-		uid = (*data)["uid"].asString();
 		if (name.empty()) std::cout << "username is empty!\n";
 		if (password.empty()) std::cout << "password is empty!\n";
-		if (uid.empty()) std::cout << "uid is empty!\n";
 	}
 	password = Utils::PasswordHashed(password);
 
 	Json::Value s_data;
-	if (!Users::GetUserInfo(uid, s_data))
+	if (!Users::GetUserInfoByName(name, s_data))
 	{
 		std::cout << "cam not find user info\n";
-		auto resp = drogon::HttpResponse::newHttpResponse();
-		resp->setStatusCode(drogon::HttpStatusCode::k500InternalServerError);
+		Json::Value data;
+		data["code"] = 400;
+		data["message"] = "Can not find user!";
+		auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
+		resp->addHeader("content-type", "application/json");
 		callback(resp);
 		return;
 	}
@@ -76,19 +89,29 @@ void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 	auto s_password = s_data["password"].asString();
 	auto s_uid = s_data["uid"].asString();
 
-	if (s_name!=name || s_password!=password || s_uid!=uid)
+	if (s_name!=name || s_password!=password )
 	{
+		Json::Value data;
+		data["code"] = 401;
+		if (s_name!=name)
+			data["message"] = "username is no correct";
+		if (s_password!=password)
+			data["message"] = "password is no correct";
+		
 		auto resp = drogon::HttpResponse::newHttpResponse();
+		resp->addHeader("content-type", "application/json");
 		std::cout << "error to verify\n";
-		resp->setStatusCode(drogon::HttpStatusCode::k500InternalServerError);
 		callback(resp);
 	}
 	else
 	{
 		Json::Value data;
-		data["jwt"] = "this is a monkey token";
+		data["message"] = "Login success";
+		data["token"] = "this is a monkey token";
+		data["code"] = 200;
+		data["uid"] = s_data["uid"].asString();
 		auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
-		resp->setStatusCode(drogon::k200OK);
+		resp->addHeader("content-type", "application/json");
 		callback(resp);
 	}
 }

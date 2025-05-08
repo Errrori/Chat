@@ -36,6 +36,9 @@
     <ClCompile Include="Authentication.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Websocket.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
@@ -54,6 +57,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Authentication.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Websocket.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

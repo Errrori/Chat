@@ -139,6 +139,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Users.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="Websocket.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Authentication.h" />
@@ -147,6 +148,7 @@
     <ClInclude Include="DebugRoute.h" />
     <ClInclude Include="Users.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="Websocket.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

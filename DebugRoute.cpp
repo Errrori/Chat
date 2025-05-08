@@ -206,7 +206,7 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
     }
     
     Json::Value userInfo;
-    bool success = Users::GetUserInfo(uid, userInfo);
+    bool success = Users::GetUserInfoByUid(uid, userInfo);
     
     if (!success) {
         response["code"] = 404;
@@ -267,7 +267,7 @@ void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
             ? user["uid"].asString() : Utils::GenerateUid();
         
         // 检查用户名是否已存在
-        if (Users::FindUser(uid)) {
+        if (Users::FindUserByUid(uid)) {
             Json::Value failedUser;
             failedUser["index"] = i;
             failedUser["username"] = name;

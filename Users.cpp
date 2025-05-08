@@ -91,7 +91,46 @@ namespace Users
         return success;
     }
 
-    bool FindUser(const std::string& uid)
+    bool FindUserByName(const std::string& username)
+    {
+        auto db = DatabaseManager::GetDbClient();
+
+        std::string sql = "SELECT username FROM users WHERE username = ?";
+
+        bool success = false;
+        std::promise<bool> pro;
+        auto f = pro.get_future();
+
+        db->execSqlAsync(
+            sql,
+            [&pro](const drogon::orm::Result& result) {
+                if (result.size() == 0) {
+                    LOG_INFO << "User not found";
+                    pro.set_value(false);
+                    return;
+                }
+
+                LOG_INFO << "Found user: " << result[0]["username"].as<std::string>();
+                pro.set_value(true);
+            },
+            [&pro](const drogon::orm::DrogonDbException& e) {
+                LOG_ERROR << "Failed to find user: " << e.base().what();
+                pro.set_value(false);
+            },
+            username);
+
+        try {
+            success = f.get();
+        }
+        catch (...) {
+            LOG_ERROR << "Exception occurred when finding user";
+            success = false;
+        }
+
+        return success;
+    }
+
+    bool FindUserByUid(const std::string& uid)
     {
         auto db = DatabaseManager::GetDbClient();
 
@@ -209,7 +248,7 @@ namespace Users
 
         return success;
     }
-    bool GetUserInfo(const std::string& uid, Json::Value& userInfo)
+    bool GetUserInfoByUid(const std::string& uid, Json::Value& userInfo)
     {
         auto db = DatabaseManager::GetDbClient();
 
@@ -242,6 +281,51 @@ namespace Users
                 pro.set_value(false);
             },
             uid);
+
+        try {
+            success = f.get();
+        }
+        catch (...) {
+            LOG_ERROR << "exception to find user info";
+            success = false;
+        }
+
+        return success;
+    }
+
+    bool GetUserInfoByName(const std::string& name, Json::Value& userInfo)
+    {
+        auto db = DatabaseManager::GetDbClient();
+
+        std::string sql = "SELECT id, username, password, uid, create_time FROM users WHERE username = ?";
+
+        bool success = false;
+        std::promise<bool> pro;
+        auto f = pro.get_future();
+
+        db->execSqlAsync(
+            sql,
+            [&pro, &userInfo](const drogon::orm::Result& result) {
+                if (result.size() == 0) {
+                    LOG_INFO << "can not find user info";
+                    pro.set_value(false);
+                    return;
+                }
+
+                const auto& row = result[0];
+                userInfo["id"] = row["id"].as<int>();
+                userInfo["username"] = row["username"].as<std::string>();
+                userInfo["uid"] = row["uid"].as<std::string>();
+                userInfo["password"] = row["password"].as<std::string>();
+                userInfo["create_time"] = row["create_time"].as<std::string>();
+
+                pro.set_value(true);
+            },
+            [&pro](const drogon::orm::DrogonDbException& e) {
+                LOG_ERROR << "fail to get info��" << e.base().what();
+                pro.set_value(false);
+            },
+            name);
 
         try {
             success = f.get();
