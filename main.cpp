@@ -49,7 +49,7 @@ int main()
 
 	drogon::app().setLogLevel(trantor::Logger::kDebug)
 		.loadConfigFile("config.json").setThreadNum(16);
-	LOG_TRACE << "Server start!";
+	LOG_INFO << "Server start!";
 	drogon::app().run();
 
 }

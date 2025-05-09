@@ -6,6 +6,11 @@ using namespace drogon;
 
 void EchoController::handleNewMessage(const WebSocketConnectionPtr& conn, std::string&& msg, const WebSocketMessageType& type)
 {
+    LOG_INFO << "receive msg:" << msg;
+    if (msg.empty())
+    {
+        return;
+    }
 	conn->send("Server receive: " + msg);
 }
 
