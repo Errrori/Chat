@@ -4,19 +4,16 @@ using namespace DataBase;
 
 void DatabaseManager::InitDatabase()
 {
-	if (!is_init)
-	{
-		std::cout << "init database!\n";
-		drogon::app().getDbClient()->execSqlSync(USER_TABLE);
-		is_init = true;
-	}
+	drogon::app().getDbClient()->execSqlSync(USER_TABLE);
 }
 
 drogon::orm::DbClientPtr DatabaseManager::GetDbClient()
 {
-	if (!DataBase::is_init)
+	static std::once_flag flag;
+	std::call_once(flag, []
 	{
+		LOG_INFO << "Database init success";
 		InitDatabase();
-	}
+	});
 	return drogon::app().getDbClient();
 }

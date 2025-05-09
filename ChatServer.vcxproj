@@ -134,21 +134,25 @@
   <ItemGroup>
     <ClCompile Include="Auth\Authentication.cpp" />
     <ClCompile Include="Auth\CorsMiddleware.cpp" />
+    <ClCompile Include="ConnectionManager.cpp" />
     <ClCompile Include="DatabaseManager.cpp" />
     <ClCompile Include="Auth\DebugRoute.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PublicChatController.cpp" />
     <ClCompile Include="Users.cpp" />
     <ClCompile Include="Utils.cpp" />
-    <ClCompile Include="Websocket.cpp" />
+    <ClCompile Include="EchoController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Auth\Authentication.h" />
     <ClInclude Include="Auth\CorsMiddleware.h" />
+    <ClInclude Include="ConnectionManager.h" />
     <ClInclude Include="DatabaseManager.h" />
     <ClInclude Include="Auth\DebugRoute.h" />
+    <ClInclude Include="PublicChatController.h" />
     <ClInclude Include="Users.h" />
     <ClInclude Include="Utils.h" />
-    <ClInclude Include="Websocket.h" />
+    <ClInclude Include="EchoController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -30,20 +30,11 @@ RUN git clone https://github.com/drogonframework/drogon \
     && make -j $(nproc) \
     && make install
 
-# 安装jwt-cpp (header-only库)
-RUN git clone https://github.com/Thalhammer/jwt-cpp.git \
-    && mkdir -p /usr/local/include/jwt-cpp \
-    && cp -r jwt-cpp/include/* /usr/local/include/
-
 # 创建工作目录
 WORKDIR /app
 
 # 复制源代码
 COPY . .
-
-# 创建include目录并复制jwt-cpp头文件
-RUN mkdir -p include/jwt-cpp \
-    && cp -r /usr/local/include/jwt-cpp/* include/jwt-cpp/
 
 # 创建构建目录并编译
 RUN mkdir -p build \

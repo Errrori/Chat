@@ -23,7 +23,7 @@ public:
 	static std::string GetJwtSecret();
 	static std::string PasswordHashed(const std::string& password);
 	static std::string LoadJwtSecret(const std::string& file_path = SecretFilePath);
-	static std::string GenJWT(UserInfo info);
+	static std::string GenJWT(const UserInfo& info);
 	static bool VerifyJWT(const std::string& token, UserInfo& info);
 };
 

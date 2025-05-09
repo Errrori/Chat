@@ -36,7 +36,13 @@
     <ClCompile Include="Auth\Authentication.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Websocket.cpp">
+    <ClCompile Include="EchoController.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ConnectionManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="PublicChatController.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,7 +65,13 @@
     <ClInclude Include="Auth\Authentication.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Websocket.h">
+    <ClInclude Include="EchoController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ConnectionManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="PublicChatController.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

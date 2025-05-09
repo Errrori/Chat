@@ -22,9 +22,6 @@ int main()
 {
 	signal(SIGINT, SignalHandler);
 	signal(SIGTERM, SignalHandler);
-	drogon::app().setLogLevel(trantor::Logger::kInfo)
-		.loadConfigFile("config.json").setThreadNum(16);
-
 	drogon::app().registerHandler("/auth/register",
 		&handleOptions,
 		{ drogon::Options });
@@ -50,7 +47,9 @@ int main()
 		&handleOptions,
 		{ drogon::Options });
 
-	std::cout << "Server start!\n";
+	drogon::app().setLogLevel(trantor::Logger::kDebug)
+		.loadConfigFile("config.json").setThreadNum(16);
+	LOG_TRACE << "Server start!";
 	drogon::app().run();
 
 }
