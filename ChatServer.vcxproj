@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClCompile Include="Auth\Authentication.cpp" />
     <ClCompile Include="Auth\CorsMiddleware.cpp" />
+    <ClCompile Include="ChatRecord.cpp" />
     <ClCompile Include="ConnectionManager.cpp" />
     <ClCompile Include="DatabaseManager.cpp" />
     <ClCompile Include="DebugRoute.cpp" />
@@ -146,6 +147,7 @@
   <ItemGroup>
     <ClInclude Include="Auth\Authentication.h" />
     <ClInclude Include="Auth\CorsMiddleware.h" />
+    <ClInclude Include="ChatRecord.h" />
     <ClInclude Include="ConnectionManager.h" />
     <ClInclude Include="DatabaseManager.h" />
     <ClInclude Include="DebugRoute.h" />

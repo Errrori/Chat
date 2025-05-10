@@ -3,147 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户数据</title>
+    <title>数据库用户列表</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 20px;
             color: #333;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
         }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
         }
-        .data-table th, .data-table td {
-            border: 1px solid #ddd;
-            padding: 12px 15px;
-            text-align: left;
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
         }
-        .data-table th {
-            background-color: #4CAF50;
-            color: white;
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
             font-weight: bold;
+            color: #3498db;
         }
-        .data-table tr:nth-child(even) {
-            background-color: #f2f2f2;
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
         }
-        .data-table tr:hover {
-            background-color: #ddd;
+        .user-list {
+            list-style-type: none;
+            padding: 0;
         }
-        .info-bar {
-            background-color: #e7f3fe;
-            border-left: 6px solid #2196F3;
-            padding: 10px;
-            margin-bottom: 15px;
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
         }
-        .error {
+        .user-item:last-child {
+            border-bottom: none;
+        }
+        .user-item:hover {
+            background-color: #f5f7fa;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #3498db;
             color: white;
-            background-color: #f44336;
-            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .user-info {
+            flex-grow: 1;
+        }
+        .user-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .user-id {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        .user-create-time {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        .refresh-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
             border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        .refresh-btn:hover {
+            background-color: #2980b9;
+        }
+        .no-users {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+            font-style: italic;
         }
         .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0,0,0,.3);
-            border-radius: 50%;
-            border-top-color: #4CAF50;
-            animation: spin 1s ease-in-out infinite;
+            text-align: center;
+            padding: 20px;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .last-update {
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>用户数据表</h1>
-        <div id="data-container">
-            <p>加载中... <span class="loading"></span></p>
+        <h1>数据库用户列表</h1>
+        
+        <div id="error" class="error-message" style="display: none;"></div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-users">0</div>
+                <div class="stat-label">用户总数</div>
+            </div>
         </div>
+        
+        <div id="loading" class="loading">加载中...</div>
+        
+        <ul id="user-list" class="user-list" style="display: none;"></ul>
+        
+        <div id="no-users" class="no-users" style="display: none;">
+            数据库中没有用户
+        </div>
+        
+        <button id="refresh-btn" class="refresh-btn">刷新数据</button>
+        
+        <div id="last-update" class="last-update"></div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const container = document.getElementById('data-container');
-            
-            // 添加超时处理
-            const timeout = setTimeout(() => {
-                container.innerHTML = '<div class="error">请求超时，请检查服务器是否正常运行。</div>';
-            }, 10000); // 10秒超时
-            
-            fetch('/db_info')
-                .then(response => {
-                    clearTimeout(timeout);
-                    if (!response.ok) {
-                        throw new Error(`HTTP错误: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('收到数据:', data);
-                    
-                    if (data.code === 200) {
-                        // 修改这里：直接使用data.data作为用户数组
-                        const users = Array.isArray(data.data) ? data.data : [];
-                        const totalCount = data.total || users.length;
-                        
-                        if (!users || users.length === 0) {
-                            container.innerHTML = '<div class="info-bar">数据库中没有用户数据</div>';
-                            return;
-                        }
-                        
-                        // 创建信息栏
-                        let html = `<div class="info-bar">共 ${totalCount} 条用户记录</div>`;
-                        
-                        // 创建表格
-                        html += '<table class="data-table">';
-                        html += '<thead><tr>';
-                        html += '<th>ID</th><th>用户名</th><th>密码</th><th>UID</th><th>创建时间</th>';
-                        html += '</tr></thead><tbody>';
-                        
-                        users.forEach(user => {
-                            html += '<tr>';
-                            html += `<td>${user.id}</td>`;
-                            html += `<td>${user.name || '<空>'}</td>`;
-                            html += `<td>${user.password || '<空>'}</td>`;
-                            html += `<td>${user.uid}</td>`;
-                            html += `<td>${user.create_time}</td>`;
-                            html += '</tr>';
-                        });
-                        
-                        html += '</tbody></table>';
-                        container.innerHTML = html;
-                    } else {
-                        container.innerHTML = `<div class="error">错误: ${data.message}</div>`;
-                    }
-                })
-                .catch(error => {
-                    clearTimeout(timeout);
-                    console.error('获取数据库信息失败:', error);
-                    container.innerHTML = 
-                        `<div class="error">
-                            <p>获取数据库信息失败: ${error.message}</p>
-                            <p>请检查:</p>
-                            <ul>
-                                <li>服务器是否正常运行</li>
-                                <li>数据库连接是否正常</li>
-                                <li>查看服务器日志获取更多信息</li>
-                            </ul>
-                        </div>`;
+        // 获取DOM元素
+        const errorElement = document.getElementById('error');
+        const totalUsersElement = document.getElementById('total-users');
+        const loadingElement = document.getElementById('loading');
+        const userListElement = document.getElementById('user-list');
+        const noUsersElement = document.getElementById('no-users');
+        const refreshButton = document.getElementById('refresh-btn');
+        const lastUpdateElement = document.getElementById('last-update');
+        
+        // 获取用户数据的函数
+        async function fetchUserData() {
+            try {
+                loadingElement.style.display = 'block';
+                userListElement.style.display = 'none';
+                noUsersElement.style.display = 'none';
+                errorElement.style.display = 'none';
+                
+                // 使用完整的URL路径
+                const response = await fetch('/db_info', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    // 添加凭证，确保跨域请求时携带cookie
+                    credentials: 'same-origin'
                 });
-        });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log("获取到的数据:", data); // 添加调试信息
+                
+                if (data.code !== 200) {
+                    throw new Error(data.message || '获取数据失败');
+                }
+                
+                displayUserData(data);
+                
+                // 更新最后更新时间
+                const now = new Date();
+                lastUpdateElement.textContent = `最后更新: ${now.toLocaleString()}`;
+            } catch (error) {
+                console.error("获取数据错误:", error); // 添加详细错误日志
+                errorElement.textContent = `错误: ${error.message}`;
+                errorElement.style.display = 'block';
+                loadingElement.style.display = 'none';
+            }
+        }
+        
+        // 显示用户数据的函数
+        function displayUserData(data) {
+            loadingElement.style.display = 'none';
+            
+            // 更新用户总数
+            totalUsersElement.textContent = data.total || 0;
+            
+            // 清空用户列表
+            userListElement.innerHTML = '';
+            
+            // 检查是否有用户数据
+            if (data.data && data.data.length > 0) {
+                // 显示用户列表
+                userListElement.style.display = 'block';
+                noUsersElement.style.display = 'none';
+                
+                // 为每个用户创建列表项
+                data.data.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'user-item';
+                    
+                    // 创建用户头像（使用用户名首字母）
+                    const avatar = document.createElement('div');
+                    avatar.className = 'user-avatar';
+                    avatar.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
+                    
+                    // 创建用户信息容器
+                    const userInfo = document.createElement('div');
+                    userInfo.className = 'user-info';
+                    
+                    // 创建用户名元素
+                    const userName = document.createElement('div');
+                    userName.className = 'user-name';
+                    userName.textContent = user.username || '未知用户';
+                    
+                    // 创建用户ID元素
+                    const userId = document.createElement('div');
+                    userId.className = 'user-id';
+                    userId.textContent = `UID: ${user.uid || '未知'}`;
+                    
+                    // 创建用户创建时间元素
+                    const userCreateTime = document.createElement('div');
+                    userCreateTime.className = 'user-create-time';
+                    userCreateTime.textContent = `创建时间: ${user.create_time || '未知'}`;
+                    
+                    // 组装用户信息
+                    userInfo.appendChild(userName);
+                    userInfo.appendChild(userId);
+                    userInfo.appendChild(userCreateTime);
+                    
+                    // 组装列表项
+                    listItem.appendChild(avatar);
+                    listItem.appendChild(userInfo);
+                    
+                    // 添加到用户列表
+                    userListElement.appendChild(listItem);
+                });
+            } else {
+                // 显示无用户提示
+                userListElement.style.display = 'none';
+                noUsersElement.style.display = 'block';
+            }
+        }
+        
+        // 添加刷新按钮点击事件
+        refreshButton.addEventListener('click', fetchUserData);
+        
+        // 页面加载时获取数据
+        document.addEventListener('DOMContentLoaded', fetchUserData);
     </script>
 </body>
 </html>

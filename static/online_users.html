@@ -211,20 +211,20 @@
         function displayUserData(data) {
             loadingElement.style.display = 'none';
             
-            // 更新用户总数
-            totalUsersElement.textContent = data.size || 0;
+            // 更新用户总数 - 修改这里，使用正确的路径获取用户数量
+            totalUsersElement.textContent = data.data.size || 0;
             
             // 清空用户列表
             userListElement.innerHTML = '';
             
-            // 检查是否有用户数据
-            if (data.data && data.data.length > 0) {
+            // 检查是否有用户数据 - 修改这里，使用正确的路径检查用户数组
+            if (data.data && data.data.data && data.data.data.length > 0) {
                 // 显示用户列表
                 userListElement.style.display = 'block';
                 noUsersElement.style.display = 'none';
                 
-                // 为每个用户创建列表项
-                data.data.forEach(user => {
+                // 为每个用户创建列表项 - 修改这里，使用正确的路径遍历用户数组
+                data.data.data.forEach(user => {
                     const listItem = document.createElement('li');
                     listItem.className = 'user-item';
                     

@@ -15,6 +15,7 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
     if (msg.empty()) return;
     auto info = conn->getContext<Utils::UserInfo>();
     LOG_INFO << info->username<<" Receive message : " << msg;
+
     Json::Value json_msg;
     Json::Reader reader;
     if (!reader.parse(msg,json_msg))
@@ -22,19 +23,24 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
         LOG_ERROR << "fail to parse msg";
     	return;
     }
-    if (!json_msg.isMember("is_posted"))
+    if (!json_msg.isMember("forwarded"))
     {
-        LOG_ERROR << "can not find flag: is_posted";
-        return;
+        //message need to be broadcast
+        auto msg_id = Utils::GenerateMsgId();
+        json_msg["forwarded"] = true;
+        json_msg["msg_id"] = msg_id;
+	    json_msg["uid"] = info->uid;
+		json_msg["sender"] = info->username;
+		ConnectionManager::GetInstance().BroadcastMsg(info->uid, json_msg.toStyledString());
+        Json::Value reply;
+        reply["id"] = json_msg["id"].asString();
+        reply["msg_id"] = msg_id;
+        reply["ack"] = true;
+        conn->sendJson(reply);
     }
-    bool is_posted = json_msg["is_posted"].asBool();
-    if (is_posted) return;
-	LOG_INFO << "message need to post,sender :"<<info->username;
-    json_msg["is_posted"] = true;
-    json_msg["uid"] = info->uid;
-    json_msg["sender"] = info->username;
-    ConnectionManager::GetInstance().BroadcastMsg(info->uid, json_msg.toStyledString());
 
+    //if program reach here,it indicates that this message do not need to forward,
+    //server can check if "forwarded" is true here, but we ignore this
 }
 
 void PublicChatController::handleNewConnection(const drogon::HttpRequestPtr& req,

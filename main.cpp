@@ -46,6 +46,9 @@ int main()
 	drogon::app().registerHandler("/import",
 		&handleOptions,
 		{ drogon::Options });
+	drogon::app().registerHandler("/users_online",
+		&handleOptions,
+		{ drogon::Options });
 
 	drogon::app().setLogLevel(trantor::Logger::kDebug)
 		.loadConfigFile("config.json").setThreadNum(16);

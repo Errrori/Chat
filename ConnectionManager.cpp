@@ -88,7 +88,6 @@ void ConnectionManager::BroadcastMsg(const std::string& uid, const Json::Value& 
 	{
 		if (it.first!=uid)
 		{
-			LOG_INFO << "send message to" << _name_map.at(it.first);
 			it.second->sendJson(msg);
 		}
 	}
@@ -96,11 +95,11 @@ void ConnectionManager::BroadcastMsg(const std::string& uid, const Json::Value& 
 
 void ConnectionManager::BroadcastMsg(const std::string& uid, const std::string& msg)
 {
+	std::lock_guard lock(_conn_mtx);
 	for (const auto& it : _conn_map)
 	{
 		if (it.first != uid)
 		{
-			LOG_INFO << "send message to" <<_name_map.at(it.first);
 			it.second->send(msg);
 		}
 	}
