@@ -81,31 +81,48 @@ bool ConnectionManager::AddUIdToNameRef(const std::string& uid, const std::strin
 	return true;
 }
 
-void ConnectionManager::BroadcastMsg(const std::string& uid, const Json::Value& msg) const
+void ConnectionManager::BroadcastMsg(const std::string& uid, const Json::Value& msg)
 {
-	LOG_INFO << "access broadcast message :"<<msg.toStyledString();
-	std::cout << "access broadcast message :"<<msg.toStyledString();
+	std::lock_guard lock(_conn_mtx);
 	for (const auto& it : _conn_map)
 	{
 		if (it.first!=uid)
 		{
-			LOG_INFO << "send message to" << GetInstance().GetName(it.first);
+			LOG_INFO << "send message to" << _name_map.at(it.first);
 			it.second->sendJson(msg);
 		}
 	}
 }
 
-void ConnectionManager::BroadcastMsg(const std::string& uid, const std::string& msg) const
+void ConnectionManager::BroadcastMsg(const std::string& uid, const std::string& msg)
 {
-	LOG_INFO <<GetInstance().GetName(uid)<< " access broadcast message :" << msg;
 	for (const auto& it : _conn_map)
 	{
 		if (it.first != uid)
 		{
-			LOG_INFO << "send message to" << GetInstance().GetName(it.first);
+			LOG_INFO << "send message to" <<_name_map.at(it.first);
 			it.second->send(msg);
 		}
 	}
+}
+
+Json::Value ConnectionManager::GetOnlineUsers()
+{
+	std::lock_guard c_lock(_conn_mtx);
+	std::lock_guard n_lock(_name_mtx);
+	Json::Value data(Json::arrayValue);
+	for (const auto& it: _conn_map)
+	{
+		auto& uid = it.first;
+		Json::Value user;
+		user["uid"] = uid;
+		user["username"] = _name_map.at(uid);
+		data.append(user);
+	}
+	Json::Value resp;
+	resp["data"] = data;
+	resp["size"] = data.size();
+	return resp;
 }
 
 std::string ConnectionManager::GetName(const std::string& uid)

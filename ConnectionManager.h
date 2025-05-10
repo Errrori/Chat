@@ -18,9 +18,9 @@ public:
 	bool RemoveConnection(const std::string& uid);
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
 	bool AddUIdToNameRef(const std::string& uid, const std::string& name);
-
-	void BroadcastMsg(const std::string& uid, const Json::Value& msg) const;
-	void BroadcastMsg(const std::string& uid, const std::string& msg) const;
+	void BroadcastMsg(const std::string& uid, const Json::Value& msg);
+	void BroadcastMsg(const std::string& uid, const std::string& msg);
+	Json::Value GetOnlineUsers();
 
 	std::string GetName(const std::string& uid);
 	drogon::WebSocketConnectionPtr GetConnection(const std::string& uid);

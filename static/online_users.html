@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线用户列表</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .user-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        .user-item:last-child {
+            border-bottom: none;
+        }
+        .user-item:hover {
+            background-color: #f5f7fa;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .user-info {
+            flex-grow: 1;
+        }
+        .user-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .user-id {
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        .refresh-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        .refresh-btn:hover {
+            background-color: #2980b9;
+        }
+        .no-users {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .last-update {
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>聊天服务器在线用户</h1>
+        
+        <div id="error" class="error-message" style="display: none;"></div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-users">0</div>
+                <div class="stat-label">在线用户数</div>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">加载中...</div>
+        
+        <ul id="user-list" class="user-list" style="display: none;"></ul>
+        
+        <div id="no-users" class="no-users" style="display: none;">
+            当前没有在线用户
+        </div>
+        
+        <button id="refresh-btn" class="refresh-btn">刷新数据</button>
+        
+        <div id="last-update" class="last-update"></div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const errorElement = document.getElementById('error');
+        const totalUsersElement = document.getElementById('total-users');
+        const loadingElement = document.getElementById('loading');
+        const userListElement = document.getElementById('user-list');
+        const noUsersElement = document.getElementById('no-users');
+        const refreshButton = document.getElementById('refresh-btn');
+        const lastUpdateElement = document.getElementById('last-update');
+        
+        // 获取用户数据的函数
+        async function fetchUserData() {
+            try {
+                loadingElement.style.display = 'block';
+                userListElement.style.display = 'none';
+                noUsersElement.style.display = 'none';
+                errorElement.style.display = 'none';
+                
+                // 修改API路径，使用完整的URL路径
+                const response = await fetch('/users_online', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    // 添加凭证，确保跨域请求时携带cookie
+                    credentials: 'same-origin'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log("获取到的数据:", data); // 添加调试信息
+                
+                if (data.code !== 200) {
+                    throw new Error(data.message || '获取数据失败');
+                }
+                
+                displayUserData(data);
+                
+                // 更新最后更新时间
+                const now = new Date();
+                lastUpdateElement.textContent = `最后更新: ${now.toLocaleString()}`;
+            } catch (error) {
+                console.error("获取数据错误:", error); // 添加详细错误日志
+                errorElement.textContent = `错误: ${error.message}`;
+                errorElement.style.display = 'block';
+                loadingElement.style.display = 'none';
+            }
+        }
+        
+        // 显示用户数据的函数
+        function displayUserData(data) {
+            loadingElement.style.display = 'none';
+            
+            // 更新用户总数
+            totalUsersElement.textContent = data.size || 0;
+            
+            // 清空用户列表
+            userListElement.innerHTML = '';
+            
+            // 检查是否有用户数据
+            if (data.data && data.data.length > 0) {
+                // 显示用户列表
+                userListElement.style.display = 'block';
+                noUsersElement.style.display = 'none';
+                
+                // 为每个用户创建列表项
+                data.data.forEach(user => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'user-item';
+                    
+                    // 创建用户头像（使用用户名首字母）
+                    const avatar = document.createElement('div');
+                    avatar.className = 'user-avatar';
+                    avatar.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
+                    
+                    // 创建用户信息容器
+                    const userInfo = document.createElement('div');
+                    userInfo.className = 'user-info';
+                    
+                    // 创建用户名元素
+                    const userName = document.createElement('div');
+                    userName.className = 'user-name';
+                    userName.textContent = user.username || '未知用户';
+                    
+                    // 创建用户ID元素
+                    const userId = document.createElement('div');
+                    userId.className = 'user-id';
+                    userId.textContent = `UID: ${user.uid || '未知'}`;
+                    
+                    // 组装用户信息
+                    userInfo.appendChild(userName);
+                    userInfo.appendChild(userId);
+                    
+                    // 组装列表项
+                    listItem.appendChild(avatar);
+                    listItem.appendChild(userInfo);
+                    
+                    // 添加到用户列表
+                    userListElement.appendChild(listItem);
+                });
+            } else {
+                // 显示无用户提示
+                userListElement.style.display = 'none';
+                noUsersElement.style.display = 'block';
+            }
+        }
+        
+        // 添加刷新按钮点击事件
+        refreshButton.addEventListener('click', fetchUserData);
+        
+        // 页面加载时获取数据
+        document.addEventListener('DOMContentLoaded', fetchUserData);
+    </script>
+</body>
+</html>

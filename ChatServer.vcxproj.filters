@@ -24,7 +24,7 @@
     <ClCompile Include="Users.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Auth\DebugRoute.cpp">
+    <ClCompile Include="DebugRoute.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DatabaseManager.cpp">
@@ -53,7 +53,7 @@
     <ClInclude Include="Users.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Auth\DebugRoute.h">
+    <ClInclude Include="DebugRoute.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="DatabaseManager.h">

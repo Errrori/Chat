@@ -1,6 +1,7 @@
 #include "DebugRoute.h"
-#include "../Users.h"
-#include "../Utils.h"
+#include "Users.h"
+#include "Utils.h"
+#include "ConnectionManager.h"
 
 void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -302,8 +303,36 @@ void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
     callback(resp);
 }
 
+void DbInfoController::GetOnlineUsers(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    Json::Value response;
+    response["code"] = 200;
+    response["message"] = "success to get online users";
+
+    try {
+        auto user_str = ConnectionManager::GetInstance().GetOnlineUsers();
+        response["data"] = user_str;
+    }
+    catch (const drogon::orm::DrogonDbException& e) {
+        LOG_ERROR << "fail to get name: " << e.base().what();
+        response["code"] = 500;
+    }
+
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+    if (response["code"].asUInt() != 200)
+    {
+        resp->setStatusCode(drogon::k500InternalServerError);
+    }
+    else
+    {
+        resp->setStatusCode(drogon::k200OK);
+    }
+    callback(resp);
+}
+
 void DbInfoController::HandleDbInfoOptions(const drogon::HttpRequestPtr& req,
-                                         std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+                                           std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
     LOG_DEBUG << "DbInfoController::HandleDbInfoOptions called for /db_info";
     auto resp = drogon::HttpResponse::newHttpResponse();
