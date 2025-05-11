@@ -5,6 +5,7 @@
  *
  */
 
+#include "pch.h"
 #include "Users.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
@@ -103,8 +104,7 @@ Users::Users(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 5;
         if(!r[index].isNull())
         {
-            auto timeStr = r[index].as<std::string>();
-            createTime_ = std::make_shared<std::string>(timeStr);
+            createTime_ = std::make_shared<std::string>(r[index].as<std::string>());
         }
     }
 

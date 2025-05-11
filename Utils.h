@@ -1,13 +1,13 @@
 #pragma once
-#ifdef _WIN32
-#pragma comment(lib, "Rpcrt4.lib") 
-#endif
-#pragma comment(lib, "Ws2_32.lib")
 
-#include <string>
-#include <chrono>
-#include <mutex>
-
+// 不再需要这些包含，因为它们已在pch.h中
+// #ifdef _WIN32
+// #pragma comment(lib, "Rpcrt4.lib") 
+// #endif
+// #pragma comment(lib, "Ws2_32.lib")
+// #include <string>
+// #include <chrono>
+// #include <mutex>
 
 namespace
 {

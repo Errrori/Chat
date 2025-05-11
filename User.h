@@ -1,7 +1,7 @@
 #pragma once
-#include "DatabaseManager.h"
+#include "manager/DatabaseManager.h"
 
-namespace Users
+namespace User
 {
 	bool AddUser(const std::string& name,const std::string& password,const std::string& uid);
 	bool DeleteUser(const std::string& uid);

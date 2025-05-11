@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "Utils.h"
 #include <drogon/utils/Utilities.h>
 #include <fstream>
@@ -110,7 +111,7 @@ namespace Utils {
 #else
     // Linux实现
 #include <uuid/uuid.h>
-    std::string Utils::GenerateUid() {
+    std::string GenerateUid() {  // 移除了Utils::限定符
         uuid_t uuid;
         uuid_generate(uuid);
 
@@ -232,7 +233,7 @@ namespace Utils {
             auto exp = data.get_expires_at();
             if (exp < std::chrono::system_clock::now())
             {
-                std::cout << "token is not effective!\n\n";
+                LOG_ERROR << "token is not effective!\n\n";
                 return false;
             }
 
@@ -242,7 +243,6 @@ namespace Utils {
         }
         catch (const std::exception& e)
         {
-            std::cout << "Error: " << e.what() << "\n\n";
             LOG_ERROR << "Error: " << e.what();
             return false;
         }

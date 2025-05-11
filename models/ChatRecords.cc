@@ -5,6 +5,7 @@
  *
  */
 
+#include "pch.h"
 #include "ChatRecords.h"
 #include <drogon/utils/Utilities.h>
 #include <string>

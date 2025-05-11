@@ -21,28 +21,28 @@
     <ClCompile Include="Utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Users.cpp">
+    <ClCompile Include="User.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DebugRoute.cpp">
+    <ClCompile Include="controllers\DebugRoute.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DatabaseManager.cpp">
+    <ClCompile Include="manager\DatabaseManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="MiddleWare\CorsMiddleware.cpp">
+    <ClCompile Include="middleware\CorsMiddleware.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="controllers\Authentication.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="EchoController.cpp">
+    <ClCompile Include="controllers\EchoController.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ConnectionManager.cpp">
+    <ClCompile Include="manager\ConnectionManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="PublicChatController.cpp">
+    <ClCompile Include="controllers\PublicChatController.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="models\ChatRecords.cc">
@@ -51,39 +51,45 @@
     <ClCompile Include="models\Users.cc">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Users.h">
+    <ClInclude Include="User.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DebugRoute.h">
+    <ClInclude Include="controllers\DebugRoute.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DatabaseManager.h">
+    <ClInclude Include="manager\DatabaseManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MiddleWare\CorsMiddleware.h">
+    <ClInclude Include="middleware\CorsMiddleware.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="controllers\Authentication.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="EchoController.h">
+    <ClInclude Include="controllers\EchoController.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ConnectionManager.h">
+    <ClInclude Include="manager\ConnectionManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="PublicChatController.h">
+    <ClInclude Include="controllers\PublicChatController.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="models\ChatRecords.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="models\Users.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

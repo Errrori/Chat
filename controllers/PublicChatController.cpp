@@ -1,7 +1,7 @@
+#include "pch.h"
 #include "PublicChatController.h"
-#include "ConnectionManager.h"      
-#include "DatabaseManager.h"
-#include "Utils.h"
+#include "../manager/ConnectionManager.h"      
+#include "../manager/DatabaseManager.h"
 
 //message format:
 // {

@@ -1,12 +1,12 @@
+#include "pch.h"
 #include "DebugRoute.h"
-#include "Users.h"
-#include "Utils.h"
-#include "ConnectionManager.h"
+#include "../User.h"
+#include "../manager/ConnectionManager.h"
 
 void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    std::cout << "access info route\n";
+    LOG_TRACE << "access info route\n";
     auto db = DatabaseManager::GetDbClient();
     Json::Value response;
     response["code"] = 200;
@@ -53,7 +53,7 @@ void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
 void DbInfoController::ModifyName(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    std::cout << "Accessing modify username route\n";
+    LOG_TRACE << "Accessing modify username route\n";
     Json::Value response;
     response["code"] = 200;
     response["message"] = "Success";
@@ -80,7 +80,7 @@ void DbInfoController::ModifyName(const drogon::HttpRequestPtr& req,
         return;
     }
     
-    bool success = Users::ModifyUserName(uid, name);
+    bool success = User::ModifyUserName(uid, name);
     if (!success) {
         response["code"] = 404;
         response["message"] = "User does not exist or username not changed";
@@ -98,7 +98,7 @@ void DbInfoController::ModifyName(const drogon::HttpRequestPtr& req,
 void DbInfoController::ModifyPassword(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    std::cout << "Accessing modify password route\n";
+    LOG_TRACE << "Accessing modify password route\n";
     Json::Value response;
     response["code"] = 200;
     response["message"] = "Success";
@@ -128,7 +128,7 @@ void DbInfoController::ModifyPassword(const drogon::HttpRequestPtr& req,
     // Hash the password
     std::string hashedPassword = Utils::PasswordHashed(password);
     
-    bool success = Users::ModifyUserPassword(uid, hashedPassword);
+    bool success = User::ModifyUserPassword(uid, hashedPassword);
     if (!success) {
         response["code"] = 404;
         response["message"] = "User does not exist or password not changed";
@@ -146,7 +146,7 @@ void DbInfoController::ModifyPassword(const drogon::HttpRequestPtr& req,
 void DbInfoController::DeleteUser(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    std::cout << "Accessing delete user route\n";
+    LOG_TRACE << "Accessing delete user route\n";
     Json::Value response;
     response["code"] = 200;
     response["message"] = "Success";
@@ -172,7 +172,7 @@ void DbInfoController::DeleteUser(const drogon::HttpRequestPtr& req,
         return;
     }
     
-    bool success = Users::DeleteUser(uid);
+    bool success = User::DeleteUser(uid);
     if (!success) {
         response["code"] = 404;
         response["message"] = "User does not exist or deletion failed";
@@ -191,7 +191,7 @@ void DbInfoController::DeleteUser(const drogon::HttpRequestPtr& req,
 void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    std::cout << "Accessing get user by id route\n";
+    LOG_TRACE << "Accessing get user by id route\n";
     Json::Value response;
     response["code"] = 200;
     response["message"] = "Success";
@@ -209,7 +209,7 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
     }
     
     Json::Value userInfo;
-    bool success = Users::GetUserInfoByUid(uid, userInfo);
+    bool success = User::GetUserInfoByUid(uid, userInfo);
     
     if (!success) {
         response["code"] = 404;
@@ -230,7 +230,7 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
 void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    std::cout << "access import_users\n";
+    LOG_TRACE << "access import_users\n";
     Json::Value response;
     response["code"] = 200;
     response["message"] = "success import";
@@ -268,7 +268,7 @@ void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
         std::string uid = user.isMember("uid") && user["uid"].isString() && !user["uid"].asString().empty() 
             ? user["uid"].asString() : Utils::GenerateUid();
 
-        if (Users::FindUserByUid(uid)) {
+        if (User::FindUserByUid(uid)) {
             Json::Value failedUser;
             failedUser["index"] = i;
             failedUser["username"] = name;
@@ -278,7 +278,7 @@ void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
         }
 
         // 添加用户
-        bool success = Users::AddUser(name, password, uid);
+        bool success = User::AddUser(name, password, uid);
         
         if (success) {
             Json::Value successUser;
@@ -338,15 +338,19 @@ void DbInfoController::GetChatRecords(const drogon::HttpRequestPtr& req,
     LOG_INFO << "Get chat records accessed";
     Json::Value json_resp;
     Json::Value records;
-    auto num = req->getOptionalParameter<unsigned int>("num");
+    auto num = req->getOptionalParameter<unsigned int>("message_number");
+    auto existing_id = req->getOptionalParameter<int64_t>("existing_id");
 
-	if (num.has_value())
+    if (existing_id.has_value())
     {
-        LOG_INFO << "Use custom value to get records";
-        records = DatabaseManager::GetChatRecords(num.value());
+        records = DatabaseManager::GetChatRecords(existing_id.value(),num.value_or(DataBase::DEFAULT_RECORDS_QUERY_LEN));
     }else
     {
-		records = DatabaseManager::GetChatRecords();
+        json_resp["code"] = 400;
+        json_resp["message"] = "Missing field : existing_id";
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
+        callback(resp);
+        return;
     }
 
 	if (records ==Json::nullValue)
@@ -362,6 +366,62 @@ void DbInfoController::GetChatRecords(const drogon::HttpRequestPtr& req,
     json_resp["code"] = 200;
     auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
     callback(resp);
+}
+
+void DbInfoController::GetAllRecords(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    LOG_INFO << "Get chat records accessed";
+    Json::Value json_resp;
+    Json::Value records;
+    auto num = req->getOptionalParameter<unsigned int>("message_number");
+
+    if (num.has_value())
+    {
+        records = DatabaseManager::GetAllRecords(num.value());
+    }
+    else
+    {
+        records = DatabaseManager::GetAllRecords();
+    }
+
+    if (records == Json::nullValue)
+    {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setBody("Sorry,no records store in the database. ");
+        callback(resp);
+        return;
+    }
+
+    json_resp["data"] = records;
+    json_resp["size"] = records.size();
+    json_resp["code"] = 200;
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
+    callback(resp);
+}
+
+void DbInfoController::ModifyUserAvatar(const drogon::HttpRequestPtr& req,
+                                        std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    const auto& data = req->getJsonObject();
+    std::string uid = (*data)["uid"].asString();
+    std::string avatar = (*data)["avatar"].asString();
+    bool is_success = DatabaseManager::ModifyAvatar(uid, avatar);
+	Json::Value json_resp;
+	if (is_success)
+    {
+        json_resp["code"] = 200;
+        json_resp["message"] = "Operate success!";
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
+        callback(resp);
+    }
+    else
+    {
+        json_resp["code"] = 400;
+        json_resp["message"] = "Operate fail!";
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
+        callback(resp);
+    }
 }
 
 void DbInfoController::HandleDbInfoOptions(const drogon::HttpRequestPtr& req,

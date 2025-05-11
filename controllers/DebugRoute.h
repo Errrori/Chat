@@ -2,18 +2,25 @@
 #include <drogon/drogon.h>
 #include <drogon/HttpController.h>
 
+
 class DbInfoController : public drogon::HttpController<DbInfoController>
 {
     public:
         METHOD_LIST_BEGIN
-            ADD_METHOD_TO(DbInfoController::GetDbInfo, "/db_info", drogon::Get,"CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::ModifyName, "/modify_name", drogon::Post, "CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::ModifyPassword, "/modify_password", drogon::Post, "CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::DeleteUser, "/delete_user", drogon::Post, "CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::GetUserById, "/get_user", drogon::Get, "CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::ImportUsers, "/import", drogon::Post, "CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::GetOnlineUsers, "/online_users", drogon::Get, "CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::GetChatRecords, "/chatroom/record", drogon::Get, "CorsMiddleware");
+			//database
+            ADD_METHOD_TO(DbInfoController::GetDbInfo, "/debug/db_info", drogon::Get,"CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetAllRecords, "/debug/rd_info", drogon::Get,"CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetUserById, "/debug/get_user", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::ImportUsers, "/debug/import", drogon::Post, "CorsMiddleware");
+			ADD_METHOD_TO(DbInfoController::GetOnlineUsers, "/debug/online_users", drogon::Get, "CorsMiddleware");
+			//user
+            ADD_METHOD_TO(DbInfoController::ModifyName, "/user/modify/username", drogon::Post, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::ModifyPassword, "/user/modify/password", drogon::Post, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::ModifyUserAvatar, "/user/modify/avatar", drogon::Post, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::DeleteUser, "/user/cancel", drogon::Post, "CorsMiddleware");
+
+            //chatroom
+            ADD_METHOD_TO(DbInfoController::GetChatRecords, "/chatroom/records", drogon::Get, "CorsMiddleware");
         METHOD_LIST_END
 
         void GetDbInfo(const drogon::HttpRequestPtr& req,
@@ -33,6 +40,10 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
 		void GetOnlineUsers(const drogon::HttpRequestPtr& req,
                 std::function<void(const drogon::HttpResponsePtr&)>&& callback);
 		void GetChatRecords(const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+        void GetAllRecords(const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+        void ModifyUserAvatar(const drogon::HttpRequestPtr& req,
             std::function<void(const drogon::HttpResponsePtr&)>&& callback);
 };
 

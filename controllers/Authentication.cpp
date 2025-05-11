@@ -1,12 +1,12 @@
+#include "pch.h"
 #include "Authentication.h"
-#include "Users.h"
-#include "Utils.h"
+#include "../User.h"
 
 void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& req,
-	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+                                                std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-	std::cout << "access the Register route\n";
-	std::cout << "data is : "<<req->bodyData() << std::endl;
+	LOG_TRACE << "access the Register route";
+	LOG_TRACE << "data is : "<<req->bodyData();
 
 	std::string name;
 	std::string password;
@@ -27,7 +27,7 @@ void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& re
 		}
 
 		auto uid = Utils::GenerateUid();
-		if (!Users::AddUser(name, password, uid))
+		if (!User::AddUser(name, password, uid))
 		{
 			Json::Value data;
 			data["code"] = 501;
@@ -59,23 +59,23 @@ void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& re
 void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-	std::cout << "access the Login route\n";
-	std::cout << "data is : " << req->bodyData() << std::endl;
+	LOG_TRACE << "access the Login route\n";
+	LOG_TRACE << "data is : " << req->bodyData();
 	std::string name;	
 	std::string password;
 	auto data = req->getJsonObject();
 	if (data) {
 		name = (*data)["username"].asString();
 		password = (*data)["password"].asString();
-		if (name.empty()) std::cout << "username is empty!\n";
-		if (password.empty()) std::cout << "password is empty!\n";
+		if (name.empty()) LOG_ERROR << "username is empty!\n";
+		if (password.empty()) LOG_ERROR << "password is empty!\n";
 	}
 	password = Utils::PasswordHashed(password);
 
 	Json::Value s_data;
-	if (!Users::GetUserInfoByName(name, s_data))
+	if (!User::GetUserInfoByName(name, s_data))
 	{
-		std::cout << "cam not find user info\n";
+		LOG_ERROR << "cam not find user info\n";
 		Json::Value data;
 		data["code"] = 400;
 		data["message"] = "Can not find user!";
@@ -100,7 +100,7 @@ void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 		
 		auto resp = drogon::HttpResponse::newHttpResponse();
 		resp->addHeader("content-type", "application/json");
-		std::cout << "error to verify\n";
+		LOG_ERROR << "error to verify\n";
 		callback(resp);
 		return;
 	}

@@ -1,5 +1,6 @@
+#include "pch.h"
 #include "ConnectionManager.h"
-#include "Users.h"
+#include "../User.h"
 
 ConnectionManager& ConnectionManager::GetInstance()
 {
@@ -28,7 +29,7 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 	lock.unlock();
 
 	Json::Value data;
-	if (Users::GetUserInfoByUid(uid,data))
+	if (User::GetUserInfoByUid(uid,data))
 	{
 		auto name = data["username"].asString();
 		return AddUIdToNameRef(uid, name);
@@ -114,7 +115,7 @@ Json::Value ConnectionManager::GetOnlineUsers()
 	{
 		auto& uid = it.first;
 		Json::Value userInfo;
-		if (Users::GetUserInfoByUid(uid, userInfo)) {
+		if (User::GetUserInfoByUid(uid, userInfo)) {
 			Json::Value user;
 			user["uid"] = uid;
 			user["username"] = _name_map.at(uid);

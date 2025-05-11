@@ -1,9 +1,12 @@
+#include "pch.h"
+#include "../models/ChatRecords.h"
+#include "../models/Users.h"
 #include "DatabaseManager.h"
-#include "models/ChatRecords.h"
 #include <drogon/orm/Mapper.h>
 
 using namespace DataBase;
 using ChatRecord = drogon_model::sqlite3::ChatRecords;
+using User = drogon_model::sqlite3::Users;
 using namespace drogon::orm;
 
 void DatabaseManager::InitDatabase()
@@ -25,7 +28,6 @@ DbClientPtr DatabaseManager::GetDbClient()
 
 void DatabaseManager::PushChatRecords(const Json::Value& message)
 {
-	//或许这里需要重构一条记录然后放入，不过出于简单易用的方面考虑直接放入消息
 	//auto sender_name = message["sender_name"].asString();
 	//auto sender_uid = message["sender_uid"].asString();
 	//auto msg = message["content"].asString();
@@ -48,12 +50,14 @@ void DatabaseManager::PushChatRecords(const Json::Value& message)
 	);
 }
 
-Json::Value DatabaseManager::GetChatRecords(unsigned num)
+Json::Value DatabaseManager::GetChatRecords(int64_t existing_id,unsigned num)
 {
 	Mapper<ChatRecord> mapper(GetDbClient());
 	Json::Value data(Json::arrayValue);
+
+	Criteria criteria(ChatRecord::Cols::_message_id, CompareOperator::GT, existing_id);
 	auto records = 
-		mapper.orderBy(ChatRecord::Cols::_create_time,SortOrder::DESC).limit(num).findAll();
+		mapper.orderBy(ChatRecord::Cols::_message_id,SortOrder::DESC).limit(num).findBy(criteria);
 	
 	for (const auto& record : records)
 	{
@@ -63,6 +67,7 @@ Json::Value DatabaseManager::GetChatRecords(unsigned num)
 		json_record["sender_name"] = record.getValueOfSenderName();
 		json_record["content"] = record.getValueOfContent();
 		json_record["create_time"] = record.getValueOfCreateTime();
+		json_record["avatar"] = record.getValueOfAvatar();
 		data.append(json_record);
 	}
 
@@ -71,3 +76,40 @@ Json::Value DatabaseManager::GetChatRecords(unsigned num)
 	return data;
 }
 
+Json::Value DatabaseManager::GetAllRecords(unsigned num)
+{
+	Mapper<ChatRecord> mapper(GetDbClient());
+	Json::Value data(Json::arrayValue);
+	auto records =
+		mapper.orderBy(ChatRecord::Cols::_create_time, SortOrder::DESC).limit(num).findAll();
+
+	for (const auto& record : records)
+	{
+		Json::Value json_record;
+		json_record["message_id"] = record.getValueOfMessageId();
+		json_record["sender_uid"] = record.getValueOfSenderUid();
+		json_record["sender_name"] = record.getValueOfSenderName();
+		json_record["content"] = record.getValueOfContent();
+		json_record["create_time"] = record.getValueOfCreateTime();
+		json_record["avatar"] = record.getValueOfAvatar();
+		data.append(json_record);
+	}
+
+	LOG_INFO << "Get ChatRecords : " << data.toStyledString();
+
+	return data;
+}
+
+bool DatabaseManager::ModifyAvatar(const std::string& uid, const std::string& avatar)
+{
+	Criteria criteria(User::Cols::_uid,CompareOperator::EQ,uid);
+	Mapper<User> mapper(DatabaseManager::GetDbClient());
+	auto record = mapper.findOne(criteria);
+	mapper.limit(1);
+	User user;
+	user.setId(record.getPrimaryKey());
+	user.setAvatar(avatar);
+	size_t result = mapper.updateBy({User::Cols::_avatar},criteria,avatar);
+
+	return result == 1;
+}

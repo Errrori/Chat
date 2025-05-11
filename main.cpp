@@ -1,3 +1,4 @@
+#include "pch.h"
 #include <drogon/drogon.h>
 #include <csignal>
 #include "Utils.h"
@@ -9,7 +10,7 @@ void SignalHandler(int signals)
 	drogon::app().quit();
 }
 
-void handleOptions(const drogon::HttpRequestPtr& req,
+void HandleOptions(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
 	auto resp = drogon::HttpResponse::newHttpResponse();
@@ -21,38 +22,56 @@ void handleOptions(const drogon::HttpRequestPtr& req,
 	callback(resp);
 }
 
+void AddOptionHandle()
+{
+	drogon::app().registerHandler("/auth/register",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/auth/login",
+		&HandleOptions,
+		{ drogon::Options });
+
+	drogon::app().registerHandler("/debug/db_info",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/debug/rd_info",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/debug/get_user",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/debug/import",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/debug/online_users",
+		&HandleOptions,
+		{ drogon::Options });
+
+	drogon::app().registerHandler("/user/modify/username",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/user/modify/avatar",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/user/cancel",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/users_online",
+		&HandleOptions,
+		{ drogon::Options });
+
+	drogon::app().registerHandler("/chatroom/records",
+		&HandleOptions,
+		{ drogon::Options });
+}
+
 int main()
 {
 	signal(SIGINT, SignalHandler);
 	signal(SIGTERM, SignalHandler);
 	
-		drogon::app().registerHandler("/auth/register",
-			&handleOptions,
-			{ drogon::Options });
-		drogon::app().registerHandler("/auth/login",
-			&handleOptions,
-			{ drogon::Options });
-		drogon::app().registerHandler("/db_info",
-			&handleOptions,
-			{ drogon::Options });
-		drogon::app().registerHandler("/modify_name",
-			&handleOptions,
-			{ drogon::Options });
-		drogon::app().registerHandler("/modify_password",
-			&handleOptions,
-			{ drogon::Options });
-		drogon::app().registerHandler("/delete_user",
-			&handleOptions,
-			{ drogon::Options });
-		drogon::app().registerHandler("/get_user",
-			&handleOptions,
-			{ drogon::Options });
-		drogon::app().registerHandler("/import",
-			&handleOptions,
-			{ drogon::Options });
-		drogon::app().registerHandler("/users_online",
-			&handleOptions,
-			{ drogon::Options });
+	AddOptionHandle();
+	
 	drogon::app().setLogLevel(trantor::Logger::kDebug)
 		.loadConfigFile("config.json").setThreadNum(16);
 	LOG_INFO << "Server start!";

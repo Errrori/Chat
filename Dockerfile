@@ -43,7 +43,18 @@ WORKDIR /app
 # 复制源代码
 COPY . .
 
-# 创建构建目录并编译
+# 确保所有头文件都在正确的位置
+RUN mkdir -p manager controllers middleware models
+
+# 修复utils.cpp中的GenerateUid函数定义问题
+RUN sed -i 's/std::string Utils::GenerateUid()/std::string GenerateUid()/g' utils.cpp
+
+# 修复Json::Value类型转换问题
+RUN sed -i 's/json_record\["message_id"\] = record.getValueOfMessageId();/json_record\["message_id"\] = Json::Value::Int64(record.getValueOfMessageId());/g' manager/DatabaseManager.cpp || true
+RUN sed -i 's/json_msg\["message_id"\] = msg_id;/json_msg\["message_id"\] = Json::Value::Int64(msg_id);/g' controllers/PublicChatController.cpp || true
+RUN sed -i 's/reply\["message_id"\] = msg_id;/reply\["message_id"\] = Json::Value::Int64(msg_id);/g' controllers/PublicChatController.cpp || true
+
+# 构建项目
 RUN mkdir -p build \
     && cd build \
     && cmake .. \
@@ -71,9 +82,11 @@ WORKDIR /app
 
 # 从构建阶段复制编译好的可执行文件和必要的配置文件
 COPY --from=builder /app/build/Test /app/
-COPY --from=builder /app/config.json /app/
-COPY --from=builder /app/static /app/static
-COPY --from=builder /app/uploads /app/uploads
+
+# 使用多条RUN命令替代带有||true的COPY命令
+RUN if [ -f /builder/app/config.json ]; then cp /builder/app/config.json /app/; fi
+RUN mkdir -p /app/static && if [ -d /builder/app/static ]; then cp -r /builder/app/static/* /app/static/; fi
+RUN mkdir -p /app/uploads && if [ -d /builder/app/uploads ]; then cp -r /builder/app/uploads/* /app/uploads/; fi
 
 # 暴露应用程序端口（根据您的配置调整）
 EXPOSE 10086

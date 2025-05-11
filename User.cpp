@@ -1,16 +1,14 @@
-#include "Users.h"
-#include "DatabaseManager.h"
+#include "pch.h"
+#include "User.h"
+#include "manager/DatabaseManager.h"
 #include "Utils.h"
 
-namespace Users
+namespace User
 {
     bool AddUser(const std::string& name, const std::string& password, const std::string& uid)
     {
-
         auto db = DatabaseManager::GetDbClient();
-
         std::string hash_password = Utils::PasswordHashed(password);
-
         std::string sql = "INSERT INTO users (username, password, uid) VALUES (?, ?, ?)";
 
         bool success = false;
@@ -24,7 +22,6 @@ namespace Users
                 pro.set_value(true);
             },
             [&pro](const drogon::orm::DrogonDbException& e) {
-
                 LOG_ERROR << "Failed to add user: " << e.base().what();
                 pro.set_value(false);
             },
