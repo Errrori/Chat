@@ -1,5 +1,6 @@
 #include "PublicChatController.h"
 #include "ConnectionManager.h"      
+#include "DatabaseManager.h"
 #include "Utils.h"
 
 //message format:
@@ -27,14 +28,17 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
     {
         //message need to be broadcast
         auto msg_id = Utils::GenerateMsgId();
+        json_msg["message_id"] = msg_id;
+	    json_msg["sender_uid"] = info->uid;
+		json_msg["sender_name"] = info->username;
+        LOG_INFO << "Put message into records : " << json_msg.toStyledString();
+        DatabaseManager::PushChatRecords(json_msg);
+        //这里在写入forwarded之前先放入聊天记录
         json_msg["forwarded"] = true;
-        json_msg["msg_id"] = msg_id;
-	    json_msg["uid"] = info->uid;
-		json_msg["sender"] = info->username;
 		ConnectionManager::GetInstance().BroadcastMsg(info->uid, json_msg.toStyledString());
         Json::Value reply;
         reply["id"] = json_msg["id"].asString();
-        reply["msg_id"] = msg_id;
+        reply["message_id"] = msg_id;
         reply["ack"] = true;
         conn->sendJson(reply);
     }

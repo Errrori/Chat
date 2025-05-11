@@ -2,11 +2,12 @@
 #ifdef _WIN32
 #pragma comment(lib, "Rpcrt4.lib") 
 #endif
+#pragma comment(lib, "Ws2_32.lib")
 
 #include <string>
 #include <chrono>
-#include <cstdint>
 #include <mutex>
+
 
 namespace
 {
@@ -71,5 +72,7 @@ private:
 	std::string LoadJwtSecret(const std::string& file_path = SecretFilePath);
 	std::string GenJWT(const UserInfo& info);
 	bool VerifyJWT(const std::string& token, UserInfo& info);
+
+
 };
 

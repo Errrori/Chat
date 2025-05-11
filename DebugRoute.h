@@ -12,7 +12,8 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
             ADD_METHOD_TO(DbInfoController::DeleteUser, "/delete_user", drogon::Post, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::GetUserById, "/get_user", drogon::Get, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::ImportUsers, "/import", drogon::Post, "CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::GetOnlineUsers, "/users_online", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetOnlineUsers, "/online_users", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetChatRecords, "/chatroom/record", drogon::Get, "CorsMiddleware");
         METHOD_LIST_END
 
         void GetDbInfo(const drogon::HttpRequestPtr& req,
@@ -31,6 +32,8 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
                 std::function<void(const drogon::HttpResponsePtr&)>&& callback);
 		void GetOnlineUsers(const drogon::HttpRequestPtr& req,
                 std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+		void GetChatRecords(const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback);
 };
 
 

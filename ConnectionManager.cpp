@@ -113,10 +113,20 @@ Json::Value ConnectionManager::GetOnlineUsers()
 	for (const auto& it: _conn_map)
 	{
 		auto& uid = it.first;
-		Json::Value user;
-		user["uid"] = uid;
-		user["username"] = _name_map.at(uid);
-		data.append(user);
+		Json::Value userInfo;
+		if (Users::GetUserInfoByUid(uid, userInfo)) {
+			Json::Value user;
+			user["uid"] = uid;
+			user["username"] = _name_map.at(uid);
+			user["avatar"] = userInfo["avatar"].asString();
+			data.append(user);
+		} else {
+			Json::Value user;
+			user["uid"] = uid;
+			user["username"] = _name_map.at(uid);
+			user["avatar"] = "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png";
+			data.append(user);
+		}
 	}
 	Json::Value resp;
 	resp["data"] = data;

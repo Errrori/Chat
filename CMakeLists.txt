@@ -9,17 +9,20 @@ add_executable(${PROJECT_NAME}
     main.cpp
     Authentication.cpp
     DatabaseManager.cpp
-    # DbInfoController.cpp  - 已删除
     DebugRoute.cpp
     Users.cpp
     Utils.cpp
     CorsMiddleware.cpp
+    chatRecord.cc
+    ConnectionManager.cpp
+    EchoController.cpp
+    PublicChatController.cpp
 )
 
 # 查找 Drogon 包
 find_package(Drogon REQUIRED)
 # 链接 Drogon 库
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
+target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon jwt-cpp::jwt-cpp)
 
 
 # 添加jwt-cpp库

@@ -30,10 +30,10 @@
     <ClCompile Include="DatabaseManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Auth\CorsMiddleware.cpp">
+    <ClCompile Include="MiddleWare\CorsMiddleware.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Auth\Authentication.cpp">
+    <ClCompile Include="controllers\Authentication.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="EchoController.cpp">
@@ -45,7 +45,10 @@
     <ClCompile Include="PublicChatController.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ChatRecord.cpp">
+    <ClCompile Include="models\ChatRecords.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\Users.cc">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -62,10 +65,10 @@
     <ClInclude Include="DatabaseManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Auth\CorsMiddleware.h">
+    <ClInclude Include="MiddleWare\CorsMiddleware.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Auth\Authentication.h">
+    <ClInclude Include="controllers\Authentication.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="EchoController.h">
@@ -77,7 +80,10 @@
     <ClInclude Include="PublicChatController.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ChatRecord.h">
+    <ClInclude Include="models\ChatRecords.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\Users.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

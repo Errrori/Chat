@@ -68,6 +68,13 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+        .user-avatar-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             background-color: #3498db;
             color: white;
             display: flex;
@@ -232,10 +239,28 @@
                     const listItem = document.createElement('li');
                     listItem.className = 'user-item';
                     
-                    // 创建用户头像（使用用户名首字母）
-                    const avatar = document.createElement('div');
-                    avatar.className = 'user-avatar';
-                    avatar.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
+                    // 创建用户头像
+                    if (user.avatar) {
+                        const avatar = document.createElement('img');
+                        avatar.className = 'user-avatar';
+                        avatar.src = user.avatar;
+                        avatar.alt = user.username || '未知用户';
+                        avatar.onerror = function() {
+                            // 如果头像加载失败，显示用户名首字母
+                            this.style.display = 'none';
+                            const placeholder = document.createElement('div');
+                            placeholder.className = 'user-avatar-placeholder';
+                            placeholder.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
+                            this.parentNode.insertBefore(placeholder, this);
+                        };
+                        listItem.appendChild(avatar);
+                    } else {
+                        // 如果没有头像，显示用户名首字母
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'user-avatar-placeholder';
+                        placeholder.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
+                        listItem.appendChild(placeholder);
+                    }
                     
                     // 创建用户信息容器
                     const userInfo = document.createElement('div');
@@ -262,7 +287,6 @@
                     userInfo.appendChild(userCreateTime);
                     
                     // 组装列表项
-                    listItem.appendChild(avatar);
                     listItem.appendChild(userInfo);
                     
                     // 添加到用户列表

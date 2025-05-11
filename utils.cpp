@@ -3,9 +3,17 @@
 #include <fstream>
 #include <json/json.h>
 #include <trantor/utils/Logger.h>
+//
+//#ifdef _WIN32
+//#undef min
+//#undef max
+//#endif
 #include "jwt-cpp/jwt.h"
+
 #include <chrono>
 #include <openssl/rand.h>
+
+
 
 
 namespace Utils {

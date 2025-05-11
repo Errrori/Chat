@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)ChatServer\;$(SolutionDir)third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\vcpkg\installed\x64-windows\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -132,25 +132,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Auth\Authentication.cpp" />
-    <ClCompile Include="Auth\CorsMiddleware.cpp" />
-    <ClCompile Include="ChatRecord.cpp" />
+    <ClCompile Include="controllers\Authentication.cpp" />
+    <ClCompile Include="MiddleWare\CorsMiddleware.cpp" />
     <ClCompile Include="ConnectionManager.cpp" />
     <ClCompile Include="DatabaseManager.cpp" />
     <ClCompile Include="DebugRoute.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="models\ChatRecords.cc" />
+    <ClCompile Include="models\Users.cc" />
     <ClCompile Include="PublicChatController.cpp" />
     <ClCompile Include="Users.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="EchoController.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Auth\Authentication.h" />
-    <ClInclude Include="Auth\CorsMiddleware.h" />
-    <ClInclude Include="ChatRecord.h" />
+    <ClInclude Include="controllers\Authentication.h" />
+    <ClInclude Include="MiddleWare\CorsMiddleware.h" />
     <ClInclude Include="ConnectionManager.h" />
     <ClInclude Include="DatabaseManager.h" />
     <ClInclude Include="DebugRoute.h" />
+    <ClInclude Include="models\ChatRecords.h" />
+    <ClInclude Include="models\Users.h" />
     <ClInclude Include="PublicChatController.h" />
     <ClInclude Include="Users.h" />
     <ClInclude Include="Utils.h" />

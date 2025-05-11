@@ -30,6 +30,13 @@ RUN git clone https://github.com/drogonframework/drogon \
     && make -j $(nproc) \
     && make install
 
+RUN git clone --depth=1 https://github.com/Thalhammer/jwt-cpp.git third_party/jwt-cpp \
+    && mkdir -p third_party/jwt-cpp/build \
+    && cd third_party/jwt-cpp/build \
+    && cmake .. \
+    && make -j $(nproc) \
+    && make install
+
 # 创建工作目录
 WORKDIR /app
 

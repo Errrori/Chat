@@ -1,6 +1,6 @@
 #include "Authentication.h"
-#include "../Users.h"
-#include "../Utils.h"
+#include "Users.h"
+#include "Utils.h"
 
 void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)

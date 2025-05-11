@@ -25,6 +25,7 @@ void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
             user["username"] = row["username"].as<std::string>();
             user["uid"] = row["uid"].as<std::string>();
             user["create_time"] = row["create_time"].as<std::string>();
+            user["avatar"] = row["avatar"].as<std::string>();
 
             users.append(user);
         }
@@ -328,6 +329,38 @@ void DbInfoController::GetOnlineUsers(const drogon::HttpRequestPtr& req,
     {
         resp->setStatusCode(drogon::k200OK);
     }
+    callback(resp);
+}
+
+void DbInfoController::GetChatRecords(const drogon::HttpRequestPtr& req,
+    std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    LOG_INFO << "Get chat records accessed";
+    Json::Value json_resp;
+    Json::Value records;
+    auto num = req->getOptionalParameter<unsigned int>("num");
+
+	if (num.has_value())
+    {
+        LOG_INFO << "Use custom value to get records";
+        records = DatabaseManager::GetChatRecords(num.value());
+    }else
+    {
+		records = DatabaseManager::GetChatRecords();
+    }
+
+	if (records ==Json::nullValue)
+    {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setBody("Sorry,no records store in the database. ");
+        callback(resp);
+        return;
+    }
+
+    json_resp["data"] = records;
+    json_resp["size"] = records.empty() ? 0 : records.size();
+    json_resp["code"] = 200;
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
     callback(resp);
 }
 
