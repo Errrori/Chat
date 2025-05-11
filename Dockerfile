@@ -43,6 +43,7 @@ WORKDIR /app
 # 复制源代码
 COPY . .
 
+COPY config.json /app/
 # 确保所有头文件都在正确的位置
 RUN mkdir -p manager controllers middleware models
 
@@ -82,11 +83,10 @@ WORKDIR /app
 
 # 从构建阶段复制编译好的可执行文件和必要的配置文件
 COPY --from=builder /app/build/Test /app/
+COPY --from=builder /app/config.json /app/
 
-# 使用多条RUN命令替代带有||true的COPY命令
-RUN if [ -f /builder/app/config.json ]; then cp /builder/app/config.json /app/; fi
-RUN mkdir -p /app/static && if [ -d /builder/app/static ]; then cp -r /builder/app/static/* /app/static/; fi
-RUN mkdir -p /app/uploads && if [ -d /builder/app/uploads ]; then cp -r /builder/app/uploads/* /app/uploads/; fi
+# 创建必要的目录
+RUN mkdir -p /app/static /app/uploads
 
 # 暴露应用程序端口（根据您的配置调整）
 EXPOSE 10086

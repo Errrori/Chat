@@ -20,7 +20,7 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
             ADD_METHOD_TO(DbInfoController::DeleteUser, "/user/cancel", drogon::Post, "CorsMiddleware");
 
             //chatroom
-            ADD_METHOD_TO(DbInfoController::GetChatRecords, "/chatroom/records", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetChatRecords, "/user/get_records", drogon::Get, "CorsMiddleware");
         METHOD_LIST_END
 
         void GetDbInfo(const drogon::HttpRequestPtr& req,

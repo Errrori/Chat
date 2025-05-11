@@ -57,7 +57,8 @@ Json::Value DatabaseManager::GetChatRecords(int64_t existing_id,unsigned num)
 
 	Criteria criteria(ChatRecord::Cols::_message_id, CompareOperator::GT, existing_id);
 	auto records = 
-		mapper.orderBy(ChatRecord::Cols::_message_id,SortOrder::DESC).limit(num).findBy(criteria);
+		mapper.orderBy(ChatRecord::Cols::_message_id,SortOrder::ASC).limit(num).findBy(criteria);
+	//ASC ±Ì æÀ≥–Ú≤È’“
 	
 	for (const auto& record : records)
 	{

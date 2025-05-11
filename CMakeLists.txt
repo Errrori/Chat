@@ -23,10 +23,11 @@ add_executable(${PROJECT_NAME}
     controllers/Authentication.cpp
     manager/DatabaseManager.cpp
     controllers/DebugRoute.cpp
-    Users.cpp
+    User.cpp
     utils.cpp
     middleware/CorsMiddleware.cpp
     models/ChatRecords.cc
+    models/Users.cc
     manager/ConnectionManager.cpp
     controllers/EchoController.cpp
     controllers/PublicChatController.cpp
