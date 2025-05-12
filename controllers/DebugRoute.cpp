@@ -371,7 +371,7 @@ void DbInfoController::GetChatRecords(const drogon::HttpRequestPtr& req,
 void DbInfoController::GetAllRecords(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    LOG_INFO << "Get chat records accessed";
+    LOG_INFO << "Get all records accessed";
     Json::Value json_resp;
     Json::Value records;
     auto num = req->getOptionalParameter<unsigned int>("message_number");
