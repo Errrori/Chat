@@ -77,7 +77,7 @@ Json::Value DatabaseManager::GetChatRecords(int64_t existing_id, unsigned num)
 		for (const auto& record : records)
 		{
 			Json::Value json_record;
-			json_record["message_id"] = record.getValueOfMessageId();
+			json_record["message_id"] = std::to_string(record.getValueOfMessageId());
 			json_record["sender_uid"] = record.getValueOfSenderUid();
 			json_record["sender_name"] = record.getValueOfSenderName();
 			json_record["content"] = record.getValueOfContent();
@@ -186,7 +186,7 @@ Json::Value DatabaseManager::GetAllRecords(unsigned num)
 	for (const auto& record : records)
 	{
 		Json::Value json_record;
-		json_record["message_id"] = record.getValueOfMessageId();
+		json_record["message_id"] = std::to_string(record.getValueOfMessageId());
 		json_record["sender_uid"] = record.getValueOfSenderUid();
 		json_record["sender_name"] = record.getValueOfSenderName();
 		json_record["content"] = record.getValueOfContent();

@@ -35,12 +35,12 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
         DatabaseManager::PushChatRecords(json_msg);
         //这里在写入forwarded之前先放入聊天记录
         json_msg["forwarded"] = true;
-		ConnectionManager::GetInstance().BroadcastMsg(info->uid, json_msg.toStyledString());
-        Json::Value reply;
+		ConnectionManager::GetInstance().BroadcastMsg(info->uid, json_msg);
+        /*Json::Value reply;
         reply["id"] = json_msg["id"].asString();
         reply["message_id"] = msg_id;
-        reply["ack"] = true;
-        conn->sendJson(reply);
+        reply["ack"] = true;*/
+        conn->sendJson(json_msg);
     }
 
     //if program reach here,it indicates that this message do not need to forward,
