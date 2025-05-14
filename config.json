@@ -33,7 +33,8 @@
       "port": 10086,
       "https": false
     }
-  ]
+  ],
+  "upload_path": "uploads"
 }
 
 

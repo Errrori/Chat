@@ -9,15 +9,12 @@
 // #include <chrono>
 // #include <mutex>
 
-namespace
-{
-	constexpr unsigned EffectiveTime = 30 * 24 * 60 * 60;
-	constexpr unsigned SecretLength = 32;
-	const std::string SecretFilePath = "jwt_secret.json";
-}
-
 namespace Utils
 {
+    constexpr unsigned EffectiveTime = 30 * 24 * 60 * 60;
+    constexpr unsigned SecretLength = 32;
+    const std::string SecretFilePath = "jwt_secret.json";
+
 	struct UserInfo
 	{
 		std::string username;

@@ -31,10 +31,10 @@ void AddOptionHandle()
 		&HandleOptions,
 		{ drogon::Options });
 
-	drogon::app().registerHandler("/debug/db_info",
+	drogon::app().registerHandler("/debug/get_all_records",
 		&HandleOptions,
 		{ drogon::Options });
-	drogon::app().registerHandler("/debug/rd_info",
+	drogon::app().registerHandler("/debug/db_info",
 		&HandleOptions,
 		{ drogon::Options });
 	drogon::app().registerHandler("/debug/get_user",
@@ -60,7 +60,10 @@ void AddOptionHandle()
 		&HandleOptions,
 		{ drogon::Options });
 
-	drogon::app().registerHandler("/chatroom/records",
+	drogon::app().registerHandler("/user/get_records",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/file/upload/image",
 		&HandleOptions,
 		{ drogon::Options });
 }

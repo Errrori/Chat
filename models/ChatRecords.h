@@ -49,6 +49,7 @@ class ChatRecords
         static const std::string _sender_uid;
         static const std::string _content;
         static const std::string _avatar;
+        static const std::string _message_type;
         static const std::string _create_time;
     };
 
@@ -147,6 +148,15 @@ class ChatRecords
     void setAvatar(std::string &&pAvatar) noexcept;
     void setAvatarToNull() noexcept;
 
+    /**  For column message_type  */
+    ///Get the value of the column message_type, returns the default value if the column is null
+    const std::string &getValueOfMessageType() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getMessageType() const noexcept;
+    ///Set the value of the column message_type
+    void setMessageType(const std::string &pMessageType) noexcept;
+    void setMessageType(std::string &&pMessageType) noexcept;
+
     /**  For column create_time  */
     ///Get the value of the column create_time, returns the default value if the column is null
     const std::string &getValueOfCreateTime() const noexcept;
@@ -158,7 +168,7 @@ class ChatRecords
     void setCreateTimeToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 6;  }
+    static size_t getColumnNumber() noexcept {  return 7;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -184,6 +194,7 @@ class ChatRecords
     std::shared_ptr<std::string> senderUid_;
     std::shared_ptr<std::string> content_;
     std::shared_ptr<std::string> avatar_;
+    std::shared_ptr<std::string> messageType_;
     std::shared_ptr<std::string> createTime_;
     struct MetaData
     {
@@ -196,7 +207,7 @@ class ChatRecords
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[6]={ false };
+    bool dirtyFlag_[7]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -245,10 +256,15 @@ class ChatRecords
         }
         if(dirtyFlag_[5])
         {
+            sql += "message_type,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[6])
+        {
             sql += "create_time,";
             ++parametersCount;
         }
-        if(!dirtyFlag_[5])
+        if(!dirtyFlag_[6])
         {
             needSelection=true;
         }
@@ -286,6 +302,11 @@ class ChatRecords
 
         }
         if(dirtyFlag_[5])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[6])
         {
             sql.append("?,");
 

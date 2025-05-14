@@ -37,7 +37,7 @@
 #include <uuid/uuid.h>
 #endif
 
-#include "jwt-cpp/jwt.h"
+#include "const.h"
 
 #include "Utils.h"
 #include "manager/DatabaseManager.h"

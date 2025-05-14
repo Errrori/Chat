@@ -26,15 +26,30 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
     }
     if (!json_msg.isMember("forwarded"))
     {
+        //查看消息类型,如果缺失message_type就报错
+        if (!json_msg.isMember("message_type"))
+        {
+            LOG_ERROR << "receive error message that misses message_type";
+            Json::Value data;
+            data["message_type"] = "ErrorMessage";
+            data["content_type"] = "Missing field : message_type";
+            conn->sendJson(data);
+            return;
+        }
+        //缺少一个对消息类型的检查
+
         //message need to be broadcast
         auto msg_id = Utils::GenerateMsgId();
         json_msg["message_id"] = msg_id;
 	    json_msg["sender_uid"] = info->uid;
 		json_msg["sender_name"] = info->username;
         LOG_INFO << "Put message into records : " << json_msg.toStyledString();
+        std::string create_time_str = trantor::Date::now().toDbString();
+        json_msg["create_time"] = create_time_str;
         DatabaseManager::PushChatRecords(json_msg);
         //这里在写入forwarded之前先放入聊天记录
         json_msg["forwarded"] = true;
+
 		ConnectionManager::GetInstance().BroadcastMsg(info->uid, json_msg);
         /*Json::Value reply;
         reply["id"] = json_msg["id"].asString();

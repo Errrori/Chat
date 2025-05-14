@@ -84,9 +84,10 @@ WORKDIR /app
 # 从构建阶段复制编译好的可执行文件和必要的配置文件
 COPY --from=builder /app/build/Test /app/
 COPY --from=builder /app/config.json /app/
+COPY --from=builder /app/static /app/static
 
 # 创建必要的目录
-RUN mkdir -p /app/static /app/uploads
+RUN mkdir -p /app/uploads
 
 # 暴露应用程序端口（根据您的配置调整）
 EXPOSE 10086

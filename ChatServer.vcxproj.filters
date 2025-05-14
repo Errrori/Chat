@@ -27,9 +27,6 @@
     <ClCompile Include="controllers\DebugRoute.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="manager\DatabaseManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="middleware\CorsMiddleware.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -45,13 +42,22 @@
     <ClCompile Include="controllers\PublicChatController.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="models\ChatRecords.cc">
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="controllers\FileController.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="manager\FileManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="models\Users.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="models\ChatRecords.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="manager\DatabaseManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -63,9 +69,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="controllers\DebugRoute.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="manager\DatabaseManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="middleware\CorsMiddleware.h">
@@ -83,13 +86,25 @@
     <ClInclude Include="controllers\PublicChatController.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="models\ChatRecords.h">
+    <ClInclude Include="pch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="controllers\FileController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="manager\FileManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="const.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="models\Users.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="models\ChatRecords.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="manager\DatabaseManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

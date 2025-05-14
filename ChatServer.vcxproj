@@ -91,14 +91,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="controllers\Authentication.cpp" />
+    <ClCompile Include="controllers\FileController.cpp" />
+    <ClCompile Include="manager\DatabaseManager.cpp" />
+    <ClCompile Include="manager\FileManager.cpp" />
     <ClCompile Include="middleware\CorsMiddleware.cpp" />
     <ClCompile Include="manager\ConnectionManager.cpp" />
-    <ClCompile Include="manager\DatabaseManager.cpp" />
     <ClCompile Include="controllers\DebugRoute.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="controllers\PublicChatController.cpp" />
     <ClCompile Include="models\ChatRecords.cc" />
     <ClCompile Include="models\Users.cc" />
-    <ClCompile Include="controllers\PublicChatController.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -108,14 +110,17 @@
     <ClCompile Include="controllers\EchoController.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="const.h" />
     <ClInclude Include="controllers\Authentication.h" />
+    <ClInclude Include="controllers\FileController.h" />
+    <ClInclude Include="manager\DatabaseManager.h" />
+    <ClInclude Include="manager\FileManager.h" />
     <ClInclude Include="middleware\CorsMiddleware.h" />
     <ClInclude Include="manager\ConnectionManager.h" />
-    <ClInclude Include="manager\DatabaseManager.h" />
     <ClInclude Include="controllers\DebugRoute.h" />
+    <ClInclude Include="controllers\PublicChatController.h" />
     <ClInclude Include="models\ChatRecords.h" />
     <ClInclude Include="models\Users.h" />
-    <ClInclude Include="controllers\PublicChatController.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="User.h" />
     <ClInclude Include="Utils.h" />

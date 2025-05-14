@@ -15,8 +15,6 @@
 #include <openssl/rand.h>
 
 
-
-
 namespace Utils {
 
     MessageIDGenerator& MessageIDGenerator::GetInstance() {

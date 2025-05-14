@@ -1,29 +1,11 @@
 #pragma once
 #include <drogon/drogon.h>
+#include "const.h"
 
-namespace DataBase
+namespace drogon_model::sqlite3
 {
-	static bool is_init = false;
-
-	const static std::string USER_TABLE = "CREATE TABLE IF NOT EXISTS users("
-										  "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-										  "username TEXT NOT NULL,"
-										  "password TEXT NOT NULL,"
-										  "uid TEXT NOT NULL UNIQUE,"
-										  "avatar TEXT DEFAULT 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',"
-										  "create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-										  ");";
-	const static std::string CHAT_RECORDS_TABLE = "CREATE TABLE IF NOT EXISTS chat_records("
-										  "message_id BIGINT PRIMARY KEY,"
-										  "sender_name TEXT NOT NULL,"
-										  "sender_uid TEXT NOT NULL,"
-										  "content TEXT NOT NULL,"
-										  "avatar TEXT DEFAULT 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',"
-										  "create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-										  ");";
-	constexpr static unsigned int DEFAULT_RECORDS_QUERY_LEN = 50;
+	class ChatRecords;
 }
-
 
 class DatabaseManager
 {
@@ -37,6 +19,9 @@ public:
 	static Json::Value GetChatRecords(int64_t existing_id,unsigned num = DataBase::DEFAULT_RECORDS_QUERY_LEN);
 	static Json::Value GetAllRecords(unsigned num = DataBase::DEFAULT_RECORDS_QUERY_LEN);
 	static bool ModifyAvatar(const std::string& uid, const std::string& avatar);
+private:
+	static Json::Value WriteRecordsReserveOrder(const std::vector<drogon_model::sqlite3::ChatRecords>& records,
+	                                            Json::Value& data);
 };
 
 //
