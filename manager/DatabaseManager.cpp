@@ -99,6 +99,7 @@ Json::Value DatabaseManager::GetAllRecords(unsigned num)
 		json_record["content"] = it->getValueOfContent();
 		json_record["create_time"] = it->getValueOfCreateTime();
 		json_record["avatar"] = it->getValueOfAvatar();
+		json_record["message_type"] = it->getValueOfMessageType();
 		data.append(json_record);
 	}
 	LOG_INFO << "Get all records:\n" << data.toStyledString()<<"\n";
@@ -132,6 +133,7 @@ Json::Value DatabaseManager::WriteRecordsReserveOrder(const std::vector<drogon_m
         json_record["content"] = it->getValueOfContent();
         json_record["create_time"] = it->getValueOfCreateTime();
         json_record["avatar"] = it->getValueOfAvatar();
+        json_record["message_type"] = it->getValueOfMessageType();
         data.append(json_record);
     }
     return data;
