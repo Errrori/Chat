@@ -3,12 +3,8 @@
 #include "../manager/ConnectionManager.h"      
 #include "../manager/DatabaseManager.h"
 
-//message format:
-// {
-//      is_posted    //false : need to post , true : do not post
-//      message
-//      uid
-// }
+//消息类型：
+//Image,Text,ErrorMessage,Notice
 
 void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn, std::string&& msg,
                                             const drogon::WebSocketMessageType& type)
@@ -37,6 +33,7 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
             return;
         }
         //缺少一个对消息类型的检查
+        //暂时没有合适的实现，实现代价和收益不匹配
 
         //message need to be broadcast
         auto msg_id = Utils::GenerateMsgId();
@@ -99,7 +96,12 @@ void PublicChatController::handleNewConnection(const drogon::HttpRequestPtr& req
         LOG_ERROR << "can not add connection!";
 
     }
-    conn->send("Connection built success.Welcome: " + info.username);
+    Json::Value data;
+    data["sender_name"] = info.username;
+    data["sender_uid"] = info.uid;
+    data["message_type"] = "Notice";
+    data["forward"] = true;
+    ConnectionManager::GetInstance().BroadcastMsg(info.uid,data);
 }
 
 void PublicChatController::handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn)

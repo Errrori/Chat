@@ -19,7 +19,7 @@ docker build -t drogon-app:latest .
 docker run -p 10086:10086 drogon-app:latest
 ```
 ---
-##### 获取更新
+### 获取更新
 1.打开命令行，进入代码文件夹，执行以下命令:
 ```shell
 git pull

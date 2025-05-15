@@ -5,42 +5,44 @@
 void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& req,
                                                 std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-	LOG_TRACE << "access the Register route";
-	LOG_TRACE << "data is : "<<req->bodyData();
+	LOG_TRACE << "access the Register route data is : "<<req->bodyData();
 
-	std::string name;
-	std::string password;
 	auto data = req->getJsonObject();
 	if (data) {
-		name = (*data)["username"].asString();
-		password = (*data)["password"].asString();
+		auto name = (*data)["username"].asString();
+		auto password = (*data)["password"].asString();
 
 		if (name.empty()||password.empty())
 		{
-			Json::Value data;
-			data["code"] = 400;
-			data["message"] = "name or password is empty";
-			auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
+			Json::Value json_resp;
+			json_resp["code"] = 400;
+			json_resp["message"] = "name or password is empty";
+			auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
 			resp->addHeader("content-type", "application/json");
 			callback(resp);
 			return;
 		}
 
 		auto uid = Utils::GenerateUid();
-		if (!User::AddUser(name, password, uid))
+		auto hashed_password = Utils::PasswordHashed(password);
+		Json::Value user_info;
+		user_info["username"] = (*data)["username"];
+		user_info["password"] = hashed_password;
+		user_info["uid"] = uid;
+		if (!DatabaseManager::PushUser(user_info))
 		{
-			Json::Value data;
-			data["code"] = 501;
-			data["message"] = "Server Database error: can not add user";
-			auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
+			Json::Value json_resp;
+			json_resp["code"] = 501;
+			json_resp["message"] = "Server Database error: can not add user";
+			auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
 			resp->addHeader("content-type", "application/json");
 			callback(resp);
 			return;
 		}
-		Json::Value data;
-		data["uid"] = uid;
-		data["code"] = 200;
-		auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
+		Json::Value json_resp;
+		json_resp["uid"] = uid;
+		json_resp["code"] = 200;
+		auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
 		resp->addHeader("content-type", "application/json");
 		callback(resp);
 	}
@@ -56,6 +58,7 @@ void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& re
 
 }
 
+//…‘∫Û”≈ªØ
 void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
@@ -73,7 +76,7 @@ void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 	password = Utils::PasswordHashed(password);
 
 	Json::Value s_data;
-	if (!User::GetUserInfoByName(name, s_data))
+	if (!DatabaseManager::GetUserInfoByUsername(name, s_data))
 	{
 		LOG_ERROR << "cam not find user info\n";
 		Json::Value data;

@@ -7,29 +7,12 @@ void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
     LOG_TRACE << "access info route\n";
-    auto db = DatabaseManager::GetDbClient();
     Json::Value response;
     response["code"] = 200;
     response["message"] = "success to get database";
 
-    std::string sql = "SELECT * FROM users LIMIT 100;";
-
     try {
-        auto result = db->execSqlSync(sql);
-
-        Json::Value users = Json::Value(Json::arrayValue);
-        for (const auto& row : result)
-        {
-            Json::Value user;
-            user["id"] = row["id"].as<int>();
-            user["username"] = row["username"].as<std::string>();
-            user["uid"] = row["uid"].as<std::string>();
-            user["create_time"] = row["create_time"].as<std::string>();
-            user["avatar"] = row["avatar"].as<std::string>();
-
-            users.append(user);
-        }
-
+        auto users = DatabaseManager::GetAllUsersInfo();
         response["data"] = users;
         response["total"] = users.size();
     }
@@ -80,7 +63,7 @@ void DbInfoController::ModifyName(const drogon::HttpRequestPtr& req,
         return;
     }
     
-    bool success = User::ModifyUserName(uid, name);
+    bool success = DatabaseManager::ModifyUsername(uid, name);
     if (!success) {
         response["code"] = 404;
         response["message"] = "User does not exist or username not changed";
@@ -127,8 +110,7 @@ void DbInfoController::ModifyPassword(const drogon::HttpRequestPtr& req,
     
     // Hash the password
     std::string hashedPassword = Utils::PasswordHashed(password);
-    
-    bool success = User::ModifyUserPassword(uid, hashedPassword);
+    bool success = DatabaseManager::ModifyPassword(uid, hashedPassword);
     if (!success) {
         response["code"] = 404;
         response["message"] = "User does not exist or password not changed";
@@ -172,7 +154,7 @@ void DbInfoController::DeleteUser(const drogon::HttpRequestPtr& req,
         return;
     }
     
-    bool success = User::DeleteUser(uid);
+    bool success = DatabaseManager::DeleteUser(uid);
     if (!success) {
         response["code"] = 404;
         response["message"] = "User does not exist or deletion failed";
@@ -209,7 +191,7 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
     }
     
     Json::Value userInfo;
-    bool success = User::GetUserInfoByUid(uid, userInfo);
+    bool success = DatabaseManager::GetUserInfoByUid(uid, userInfo);
     
     if (!success) {
         response["code"] = 404;
@@ -227,82 +209,82 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
     callback(resp);
 }
 
-void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
-    std::function<void(const drogon::HttpResponsePtr&)>&& callback)
-{
-    LOG_TRACE << "access import_users\n";
-    Json::Value response;
-    response["code"] = 200;
-    response["message"] = "success import";
-    
-    auto jsonBody = req->getJsonObject();
-    if (!jsonBody || !(*jsonBody)["users"].isArray()) {
-        response["code"] = 400;
-        response["message"] = "invalid import，need to provide users vector";
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-        resp->setStatusCode(drogon::k400BadRequest);
-        callback(resp);
-        return;
-    }
-    
-    const Json::Value& users = (*jsonBody)["users"];
-    Json::Value successUsers = Json::Value(Json::arrayValue);
-    Json::Value failedUsers = Json::Value(Json::arrayValue);
-    
-    for (int i = 0; i < users.size(); i++) {
-        const Json::Value& user = users[i];
-
-        if (!user.isMember("username") || !user["username"].isString() || user["username"].asString().empty() ||
-            !user.isMember("password") || !user["password"].isString() || user["password"].asString().empty()) {
-            
-            Json::Value failedUser;
-            failedUser["index"] = i;
-            failedUser["reason"] = "username or password is empty";
-            if (user.isMember("username")) failedUser["username"] = user["username"];
-            failedUsers.append(failedUser);
-            continue;
-        }
-        
-        std::string name = user["username"].asString();
-        std::string password = user["password"].asString();
-        std::string uid = user.isMember("uid") && user["uid"].isString() && !user["uid"].asString().empty() 
-            ? user["uid"].asString() : Utils::GenerateUid();
-
-        if (User::FindUserByUid(uid)) {
-            Json::Value failedUser;
-            failedUser["index"] = i;
-            failedUser["username"] = name;
-            failedUser["reason"] = "username already existed";
-            failedUsers.append(failedUser);
-            continue;
-        }
-
-        // 添加用户
-        bool success = User::AddUser(name, password, uid);
-        
-        if (success) {
-            Json::Value successUser;
-            successUser["username"] = name;
-            successUser["uid"] = uid;
-            successUsers.append(successUser);
-        } else {
-            Json::Value failedUser;
-            failedUser["index"] = i;
-            failedUser["username"] = name;
-            failedUser["reason"] = "fail to add user";
-            failedUsers.append(failedUser);
-        }
-    }
-    
-    response["data"]["success_count"] = static_cast<int>(successUsers.size());
-    response["data"]["failed_count"] = static_cast<int>(failedUsers.size());
-    response["data"]["success_users"] = successUsers;
-    response["data"]["failed_users"] = failedUsers;
-    
-    auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-    resp->setStatusCode(drogon::k200OK);
-    callback(resp);
-}
+//void DbInfoController::ImportUsers(const drogon::HttpRequestPtr& req,
+//    std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+//{
+//    LOG_TRACE << "access import_users\n";
+//    Json::Value response;
+//    response["code"] = 200;
+//    response["message"] = "success import";
+//    
+//    auto jsonBody = req->getJsonObject();
+//    if (!jsonBody || !(*jsonBody)["users"].isArray()) {
+//        response["code"] = 400;
+//        response["message"] = "invalid import，need to provide users vector";
+//        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+//        resp->setStatusCode(drogon::k400BadRequest);
+//        callback(resp);
+//        return;
+//    }
+//    
+//    const Json::Value& users = (*jsonBody)["users"];
+//    Json::Value successUsers = Json::Value(Json::arrayValue);
+//    Json::Value failedUsers = Json::Value(Json::arrayValue);
+//    
+//    for (int i = 0; i < users.size(); i++) {
+//        const Json::Value& user = users[i];
+//
+//        if (!user.isMember("username") || !user["username"].isString() || user["username"].asString().empty() ||
+//            !user.isMember("password") || !user["password"].isString() || user["password"].asString().empty()) {
+//            
+//            Json::Value failedUser;
+//            failedUser["index"] = i;
+//            failedUser["reason"] = "username or password is empty";
+//            if (user.isMember("username")) failedUser["username"] = user["username"];
+//            failedUsers.append(failedUser);
+//            continue;
+//        }
+//        
+//        std::string name = user["username"].asString();
+//        std::string password = user["password"].asString();
+//        std::string uid = user.isMember("uid") && user["uid"].isString() && !user["uid"].asString().empty() 
+//            ? user["uid"].asString() : Utils::GenerateUid();
+//
+//        if (User::FindUserByUid(uid)) {
+//            Json::Value failedUser;
+//            failedUser["index"] = i;
+//            failedUser["username"] = name;
+//            failedUser["reason"] = "username already existed";
+//            failedUsers.append(failedUser);
+//            continue;
+//        }
+//
+//        // 添加用户
+//        bool success = User::AddUser(name, password, uid);
+//        
+//        if (success) {
+//            Json::Value successUser;
+//            successUser["username"] = name;
+//            successUser["uid"] = uid;
+//            successUsers.append(successUser);
+//        } else {
+//            Json::Value failedUser;
+//            failedUser["index"] = i;
+//            failedUser["username"] = name;
+//            failedUser["reason"] = "fail to add user";
+//            failedUsers.append(failedUser);
+//        }
+//    }
+//    
+//    response["data"]["success_count"] = static_cast<int>(successUsers.size());
+//    response["data"]["failed_count"] = static_cast<int>(failedUsers.size());
+//    response["data"]["success_users"] = successUsers;
+//    response["data"]["failed_users"] = failedUsers;
+//    
+//    auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+//    resp->setStatusCode(drogon::k200OK);
+//    callback(resp);
+//}
 
 void DbInfoController::GetOnlineUsers(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)

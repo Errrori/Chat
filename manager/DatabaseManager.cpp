@@ -26,6 +26,38 @@ DbClientPtr DatabaseManager::GetDbClient()
 	return drogon::app().getDbClient();
 }
 
+bool DatabaseManager::PushUser(const Json::Value& user_info)
+{
+	Mapper<User> mapper(GetDbClient());
+	auto user = std::make_shared<User>(user_info);
+	mapper.insert(*user,
+		[](const User& info)
+		{
+			LOG_INFO << "Insert success,message username:" << info.getValueOfUsername();
+		},[](const DrogonDbException& e)
+		{
+			LOG_ERROR << "exception to push user: " << e.base().what();
+		});
+	return true;
+
+}
+Json::Value DatabaseManager::GetAllUsersInfo()
+{
+	Mapper<User> mapper(GetDbClient());
+	auto users = mapper.orderBy(User::Cols::_id, SortOrder::ASC).limit(100).findAll();
+	Json::Value users_data(Json::arrayValue);
+	for (const auto& user:users)
+	{
+		Json::Value data;
+		data["username"] = user.getValueOfUsername();
+		data["uid"] = user.getValueOfUid();
+		data["avatar"] = user.getValueOfAvatar();
+		data["create_time"] = user.getValueOfCreateTime();
+		users_data.append(data);
+	}
+	return users_data;
+}
+
 void DatabaseManager::PushChatRecords(const Json::Value& message)
 {
 	//如果想要保持数据库中插入json数据的一致，要手动创建
@@ -106,18 +138,71 @@ Json::Value DatabaseManager::GetAllRecords(unsigned num)
 	return data;
 }
 
+bool DatabaseManager::GetUserInfoByUid(const std::string& uid, Json::Value& data)
+{
+	Mapper<User> mapper(GetDbClient());
+	Criteria criteria(User::Cols::_uid, CompareOperator::EQ, uid);
+	auto info = mapper.limit(1).findBy(criteria);
+	if (!info.empty())
+	{
+		data["username"] = info[0].getValueOfUsername();
+		data["uid"] = info[0].getValueOfUid();
+		data["create_time"] = info[0].getValueOfCreateTime();
+		data["avatar"] = info[0].getValueOfAvatar();
+		return true;
+	}
+	return false;
+}
+
+bool DatabaseManager::GetUserInfoByUsername(const std::string& username, Json::Value& data)
+{
+	Mapper<User> mapper(GetDbClient());
+	Criteria criteria(User::Cols::_username, CompareOperator::EQ, username);
+	auto info = mapper.limit(1).findBy(criteria);
+	if (!info.empty())
+	{
+		data["username"] = info[0].getValueOfUsername();
+		data["uid"] = info[0].getValueOfUid();
+		data["create_time"] = info[0].getValueOfCreateTime();
+		data["avatar"] = info[0].getValueOfAvatar();
+		return true;
+	}
+	return false;
+}
+
 
 bool DatabaseManager::ModifyAvatar(const std::string& uid, const std::string& avatar)
 {
+	Mapper<User> mapper(GetDbClient());
 	Criteria criteria(User::Cols::_uid,CompareOperator::EQ,uid);
-	Mapper<User> mapper(DatabaseManager::GetDbClient());
-	auto record = mapper.findOne(criteria);
-	mapper.limit(1);
-	User user;
-	user.setId(record.getPrimaryKey());
-	user.setAvatar(avatar);
-	size_t result = mapper.updateBy({User::Cols::_avatar},criteria,avatar);
+	size_t result = mapper.limit(1).updateBy({User::Cols::_avatar},criteria,avatar);
 
+	return result == 1;
+}
+
+bool DatabaseManager::ModifyUsername(const std::string& uid, const std::string& username)
+{
+	Mapper<User> mapper(GetDbClient());
+	Criteria criteria(User::Cols::_uid, CompareOperator::EQ, uid);
+	size_t result = mapper.updateBy({ User::Cols::_avatar }, criteria, username);
+
+	return result == 1;
+}
+
+bool DatabaseManager::ModifyPassword(const std::string& uid, const std::string& password)
+{
+	Mapper<User> mapper(GetDbClient());
+	Criteria criteria(User::Cols::_uid, CompareOperator::EQ, uid);
+	size_t result = mapper.updateBy({ User::Cols::_avatar }, criteria, password);
+
+	return result == 1;
+}
+
+bool DatabaseManager::DeleteUser(const std::string& uid)
+{
+	Mapper<User> mapper(GetDbClient());
+	Criteria criteria(User::Cols::_uid, CompareOperator::EQ, uid);
+	auto result = mapper.deleteBy(criteria);
 	return result == 1;
 }
 

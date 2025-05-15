@@ -29,7 +29,7 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 	lock.unlock();
 
 	Json::Value data;
-	if (User::GetUserInfoByUid(uid,data))
+	if (DatabaseManager::GetUserInfoByUid(uid,data))
 	{
 		auto name = data["username"].asString();
 		return AddUIdToNameRef(uid, name);
@@ -115,7 +115,7 @@ Json::Value ConnectionManager::GetOnlineUsers()
 	{
 		auto& uid = it.first;
 		Json::Value userInfo;
-		if (User::GetUserInfoByUid(uid, userInfo)) {
+		if (DatabaseManager::GetUserInfoByUid(uid, userInfo)) {
 			Json::Value user;
 			user["uid"] = uid;
 			user["username"] = _name_map.at(uid);
