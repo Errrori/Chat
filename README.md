@@ -1,8 +1,7 @@
 # 简介
 ---
 多人聊天项目
----
-[开发文档连接](https://gitee.com/lfuturelove/chat2025-docs)
+相关资料连接: [项目开发文档](https://gitee.com/lfuturelove/chat2025-docs)
 ---
 ### 构建镜像
 前置环境：启动docker引擎
@@ -14,7 +13,7 @@
 git clone https://gitee.com/supernormal0/chat.git
 docker build -t drogon-app:latest .
 ```
-3.此时镜像构建完成，输入命令运行(端口号可以自定义)
+3.此时镜像构建完成，输入命令运行(端口号可以自定义):
 ```shell
 docker run -p 10086:10086 drogon-app:latest
 ```
@@ -25,7 +24,7 @@ docker run -p 10086:10086 drogon-app:latest
 git pull
 docker build -t drogon-app:latest.
 ```
-2.同上，构建完成后运行镜像(端口号可以自定义)
+2.同上，构建完成后运行镜像:
 ```shell
 docker run -p 10086:10086 drogon-app:latest
 ```

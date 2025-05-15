@@ -38,7 +38,7 @@ void EchoController::handleNewConnection(const HttpRequestPtr& req, const WebSoc
     }
 
     Utils::UserInfo info;
-    if (!Utils::VerifyJWT(token,info))
+    if (!Utils::Authentication::VerifyJWT(token,info))
     {
         conn->send("fail to verify token");
         conn->shutdown();

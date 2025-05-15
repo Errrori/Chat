@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "DebugRoute.h"
-#include "../User.h"
 #include "../manager/ConnectionManager.h"
 
 void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
@@ -109,7 +108,7 @@ void DbInfoController::ModifyPassword(const drogon::HttpRequestPtr& req,
     }
     
     // Hash the password
-    std::string hashedPassword = Utils::PasswordHashed(password);
+    std::string hashedPassword = Utils::Authentication::PasswordHashed(password);
     bool success = DatabaseManager::ModifyPassword(uid, hashedPassword);
     if (!success) {
         response["code"] = 404;
@@ -182,10 +181,7 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
     auto uid = req->getParameter("uid");
     
     if (uid.empty()) {
-        response["code"] = 400;
-        response["message"] = "User ID cannot be empty";
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-        resp->setStatusCode(drogon::k400BadRequest);
+        auto resp = Utils::CreateErrorResponse(400, 400, "User ID cannot be empty");
         callback(resp);
         return;
     }
@@ -194,10 +190,7 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
     bool success = DatabaseManager::GetUserInfoByUid(uid, userInfo);
     
     if (!success) {
-        response["code"] = 404;
-        response["message"] = "User not found";
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-        resp->setStatusCode(drogon::k404NotFound);
+        auto resp = Utils::CreateErrorResponse(404, 404, "User not found");
         callback(resp);
         return;
     }
@@ -291,7 +284,7 @@ void DbInfoController::GetOnlineUsers(const drogon::HttpRequestPtr& req,
 {
     Json::Value response;
     response["code"] = 200;
-    response["message"] = "success to get online users";
+    response["message"] = "Success getting online users";
 
     try {
         auto user_str = ConnectionManager::GetInstance().GetOnlineUsers();
@@ -299,18 +292,13 @@ void DbInfoController::GetOnlineUsers(const drogon::HttpRequestPtr& req,
     }
     catch (const drogon::orm::DrogonDbException& e) {
         LOG_ERROR << "fail to get name: " << e.base().what();
-        response["code"] = 500;
+        auto resp = Utils::CreateErrorResponse(500, 500, "Failed to get online users: " + std::string(e.base().what()));
+        callback(resp);
+        return;
     }
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-    if (response["code"].asUInt() != 200)
-    {
-        resp->setStatusCode(drogon::k500InternalServerError);
-    }
-    else
-    {
-        resp->setStatusCode(drogon::k200OK);
-    }
+    resp->setStatusCode(drogon::k200OK);
     callback(resp);
 }
 
@@ -328,17 +316,14 @@ void DbInfoController::GetChatRecords(const drogon::HttpRequestPtr& req,
         records = DatabaseManager::GetChatRecords(existing_id.value(),num.value_or(DataBase::DEFAULT_RECORDS_QUERY_LEN));
     }else
     {
-        json_resp["code"] = 400;
-        json_resp["message"] = "Missing field : existing_id";
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
+        auto resp = Utils::CreateErrorResponse(400, 400, "Missing required field: existing_id");
         callback(resp);
         return;
     }
 
 	if (records ==Json::nullValue)
     {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        resp->setBody("Sorry,no records store in the database. ");
+        auto resp = Utils::CreateErrorResponse(404, 404, "No records found in database");
         callback(resp);
         return;
     }
@@ -369,14 +354,13 @@ void DbInfoController::GetAllRecords(const drogon::HttpRequestPtr& req,
 
     if (records == Json::nullValue)
     {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        resp->setBody("Sorry,no records store in the database. ");
+        auto resp = Utils::CreateErrorResponse(404, 404, "No records found in database");
         callback(resp);
         return;
     }
 
     json_resp["data"] = records;
-    json_resp["size"] = records.size();
+    json_resp["size"] = records.empty() ? 0 : records.size();
     json_resp["code"] = 200;
     auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
     callback(resp);

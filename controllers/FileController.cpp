@@ -8,13 +8,11 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
 	MultiPartParser parser;
-	//文件无法解析或者获取到的文件超过一个
+	//File parsing issues or multiple files uploaded
 	if (parser.parse(req)!=0||parser.getFiles().size()!=1)
 	{
-		Json::Value data;
-		data["code"] = 400;
-		data["message"] = "File can not parse or the number of upload files more than 1";
-		callback(HttpResponse::newHttpJsonResponse(data));
+		auto resp = Utils::CreateErrorResponse(400, 400, "File cannot be parsed or number of upload files exceeds 1");
+		callback(resp);
 		return;
 	}
 
@@ -22,10 +20,8 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 
 	if (file.getFileType()!=FT_IMAGE)
 	{
-		Json::Value data;
-		data["code"] = 403;
-		data["message"] = "Can not upload file that is not image here!";
-		callback(HttpResponse::newHttpJsonResponse(data));
+		auto resp = Utils::CreateErrorResponse(403, 403, "Cannot upload non-image files here");
+		callback(resp);
 		return;
 	}
 	auto file_extension = std::string(file.getFileExtension());
@@ -33,20 +29,18 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 		&& file_extension != "jpeg" && file_extension != "gif"&&file_extension!="WebP")
 	{
 		LOG_ERROR << "upload file is not supported : "<<file_extension;
-		Json::Value data;
-		data["code"] = 400;
-		data["message"] = "upload file is not supported";
-		callback(HttpResponse::newHttpJsonResponse(data));
+		auto resp = Utils::CreateErrorResponse(400, 400, "Unsupported file type");
+		callback(resp);
 		return;
 	}
 
-	std::string new_file_name = Utils::GenerateUid() + "."+file_extension;
+	std::string new_file_name = Utils::Authentication::GenerateUid() + "."+file_extension;
 	std::string file_url;
 	if (FileManager::UploadFile(file, new_file_name,file_url))
 	{
 		Json::Value data;
 		data["code"] = 200;
-		data["message"] = "Success add file";
+		data["message"] = "File uploaded successfully";
 		data["md5"] = file.getMd5();
 		if (file_url.substr(0, 2) == "./") {
 			file_url = file_url.substr(2);
@@ -56,8 +50,6 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 		callback(HttpResponse::newHttpJsonResponse(data));
 		return;
 	}
-	Json::Value data;
-	data["code"] = 400;
-	data["message"] = "fail to add file";
-	callback(HttpResponse::newHttpJsonResponse(data));
+	auto resp = Utils::CreateErrorResponse(500, 500, "Failed to upload file");
+	callback(resp);
 }

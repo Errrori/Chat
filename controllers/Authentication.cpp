@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Authentication.h"
-#include "../User.h"
 
 void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& req,
                                                 std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -14,28 +13,20 @@ void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& re
 
 		if (name.empty()||password.empty())
 		{
-			Json::Value json_resp;
-			json_resp["code"] = 400;
-			json_resp["message"] = "name or password is empty";
-			auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
-			resp->addHeader("content-type", "application/json");
+			auto resp = Utils::CreateErrorResponse(400, 400, "Username or password is empty");
 			callback(resp);
 			return;
 		}
 
-		auto uid = Utils::GenerateUid();
-		auto hashed_password = Utils::PasswordHashed(password);
+		auto uid = Utils::Authentication::GenerateUid();
+		auto hashed_password = Utils::Authentication::PasswordHashed(password);
 		Json::Value user_info;
 		user_info["username"] = (*data)["username"];
 		user_info["password"] = hashed_password;
 		user_info["uid"] = uid;
 		if (!DatabaseManager::PushUser(user_info))
 		{
-			Json::Value json_resp;
-			json_resp["code"] = 501;
-			json_resp["message"] = "Server Database error: can not add user";
-			auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
-			resp->addHeader("content-type", "application/json");
+			auto resp = Utils::CreateErrorResponse(500, 501, "Server database error: cannot add user");
 			callback(resp);
 			return;
 		}
@@ -48,17 +39,12 @@ void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& re
 	}
 	else
 	{
-		Json::Value data;
-		data["code"] = 400;
-		data["message"] = "request body is empty";
-		auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
-		resp->addHeader("content-type", "application/json");
+		auto resp = Utils::CreateErrorResponse(400, 400, "Request body is empty");
 		callback(resp);
 	}
-
 }
 
-//稍后优化
+//院呕
 void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
@@ -73,17 +59,13 @@ void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 		if (name.empty()) LOG_ERROR << "username is empty!\n";
 		if (password.empty()) LOG_ERROR << "password is empty!\n";
 	}
-	password = Utils::PasswordHashed(password);
+	password = Utils::Authentication::PasswordHashed(password);
 
 	Json::Value s_data;
 	if (!DatabaseManager::GetUserInfoByUsername(name, s_data))
 	{
 		LOG_ERROR << "cam not find user info\n";
-		Json::Value data;
-		data["code"] = 400;
-		data["message"] = "Can not find user!";
-		auto resp = drogon::HttpResponse::newHttpJsonResponse(data);
-		resp->addHeader("content-type", "application/json");
+		auto resp = Utils::CreateErrorResponse(404, 404, "User not found");
 		callback(resp);
 		return;
 	}
@@ -94,15 +76,13 @@ void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 
 	if (s_name!=name || s_password!=password )
 	{
-		Json::Value data;
-		data["code"] = 401;
+		std::string errorMsg = "Username or password is incorrect";
 		if (s_name!=name)
-			data["message"] = "username is no correct";
+			errorMsg = "Username is incorrect";
 		if (s_password!=password)
-			data["message"] = "password is no correct";
+			errorMsg = "Password is incorrect";
 		
-		auto resp = drogon::HttpResponse::newHttpResponse();
-		resp->addHeader("content-type", "application/json");
+		auto resp = Utils::CreateErrorResponse(401, 401, errorMsg);
 		LOG_ERROR << "error to verify\n";
 		callback(resp);
 		return;
@@ -115,12 +95,11 @@ void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
 	send_data["uid"] = uid;
 
 	Utils::UserInfo info{name,uid};
-	auto token = Utils::GenJWT(info);
+	auto token = Utils::Authentication::GenJWT(info);
 	send_data["token"] = token;
 
 	auto resp = drogon::HttpResponse::newHttpJsonResponse(send_data);
 	resp->addHeader("content-type", "application/json");
 	callback(resp);
-	
 }
 

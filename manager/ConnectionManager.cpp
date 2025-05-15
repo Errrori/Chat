@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "ConnectionManager.h"
-#include "../User.h"
 
 ConnectionManager& ConnectionManager::GetInstance()
 {
