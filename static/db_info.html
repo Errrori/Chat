@@ -270,25 +270,34 @@
                     const userName = document.createElement('div');
                     userName.className = 'user-name';
                     userName.textContent = user.username || '未知用户';
-                    
+
+                    // 创建用户账号元素
+                    const userAccount = document.createElement('div');
+                    // 将类名修改为 user-id，使其样式与 UID 一致
+                    userAccount.className = 'user-id';
+                    userAccount.textContent = `账号: ${user.account || '未知'}`;
+
                     // 创建用户ID元素
                     const userId = document.createElement('div');
                     userId.className = 'user-id';
                     userId.textContent = `UID: ${user.uid || '未知'}`;
-                    
+
+
                     // 创建用户创建时间元素
                     const userCreateTime = document.createElement('div');
                     userCreateTime.className = 'user-create-time';
                     userCreateTime.textContent = `创建时间: ${user.create_time || '未知'}`;
-                    
+
+
                     // 组装用户信息
                     userInfo.appendChild(userName);
+                    userInfo.appendChild(userAccount);
                     userInfo.appendChild(userId);
                     userInfo.appendChild(userCreateTime);
-                    
+
                     // 组装列表项
                     listItem.appendChild(userInfo);
-                    
+
                     // 添加到用户列表
                     userListElement.appendChild(listItem);
                 });

@@ -46,6 +46,7 @@ class Users
     {
         static const std::string _id;
         static const std::string _username;
+        static const std::string _account;
         static const std::string _password;
         static const std::string _uid;
         static const std::string _avatar;
@@ -119,6 +120,15 @@ class Users
     void setUsername(const std::string &pUsername) noexcept;
     void setUsername(std::string &&pUsername) noexcept;
 
+    /**  For column account  */
+    ///Get the value of the column account, returns the default value if the column is null
+    const std::string &getValueOfAccount() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getAccount() const noexcept;
+    ///Set the value of the column account
+    void setAccount(const std::string &pAccount) noexcept;
+    void setAccount(std::string &&pAccount) noexcept;
+
     /**  For column password  */
     ///Get the value of the column password, returns the default value if the column is null
     const std::string &getValueOfPassword() const noexcept;
@@ -158,7 +168,7 @@ class Users
     void setCreateTimeToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 6;  }
+    static size_t getColumnNumber() noexcept {  return 7;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -181,6 +191,7 @@ class Users
     void updateId(const uint64_t id);
     std::shared_ptr<int64_t> id_;
     std::shared_ptr<std::string> username_;
+    std::shared_ptr<std::string> account_;
     std::shared_ptr<std::string> password_;
     std::shared_ptr<std::string> uid_;
     std::shared_ptr<std::string> avatar_;
@@ -196,7 +207,7 @@ class Users
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[6]={ false };
+    bool dirtyFlag_[7]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -221,29 +232,34 @@ class Users
         }
         if(dirtyFlag_[2])
         {
-            sql += "password,";
+            sql += "account,";
             ++parametersCount;
         }
         if(dirtyFlag_[3])
         {
-            sql += "uid,";
+            sql += "password,";
             ++parametersCount;
         }
         if(dirtyFlag_[4])
         {
+            sql += "uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[5])
+        {
             sql += "avatar,";
             ++parametersCount;
         }
-        if(!dirtyFlag_[4])
+        if(!dirtyFlag_[5])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[5])
+        if(dirtyFlag_[6])
         {
             sql += "create_time,";
             ++parametersCount;
         }
-        if(!dirtyFlag_[5])
+        if(!dirtyFlag_[6])
         {
             needSelection=true;
         }
@@ -276,6 +292,11 @@ class Users
 
         }
         if(dirtyFlag_[5])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[6])
         {
             sql.append("?,");
 

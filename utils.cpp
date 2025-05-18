@@ -1,15 +1,32 @@
 #include "pch.h"
+#include <regex>
 #include <drogon/utils/Utilities.h>
 #include <fstream>
 #include <json/json.h>
 #include "jwt-cpp/jwt.h"
 #include <random>
-#include <openssl/rand.h>
 
 
 namespace Utils {
     namespace Authentication
     {
+        bool IsValidAccount(const std::string& account) {
+            if (!DatabaseManager::VerifyAccount(account))
+            {
+                return false;
+            }
+            static const std::regex limit{ "^[a-zA-Z0-9]{8,15}$" };
+            if (!std::regex_match(account,limit)) {
+                return false;
+            }
+            static const std::vector<std::string> reservedWords = { "admin", "root", "system" };
+            if (std::find(reservedWords.begin(), reservedWords.end(), account) != reservedWords.end())
+            {
+                return false;
+            }
+            return true;
+        }
+
 #ifdef _WIN32
         // Windows实现
 #include <rpc.h>
@@ -116,7 +133,7 @@ namespace Utils {
             return secret;
         }
 
-        std::string GenJWT(const UserInfo& info)
+        std::string GenerateJWT(const UserInfo& info)
         {
             auto secret = GetJwtSecret();
             if (secret.empty())
@@ -127,6 +144,7 @@ namespace Utils {
 
             auto name = info.username;
             auto uid = info.uid;
+            auto account = info.account;
 
             auto now = std::chrono::system_clock::now();
             auto expiry = now + std::chrono::seconds{ EffectiveTime };
@@ -138,6 +156,7 @@ namespace Utils {
                 .set_expires_at(expiry)
                 .set_payload_claim("uid", jwt::claim(uid))
                 .set_payload_claim("username", jwt::claim(name))
+                .set_payload_claim("account", jwt::claim(account))
                 .sign(jwt::algorithm::hs256{ secret });
 
             return token;

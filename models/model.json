@@ -4,7 +4,7 @@
   "dbname": "",
   "user": "",
   "passwd": "",
-  "tables": [ "chat_records","users"],
+  "tables": [ "users"],
   "relationships": {
     "enabled": false,
     "items": []

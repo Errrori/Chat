@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+#include <regex>
 
 namespace Utils
 {
@@ -10,17 +12,19 @@ namespace Utils
 	{
 		std::string username;
 		std::string uid;
+        std::string account;
 	};
 
 	namespace Authentication
 	{
+        bool IsValidAccount(const std::string& account);
         int64_t GenerateMsgId();
         std::string GenerateUid();
         std::string GenerateSecret(size_t len = SecretLength);
         std::string GetJwtSecret();
         std::string PasswordHashed(const std::string& password);
         std::string LoadJwtSecret(const std::string& file_path = SecretFilePath);
-        std::string GenJWT(const UserInfo& info);
+        std::string GenerateJWT(const UserInfo& info);
         bool VerifyJWT(const std::string& token, UserInfo& info);
 	}
     

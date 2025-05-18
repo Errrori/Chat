@@ -15,6 +15,8 @@ void DatabaseManager::InitDatabase()
 	drogon::app().getDbClient()->execSqlSync(CHAT_RECORDS_TABLE);
 }
 
+
+
 DbClientPtr DatabaseManager::GetDbClient()
 {
 	static std::once_flag flag;
@@ -53,6 +55,7 @@ Json::Value DatabaseManager::GetAllUsersInfo()
 		data["uid"] = user.getValueOfUid();
 		data["avatar"] = user.getValueOfAvatar();
 		data["create_time"] = user.getValueOfCreateTime();
+		data["account"] = user.getValueOfAccount();
 		users_data.append(data);
 	}
 	return users_data;
@@ -154,6 +157,22 @@ bool DatabaseManager::GetUserInfoByUid(const std::string& uid, Json::Value& data
 	return false;
 }
 
+bool DatabaseManager::GetUserInfoByAccount(const std::string& account,Json::Value& data)
+{
+	Mapper<User> mapper(GetDbClient());
+	Criteria criteria(User::Cols::_account, CompareOperator::EQ, account);
+	auto info = mapper.limit(1).findBy(criteria);
+	if (!info.empty())
+	{
+		data["username"] = info[0].getValueOfUsername();
+		data["uid"] = info[0].getValueOfUid();
+		data["account"] = info[0].getValueOfAccount();
+		data["password"] = info[0].getValueOfPassword();
+		return true;
+	}
+	return false;
+}
+
 bool DatabaseManager::GetUserInfoByUsername(const std::string& username, Json::Value& data)
 {
 	Mapper<User> mapper(GetDbClient());
@@ -165,6 +184,7 @@ bool DatabaseManager::GetUserInfoByUsername(const std::string& username, Json::V
 		data["uid"] = info[0].getValueOfUid();
 		data["create_time"] = info[0].getValueOfCreateTime();
 		data["avatar"] = info[0].getValueOfAvatar();
+		data["account"] = info[0].getValueOfAccount();
 		return true;
 	}
 	return false;
@@ -184,7 +204,7 @@ bool DatabaseManager::ModifyUsername(const std::string& uid, const std::string& 
 {
 	Mapper<User> mapper(GetDbClient());
 	Criteria criteria(User::Cols::_uid, CompareOperator::EQ, uid);
-	size_t result = mapper.updateBy({ User::Cols::_avatar }, criteria, username);
+	size_t result = mapper.updateBy({ User::Cols::_username }, criteria, username);
 
 	return result == 1;
 }
@@ -193,7 +213,7 @@ bool DatabaseManager::ModifyPassword(const std::string& uid, const std::string& 
 {
 	Mapper<User> mapper(GetDbClient());
 	Criteria criteria(User::Cols::_uid, CompareOperator::EQ, uid);
-	size_t result = mapper.updateBy({ User::Cols::_avatar }, criteria, password);
+	size_t result = mapper.updateBy({ User::Cols::_password }, criteria, password);
 
 	return result == 1;
 }
@@ -204,6 +224,19 @@ bool DatabaseManager::DeleteUser(const std::string& uid)
 	Criteria criteria(User::Cols::_uid, CompareOperator::EQ, uid);
 	auto result = mapper.deleteBy(criteria);
 	return result == 1;
+}
+
+bool DatabaseManager::VerifyAccount(const std::string& account)
+{
+	Mapper<User> mapper(GetDbClient());
+	Criteria criteria(User::Cols::_account, CompareOperator::EQ, account);
+	auto user = mapper.limit(1).findBy(criteria);
+	if (user.empty())
+	{
+		return true;
+	}
+	LOG_ERROR << "user is existed";
+	return false;
 }
 
 Json::Value DatabaseManager::WriteRecordsReserveOrder(const std::vector<drogon_model::sqlite3::ChatRecords>& records,
