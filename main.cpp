@@ -2,8 +2,6 @@
 #include <drogon/drogon.h>
 #include <csignal>
 #include "Utils.h"
-#include "manager/SendManager.h"
-#include "manager/ConnectionManager.h"
 
 using namespace Utils;
 
@@ -76,7 +74,7 @@ int main()
 	signal(SIGTERM, SignalHandler);
 
 	AddOptionHandle();
-	
+
 	drogon::app().setLogLevel(trantor::Logger::kDebug)
 		.loadConfigFile("config.json").setThreadNum(16);
 	LOG_INFO << "Server start!";

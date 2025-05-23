@@ -34,9 +34,10 @@ namespace DataBase
 		"second_uid TEXT NOT NULL,"
 		"status TEXT NOT NULL,"
 		"create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-		"update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
-		"FOREIGN KEY (sender_uid) REFERENCES users(uid) ON DELETE CASCADE,"
-		"FOREIGN KEY (receiver_uid) REFERENCES users(uid) ON DELETE CASCADE";
+		"update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"  // 移除 ON UPDATE CURRENT_TIMESTAMP
+		"FOREIGN KEY (first_uid) REFERENCES users(uid) ON DELETE CASCADE,"   // 修正字段名
+		"FOREIGN KEY (second_uid) REFERENCES users(uid) ON DELETE CASCADE"   // 修正字段名
+		");";  // 添加缺少的结束括号
 	//STATUS : pending/block/friend
 	//situation Pending : first_uid is the uid of actor
 	//situation Friend : first_uid is the smaller one among two users
@@ -58,18 +59,25 @@ namespace DataBase
 		"role TEXT NOT NULL DEFAULT 'member',"
 		"join_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE,"
-		"FOREIGN KEY (user_uid) REFERENCES users(uid) ON DELETE CASCADE,"
-		"UNIQUE (group_id, user_uid)"
+		"FOREIGN KEY (member_uid) REFERENCES users(uid) ON DELETE CASCADE,"  // 修正字段名
+		"UNIQUE (group_id, member_uid)"  // 修正字段名
 		");";
 	//ROLE: member,master,administrator
 
-	const static std::string CREATE_INDEX =
-		"CREATE INDEX idx_chat_records_sender_receiver ON chat_records(sender_uid, receiver_uid);"
-		"CREATE INDEX idx_chat_records_receiver_sender ON chat_records(receiver_uid, sender_uid);"
-		"CREATE INDEX idx_chat_records_sender_conversation ON chat_records(sender_uid, conversation_id);"
-		"CREATE INDEX idx_chat_records_conversation_sender ON chat_records(conversation_id, sender_uid);"
-		"CREATE INDEX idx_relationships_first_second ON relationships (first_uid, second_uid);"
-		"CREATE INDEX idx_relationships_second_first ON relationships(second_uid, first_uid);";
+	const static std::string CREATE_INDEX_1 = "CREATE INDEX IF NOT EXISTS idx_chat_records_sender_receiver ON chat_records(sender_uid, receiver_uid);";
+	const static std::string CREATE_INDEX_2 = "CREATE INDEX IF NOT EXISTS idx_chat_records_receiver_sender ON chat_records(receiver_uid, sender_uid);";
+	const static std::string CREATE_INDEX_3 = "CREATE INDEX IF NOT EXISTS idx_chat_records_sender_conversation ON chat_records(sender_uid, conversation_id);";
+	const static std::string CREATE_INDEX_4 = "CREATE INDEX IF NOT EXISTS idx_chat_records_conversation_sender ON chat_records(conversation_id, sender_uid);";
+	const static std::string CREATE_INDEX_5 = "CREATE INDEX IF NOT EXISTS idx_relationships_first_second ON relationships (first_uid, second_uid);";
+	const static std::string CREATE_INDEX_6 = "CREATE INDEX IF NOT EXISTS idx_relationships_second_first ON relationships(second_uid, first_uid);";
+
+	const static std::string CREATE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS update_relationships_timestamp " 
+	    "AFTER UPDATE ON relationships "
+	    "FOR EACH ROW "
+	    "BEGIN "
+	    "UPDATE relationships SET update_time = CURRENT_TIMESTAMP WHERE id = NEW.id; "
+	    "END;";
+
 	constexpr static unsigned int DEFAULT_RECORDS_QUERY_LEN = 50;
 }
 

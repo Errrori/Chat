@@ -11,12 +11,18 @@ using namespace drogon::orm;
 
 void DatabaseManager::InitDatabase()
 {
-	drogon::app().getDbClient()->execSqlSync(USER_TABLE);
-	drogon::app().getDbClient()->execSqlSync(CHAT_RECORDS_TABLE);
-	drogon::app().getDbClient()->execSqlSync(RELATIONSHIPS_TABLE);
-	drogon::app().getDbClient()->execSqlSync(GROUPS_TABLE);
-	drogon::app().getDbClient()->execSqlSync(GROUP_MEMBERS_TABLE);
-	drogon::app().getDbClient()->execSqlSync(CREATE_INDEX);
+    drogon::app().getDbClient()->execSqlSync(USER_TABLE);
+    drogon::app().getDbClient()->execSqlSync(CHAT_RECORDS_TABLE);
+    drogon::app().getDbClient()->execSqlSync(RELATIONSHIPS_TABLE);
+    drogon::app().getDbClient()->execSqlSync(GROUPS_TABLE);
+    drogon::app().getDbClient()->execSqlSync(GROUP_MEMBERS_TABLE);
+    drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_1);
+    drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_2);
+    drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_3);
+    drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_4);
+    drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_5);
+    drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_6);
+    drogon::app().getDbClient()->execSqlSync(CREATE_TRIGGER);
 }
 
 DbClientPtr DatabaseManager::GetDbClient()
@@ -157,6 +163,7 @@ bool DatabaseManager::GetUserInfoByUid(const std::string& uid, Json::Value& data
 		data["account"] = info[0].getValueOfAccount();
 		return true;
 	}
+	LOG_ERROR << "can not find user info";
 	return false;
 }
 

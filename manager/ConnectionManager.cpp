@@ -12,17 +12,19 @@ ConnectionManager& ConnectionManager::GetInstance()
 bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon::WebSocketConnectionPtr& conn)
 {
 	auto uid = info.uid;
-	std::unique_lock lock(_conn_mtx);
-	auto it = _conn_map.find(uid);
-	if (it != _conn_map.end())
 	{
-		if (it->second == conn)
+		std::lock_guard lock(_conn_mtx);
+		auto it = _conn_map.find(uid);
+		if (it != _conn_map.end())
 		{
-			LOG_INFO << "Insert the same value repeatedly";
-			return true;
+			if (it->second == conn)
+			{
+				LOG_INFO << "Insert the same value repeatedly";
+				return true;
+			}
+			LOG_ERROR << "The key already had a value,and the new value is not the same as the existed one";
+			return false;
 		}
-		LOG_ERROR << "The key already had a value,and the new value is not the same as the existed one";
-		return false;
 	}
 
 	//这里采用实时查询数据库的方式获取，而不是获取jwt的信息的方式，保证实时性（可能使用了过时的jwt)
@@ -35,11 +37,11 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 	conn_info.uid = user_data["uid"].asString();
 	conn_info.avatar = user_data["avatar"].asString();
 	conn_info.username = user_data["username"].asString();
-
 	conn->setContext(std::make_shared<UserConnectionInfo>(conn_info));
 
+	std::lock_guard lock(_conn_mtx);
+
 	_conn_map.emplace(uid, conn);
-	lock.unlock();
 
 	return AddUIdToNameRef(uid, info.username);
 }
