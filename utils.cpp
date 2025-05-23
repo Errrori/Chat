@@ -11,7 +11,7 @@ namespace Utils {
     namespace Authentication
     {
         bool IsValidAccount(const std::string& account) {
-            if (!DatabaseManager::VerifyAccount(account))
+            if (!DatabaseManager::ValidateAccount(account))
             {
                 return false;
             }
@@ -267,43 +267,84 @@ namespace Utils {
             return MessageIDGenerator::GetInstance().NextId();
         }
 
-        std::string MessageType::TypeToString(const Type& type)
+        Json::Value Utils::Message::GenerateErrorMsg(const std::string& error_msg)
+        {
+            Json::Value error_json;
+            error_json["content_type"] = "ErrorMsg";
+            error_json["content"] = error_msg;
+            return error_json;
+        }
+
+        std::string Content::TypeToString(ContentType type)
         {
             switch (type) {
-            case Type::TEXT: return "Text";
-            case Type::IMAGE: return "Image";
-            case Type::FILE: return "File";
-            case Type::VIDEO: return "Video";
-            case Type::AUDIO: return "Audio";
-            case Type::SYSTEM: return "System";
-            case Type::NOTICE: return "Notice";
-            case Type::ERROR_MSG: return "ErrorMsg";
+            case ContentType::Text: return "Text";
+            case ContentType::Image: return "Image";
+            case ContentType::File: return "File";
+            case ContentType::Video: return "Video";
+            case ContentType::Audio: return "Audio";
+            case ContentType::Notice: return "Notice";
+            case ContentType::ErrorMsg: return "ErrorMsg";
             default: return "Unknown";
             }
         }
 
-        MessageType::Type MessageType::StringToType(const std::string& type_str)
+        Content::ContentType Content::StringToType(const std::string& type_str)
         {
-            static const std::unordered_map<std::string, Type> typeMap = {
-           {"Text", Type::TEXT},
-           {"Image", Type::IMAGE},
-           {"File", Type::FILE},
-           {"Video", Type::VIDEO},
-           {"Audio", Type::AUDIO},
-           {"System", Type::SYSTEM},
-           {"Notice", Type::NOTICE},
-           {"ErrorMsg", Type::ERROR_MSG}
+            static const std::unordered_map<std::string, Content::ContentType> typeMap = {
+           {"Text", Content::ContentType::Text},
+           {"Image", Content::ContentType::Image},
+           {"File", Content::ContentType::File},
+           {"Video", Content::ContentType::Video},
+           {"Audio", Content::ContentType::Audio},
+           {"Notice", Content::ContentType::Notice},
+           {"ErrorMsg", Content::ContentType::ErrorMsg}
             };
             auto it = typeMap.find(type_str);
-            return (it != typeMap.end()) ? it->second : Type::UNKNOWN;
+            return (it != typeMap.end()) ? it->second : ContentType::Unknown;
         }
 
-        bool MessageType::IsValid(const std::string& type_str)
+        bool Content::IsValid(const std::string& type_str)
         {
-            return StringToType(type_str) != Type::UNKNOWN;
+            return StringToType(type_str) != ContentType::Unknown;
+        }
+
+        std::string Chat::TypeToString(ChatType type)
+        {
+            switch (type)
+            {
+            case ChatType::Group:
+                return "Group";
+            case ChatType::Private:
+                return "Private";
+            case ChatType::System:
+                return "System";
+            case ChatType::Public:
+                return "Public";
+            default:
+                return "Unknown";
+            }
+        }
+
+        Chat::ChatType Chat::StringToType(const std::string& type_str)
+        {
+            static const std::unordered_map<std::string, ChatType> typeMap = {
+                {"Group",ChatType::Group},
+                {"Private",ChatType::Private},
+				{"System",ChatType::System},
+				{"Public",ChatType::Public}
+            };
+            auto it = typeMap.find(type_str);
+            return (it != typeMap.end()) ? it->second : ChatType::Unknown;
+        }
+
+        bool Chat::IsValid(const std::string& type_str)
+        {
+            return StringToType(type_str) != ChatType::Unknown;
         }
     }
-   
+
+    
 
     // 统一错误响应处理函数实现
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message)

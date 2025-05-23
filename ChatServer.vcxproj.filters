@@ -57,6 +57,12 @@
     <ClCompile Include="manager\DatabaseManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="controllers\ChatController.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="manager\SendManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
@@ -99,6 +105,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="manager\DatabaseManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="controllers\ChatController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="manager\SendManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

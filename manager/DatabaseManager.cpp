@@ -13,9 +13,11 @@ void DatabaseManager::InitDatabase()
 {
 	drogon::app().getDbClient()->execSqlSync(USER_TABLE);
 	drogon::app().getDbClient()->execSqlSync(CHAT_RECORDS_TABLE);
+	drogon::app().getDbClient()->execSqlSync(RELATIONSHIPS_TABLE);
+	drogon::app().getDbClient()->execSqlSync(GROUPS_TABLE);
+	drogon::app().getDbClient()->execSqlSync(GROUP_MEMBERS_TABLE);
+	drogon::app().getDbClient()->execSqlSync(CREATE_INDEX);
 }
-
-
 
 DbClientPtr DatabaseManager::GetDbClient()
 {
@@ -152,6 +154,7 @@ bool DatabaseManager::GetUserInfoByUid(const std::string& uid, Json::Value& data
 		data["uid"] = info[0].getValueOfUid();
 		data["create_time"] = info[0].getValueOfCreateTime();
 		data["avatar"] = info[0].getValueOfAvatar();
+		data["account"] = info[0].getValueOfAccount();
 		return true;
 	}
 	return false;
@@ -172,24 +175,6 @@ bool DatabaseManager::GetUserInfoByAccount(const std::string& account,Json::Valu
 	}
 	return false;
 }
-
-bool DatabaseManager::GetUserInfoByUsername(const std::string& username, Json::Value& data)
-{
-	Mapper<User> mapper(GetDbClient());
-	Criteria criteria(User::Cols::_username, CompareOperator::EQ, username);
-	auto info = mapper.limit(1).findBy(criteria);
-	if (!info.empty())
-	{
-		data["username"] = info[0].getValueOfUsername();
-		data["uid"] = info[0].getValueOfUid();
-		data["create_time"] = info[0].getValueOfCreateTime();
-		data["avatar"] = info[0].getValueOfAvatar();
-		data["account"] = info[0].getValueOfAccount();
-		return true;
-	}
-	return false;
-}
-
 
 bool DatabaseManager::ModifyAvatar(const std::string& uid, const std::string& avatar)
 {
@@ -226,7 +211,7 @@ bool DatabaseManager::DeleteUser(const std::string& uid)
 	return result == 1;
 }
 
-bool DatabaseManager::VerifyAccount(const std::string& account)
+bool DatabaseManager::ValidateAccount(const std::string& account)
 {
 	Mapper<User> mapper(GetDbClient());
 	Criteria criteria(User::Cols::_account, CompareOperator::EQ, account);
@@ -237,6 +222,14 @@ bool DatabaseManager::VerifyAccount(const std::string& account)
 	}
 	LOG_ERROR << "user is existed";
 	return false;
+}
+
+bool DatabaseManager::ValidateUid(const std::string& uid)
+{
+	Mapper<User> mapper(GetDbClient());
+	Criteria criteria(User::Cols::_uid, CompareOperator::EQ,uid);
+	auto result = mapper.limit(1).findBy(criteria);
+	return (!result.empty());
 }
 
 Json::Value DatabaseManager::WriteRecordsReserveOrder(const std::vector<drogon_model::sqlite3::ChatRecords>& records,

@@ -5,6 +5,15 @@
 #include <drogon/WebSocketConnection.h>
 #include "Utils.h"
 
+namespace Connection
+{
+	struct UserConnectionInfo {
+		std::string username;
+		std::string avatar;
+		std::string uid;
+	};
+}
+
 class ConnectionManager
 {
 public:
@@ -24,6 +33,7 @@ public:
 
 	std::string GetName(const std::string& uid);
 	drogon::WebSocketConnectionPtr GetConnection(const std::string& uid);
+	std::vector<drogon::WebSocketConnectionPtr> GetConnection(const std::vector<std::string>& uids);
 
 private:
 	ConnectionManager() = default;

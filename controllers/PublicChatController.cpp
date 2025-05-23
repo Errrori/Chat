@@ -15,7 +15,7 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
     Json::Reader reader;
     if (!reader.parse(msg,json_msg)||!json_msg.isMember("message_type"))
     {
-        LOG_ERROR << "fail to parse message";
+        LOG_ERROR << "fail to parse message:"<<msg;
         Json::Value data;
         data["message_type"] = "ErrorMsg";
         data["content_type"] = "fail to parse the message";
@@ -23,8 +23,8 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
         return;
     }
 
-    const auto& msg_type = json_msg["message_type"].asString();
-	if (!Utils::Message::MessageType::IsValid(msg_type))
+    const auto& msg_type = json_msg["chat_type"].asString();
+	if (!Utils::Message::Chat::IsValid(msg_type))
 	{
         LOG_ERROR << "the message type is not supported";
         Json::Value data;
@@ -93,6 +93,7 @@ void PublicChatController::handleNewConnection(const drogon::HttpRequestPtr& req
         return;
     }
 
+    
     if (!ConnectionManager::GetInstance().AddConnection(info, conn))
     {
         LOG_ERROR << "can not add connection!";

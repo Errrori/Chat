@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "ConnectionManager.h"
 
+using namespace Connection;
+
 ConnectionManager& ConnectionManager::GetInstance()
 {
 	static ConnectionManager manager;
@@ -23,19 +25,23 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 		return false;
 	}
 
-	conn->setContext(std::make_shared<Utils::UserInfo>(info));
+	//这里采用实时查询数据库的方式获取，而不是获取jwt的信息的方式，保证实时性（可能使用了过时的jwt)
+	Json::Value user_data;
+	if (!DatabaseManager::GetUserInfoByUid(uid, user_data))
+	{
+		return false;
+	}
+	UserConnectionInfo conn_info;
+	conn_info.uid = user_data["uid"].asString();
+	conn_info.avatar = user_data["avatar"].asString();
+	conn_info.username = user_data["username"].asString();
+
+	conn->setContext(std::make_shared<UserConnectionInfo>(conn_info));
+
 	_conn_map.emplace(uid, conn);
 	lock.unlock();
 
-	Json::Value data;
-	if (DatabaseManager::GetUserInfoByUid(uid,data))
-	{
-		auto name = data["username"].asString();
-		return AddUIdToNameRef(uid, name);
-	}
-	
-	LOG_ERROR << "can not add UID to name reference, since can not get user info";
-	return false;
+	return AddUIdToNameRef(uid, info.username);
 }
 
 bool ConnectionManager::RemoveConnection(const std::string& uid)
@@ -54,10 +60,10 @@ bool ConnectionManager::RemoveConnection(const std::string& uid)
 
 bool ConnectionManager::RemoveConnection(const drogon::WebSocketConnectionPtr& conn)
 {
-	auto info_ptr = conn->getContext<Utils::UserInfo>();
-	if (info_ptr)
+	auto uid_ptr = conn->getContext<std::string>();
+	if (uid_ptr)
 	{
-		return RemoveConnection(info_ptr->uid);
+		return RemoveConnection(*uid_ptr);
 	}
 	LOG_ERROR << "Error to get ConnectionPtr context";
 	return false;
@@ -128,10 +134,7 @@ Json::Value ConnectionManager::GetOnlineUsers()
 			data.append(user);
 		}
 	}
-	Json::Value resp;
-	resp["data"] = data;
-	resp["size"] = data.size();
-	return resp;
+	return data;
 }
 
 std::string ConnectionManager::GetName(const std::string& uid)
@@ -156,4 +159,10 @@ drogon::WebSocketConnectionPtr ConnectionManager::GetConnection(const std::strin
 		return nullptr;
 	}
 	return it->second;
+}
+
+std::vector<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnection(
+	const std::vector<std::string>& uids)
+{
+	return {};
 }

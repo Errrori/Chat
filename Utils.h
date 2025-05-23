@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <regex>
 
 namespace Utils
 {
@@ -30,6 +29,9 @@ namespace Utils
     
     namespace Message
 	{
+        Json::Value GenerateErrorMsg(const std::string& error_msg);
+        int64_t GenerateMsgId();
+
         class MessageIDGenerator
         {
         public:
@@ -70,27 +72,41 @@ namespace Utils
             int64_t WaitNextMillis(int64_t lastTimestamp);
         };
 
-        int64_t GenerateMsgId();
-
-        namespace MessageType {
-            enum class Type :std::uint8_t {
-                TEXT,
-                IMAGE,
-                FILE,
-                VIDEO,
-                AUDIO,
-                SYSTEM,
-                NOTICE,
-                ERROR_MSG,
-                UNKNOWN
+        namespace Content {
+            enum class ContentType :std::uint8_t {
+                Text,
+                Image,
+                File,
+                Video,
+                Audio,
+                Notice,
+                ErrorMsg,
+                Unknown
             };
 
-            std::string TypeToString(const Type& type);
-            Type StringToType(const std::string& type_str);
+            std::string TypeToString(ContentType type);
+            ContentType StringToType(const std::string& type_str);
+            bool IsValid(const std::string& type_str);
+        }
+
+        namespace Chat
+		{
+            enum class ChatType :std::uint8_t
+            {
+                Group,
+                Private,
+                System,
+                Public,
+                Unknown
+            };
+            std::string TypeToString(ChatType type);
+            ChatType StringToType(const std::string& type_str);
             bool IsValid(const std::string& type_str);
         }
 	}
+   
     // 统一错误响应处理函数
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message);
+
 };
 

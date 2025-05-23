@@ -7,27 +7,24 @@ void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
 {
     LOG_TRACE << "access info route\n";
     Json::Value response;
-    response["code"] = 200;
-    response["message"] = "success to get database";
 
     try {
         auto users = DatabaseManager::GetAllUsersInfo();
+        response["code"] = 200;
+        response["message"] = "success to get database";
         response["data"] = users;
         response["total"] = users.size();
     }
     catch (const drogon::orm::DrogonDbException& e) {
-        LOG_ERROR << "fail to get name: " << e.base().what();
+        LOG_ERROR << "fail to get db_info: " << e.base().what();
         response["code"] = 500;
     }
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
     if (response["code"].asUInt()!=200)
     {
-        resp->setStatusCode(drogon::k500InternalServerError);
-    }
-    else
-    {
-        resp->setStatusCode(drogon::k200OK);
+        response["message"] = "get database error";
+        
     }
     callback(resp);
 }
@@ -287,8 +284,9 @@ void DbInfoController::GetOnlineUsers(const drogon::HttpRequestPtr& req,
     response["message"] = "Success getting online users";
 
     try {
-        auto user_str = ConnectionManager::GetInstance().GetOnlineUsers();
-        response["data"] = user_str;
+        auto users = ConnectionManager::GetInstance().GetOnlineUsers();
+        response["data"] = users;
+        response["size"] = users.size();
     }
     catch (const drogon::orm::DrogonDbException& e) {
         LOG_ERROR << "fail to get name: " << e.base().what();
@@ -298,7 +296,6 @@ void DbInfoController::GetOnlineUsers(const drogon::HttpRequestPtr& req,
     }
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-    resp->setStatusCode(drogon::k200OK);
     callback(resp);
 }
 

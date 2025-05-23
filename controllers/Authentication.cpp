@@ -14,7 +14,7 @@ void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& re
 
 		if (username.empty()||password.empty()||account.empty())
 		{
-			auto resp = Utils::CreateErrorResponse(400, 400, "Username or password is empty");
+			auto resp = Utils::CreateErrorResponse(400, 400, "Username,Account or password is empty");
 			callback(resp);
 			return;
 		}

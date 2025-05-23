@@ -22,15 +22,18 @@ public:
 	static Json::Value GetChatRecords(int64_t existing_id,unsigned num = DataBase::DEFAULT_RECORDS_QUERY_LEN);
 	static Json::Value GetAllRecords(unsigned num = DataBase::DEFAULT_RECORDS_QUERY_LEN);
 	static bool GetUserInfoByUid(const std::string& uid, Json::Value& data);
-	static bool GetUserInfoByAccount(const std::string& uid, Json::Value& data);
-	static bool GetUserInfoByUsername(const std::string& username, Json::Value& data);
+	static bool GetUserInfoByAccount(const std::string& account, Json::Value& data);
+
 
 	static bool ModifyAvatar(const std::string& uid, const std::string& avatar);
 	static bool ModifyUsername(const std::string& uid, const std::string& username);
 	static bool ModifyPassword(const std::string& uid, const std::string& password);
 
 	static bool DeleteUser(const std::string& uid);
-	static bool VerifyAccount(const std::string& account);
+	static bool ValidateAccount(const std::string& account);
+	static bool ValidateUid(const std::string& uid);
+
+	static std::vector<std::string> GetGroupMember(const std::string& group_id);
 private:
 	static Json::Value WriteRecordsReserveOrder(const std::vector<drogon_model::sqlite3::ChatRecords>& records,
 	                                            Json::Value& data);
