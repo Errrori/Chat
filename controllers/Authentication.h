@@ -4,13 +4,13 @@
 
 namespace Authentication
 {
-	class Controller:public drogon::HttpController<Controller>
+	class AuthController:public drogon::HttpController<AuthController>
 	{
 	public:
 		METHOD_LIST_BEGIN
 		//can add more way to get request,like url parameters
-		ADD_METHOD_TO(Controller::HandleRegister, "/auth/register", drogon::Post, "CorsMiddleware");
-		ADD_METHOD_TO(Controller::HandleLogin, "/auth/login", drogon::Post, "CorsMiddleware");
+		ADD_METHOD_TO(AuthController::HandleRegister, "/auth/register", drogon::Post, "CorsMiddleware");
+		ADD_METHOD_TO(AuthController::HandleLogin, "/auth/login", drogon::Post, "CorsMiddleware");
 		METHOD_LIST_END
 
 		void HandleRegister(const drogon::HttpRequestPtr& req,

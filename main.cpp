@@ -2,6 +2,7 @@
 #include <drogon/drogon.h>
 #include <csignal>
 #include "Utils.h"
+#include "manager/NotificationManager.h"
 
 using namespace Utils;
 

@@ -62,10 +62,10 @@ bool ConnectionManager::RemoveConnection(const std::string& uid)
 
 bool ConnectionManager::RemoveConnection(const drogon::WebSocketConnectionPtr& conn)
 {
-	auto uid_ptr = conn->getContext<std::string>();
-	if (uid_ptr)
+	auto info_ptr = conn->getContext<UserConnectionInfo>();
+	if (info_ptr)
 	{
-		return RemoveConnection(*uid_ptr);
+		return RemoveConnection(info_ptr->uid);
 	}
 	LOG_ERROR << "Error to get ConnectionPtr context";
 	return false;

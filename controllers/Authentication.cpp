@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Authentication.h"
 
-void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& req,
+void Authentication::AuthController::HandleRegister(const drogon::HttpRequestPtr& req,
                                                 std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
 	LOG_TRACE << "access the Register route data is : "<<req->bodyData();
@@ -54,7 +54,7 @@ void Authentication::Controller::HandleRegister(const drogon::HttpRequestPtr& re
 }
 
 //ԺŻ
-void Authentication::Controller::HandleLogin(const drogon::HttpRequestPtr& req,
+void Authentication::AuthController::HandleLogin(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
 	LOG_TRACE << "access the Login route\n";

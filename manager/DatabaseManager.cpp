@@ -1,12 +1,17 @@
 #include "pch.h"
 #include "../models/ChatRecords.h"
 #include "../models/Users.h"
+#include "../models/Relationships.h"
 #include "DatabaseManager.h"
 #include <drogon/orm/Mapper.h>
+
+#include "models/Notifications.h"
 
 using namespace DataBase;
 using ChatRecord = drogon_model::sqlite3::ChatRecords;
 using User = drogon_model::sqlite3::Users;
+using Relationships = drogon_model::sqlite3::Relationships;
+using Notification = drogon_model::sqlite3::Notifications;
 using namespace drogon::orm;
 
 void DatabaseManager::InitDatabase()
@@ -16,6 +21,7 @@ void DatabaseManager::InitDatabase()
     drogon::app().getDbClient()->execSqlSync(RELATIONSHIPS_TABLE);
     drogon::app().getDbClient()->execSqlSync(GROUPS_TABLE);
     drogon::app().getDbClient()->execSqlSync(GROUP_MEMBERS_TABLE);
+    drogon::app().getDbClient()->execSqlSync(NOTIFICATION_TABLE);
     drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_1);
     drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_2);
     drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_3);
@@ -94,6 +100,45 @@ void DatabaseManager::PushChatRecords(const Json::Value& message)
 	);
 }
 
+void DatabaseManager::WriteFriendRequest(const Json::Value& request)
+{
+	//可能要检查是否被屏蔽
+	Json::Value data;
+	data["first_uid"] = request["actor_uid"].asString();
+	data["second_uid"] = request["reactor_uid"].asString();
+	data["status"] = "pending";
+	Relationships relation(data);
+
+	Mapper<Relationships> mapper(GetDbClient());
+	mapper.insert(relation,
+		[](const Relationships& relationship) {
+			LOG_INFO << "insert relationship: " << relationship.getValueOfStatus();
+		},
+		[](const DrogonDbException& e) {
+			LOG_ERROR << "Exception to insert notification," << e.base().what();
+		});
+}
+
+void DatabaseManager::PushNotification(const Json::Value& data)
+{
+	Json::Value json_notification;
+	json_notification["notification_id"] = Utils::Authentication::GenerateUid();
+	json_notification["actor_uid"] = data["actor_uid"].asString();
+	json_notification["reactor_uid"] = data["reactor_uid"].asString();
+	json_notification["action_type"] = data["action_type"].asString();
+	json_notification["content"] = data["content"].asString();
+	json_notification["create_time"] = data["create_time"].asString();
+	Notification notification(json_notification);
+	Mapper<Notification> mapper(GetDbClient());
+	mapper.insert(notification,
+		[](const Notification& notification) {
+			LOG_INFO << "insert notification: " << notification.getValueOfNotificationId();
+		},
+		[](const DrogonDbException& e) {
+			LOG_ERROR << "Exception to insert notification," << e.base().what();
+		});
+}
+
 Json::Value DatabaseManager::GetChatRecords(int64_t existing_id, unsigned num)
 {
 	Mapper<ChatRecord> mapper(GetDbClient());
@@ -116,13 +161,23 @@ Json::Value DatabaseManager::GetChatRecords(int64_t existing_id, unsigned num)
 	//找不到，就从这个已有的位置开始向后返回到最新的
 	if (index_record.empty())
 	{
-		auto records = mapper.orderBy(ChatRecord::Cols::_message_id,SortOrder::DESC).findBy(criteria);
-		return WriteRecordsReserveOrder(records, data);
+		const auto& records = mapper.orderBy(ChatRecord::Cols::_message_id,SortOrder::DESC).findBy(criteria);
+		Json::Value json_records(Json::arrayValue);
+		for (auto it = records.rbegin();it!=records.rend();++it)
+		{
+			json_records.append(WriteRecord(*it));
+		}
+		return json_records;
 	}
 	
 	//找到了，就从最新的往前返回message_number条
 	auto records = mapper.orderBy(ChatRecord::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
-	return WriteRecordsReserveOrder(records, data);
+	Json::Value json_records(Json::arrayValue);
+	for (auto it = records.rbegin(); it != records.rend(); ++it)
+	{
+		json_records.append(WriteRecord(*it));
+	}
+	return json_records;
 
 }
 
@@ -135,15 +190,7 @@ Json::Value DatabaseManager::GetAllRecords(unsigned num)
 
 	for (auto it = records.rbegin(); it != records.rend(); ++it)
 	{
-		Json::Value json_record;
-		json_record["message_id"] = std::to_string(it->getValueOfMessageId());
-		json_record["sender_uid"] = it->getValueOfSenderUid();
-		json_record["sender_name"] = it->getValueOfSenderName();
-		json_record["content"] = it->getValueOfContent();
-		json_record["create_time"] = it->getValueOfCreateTime();
-		json_record["avatar"] = it->getValueOfAvatar();
-		json_record["message_type"] = it->getValueOfMessageType();
-		data.append(json_record);
+		data.append(WriteRecord(*it));
 	}
 	LOG_INFO << "Get all records:\n" << data.toStyledString()<<"\n";
 	return data;
@@ -181,6 +228,20 @@ bool DatabaseManager::GetUserInfoByAccount(const std::string& account,Json::Valu
 		return true;
 	}
 	return false;
+}
+
+bool DatabaseManager::GetUserNotification(const std::string& uid,Json::Value& data)
+{
+	Mapper<Notification> mapper(GetDbClient());
+	Criteria criteria(Notification::Cols::_reactor_uid, uid);
+	const auto& results = mapper.findBy(criteria);
+	Json::Value notification_data(Json::arrayValue);
+	for (const auto& result : results)
+	{
+		notification_data.append(WriteNotification(result));
+	}
+	data = notification_data;
+	return true;
 }
 
 bool DatabaseManager::ModifyAvatar(const std::string& uid, const std::string& avatar)
@@ -239,21 +300,34 @@ bool DatabaseManager::ValidateUid(const std::string& uid)
 	return (!result.empty());
 }
 
-Json::Value DatabaseManager::WriteRecordsReserveOrder(const std::vector<drogon_model::sqlite3::ChatRecords>& records,
-                                                      Json::Value& data)
+Json::Value DatabaseManager::WriteRecord(const drogon_model::sqlite3::ChatRecords& record)
 {
-    for (auto it = records.rbegin(); it != records.rend(); ++it)
-    {
-        Json::Value json_record;
-        json_record["message_id"] = std::to_string(it->getValueOfMessageId());
-        json_record["sender_uid"] = it->getValueOfSenderUid();
-        json_record["sender_name"] = it->getValueOfSenderName();
-        json_record["content"] = it->getValueOfContent();
-        json_record["create_time"] = it->getValueOfCreateTime();
-        json_record["avatar"] = it->getValueOfAvatar();
-        json_record["message_type"] = it->getValueOfMessageType();
-        data.append(json_record);
-    }
-    return data;
+	Json::Value json_record;
+	json_record["message_id"] = std::to_string(record.getValueOfMessageId());
+	json_record["sender_uid"] = record.getValueOfSenderUid();
+	json_record["sender_name"] = record.getValueOfSenderName();
+	json_record["avatar"] = record.getValueOfSenderAvatar();
+	json_record["content"] = record.getValueOfContent();
+	json_record["content_type"] = record.getValueOfContentType();
+	json_record["receiver_uid"] = record.getValueOfReceiverUid();
+	json_record["create_time"] = record.getValueOfCreateTime();
+	json_record["conversation_id"] = record.getValueOfConversationId();
+	json_record["conversation_name"] = record.getValueOfConversationName();
+	json_record["chat_type"] = record.getValueOfChatType();
+
+	return json_record;
+}
+
+Json::Value DatabaseManager::WriteNotification(const drogon_model::sqlite3::Notifications& notification)
+{
+	Json::Value data;
+	data["actor_uid"] = notification.getValueOfActorUid();
+	data["reactor_uid"] = notification.getValueOfReactorUid();
+	data["action_type"] = notification.getValueOfActionType();
+	data["create_time"] = notification.getValueOfCreateTime();
+	data["content"] = notification.getValueOfContent();
+	//data["status"] = notification.getValueOfStatus();
+	//这里忽略了通知id和status
+	return data;
 }
 

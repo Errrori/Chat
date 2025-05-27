@@ -10,9 +10,7 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
 			//database
             ADD_METHOD_TO(DbInfoController::GetDbInfo, "/debug/db_info", drogon::Get,"CorsMiddleware");
 			ADD_METHOD_TO(DbInfoController::GetOnlineUsers, "/debug/online_users", drogon::Get, "CorsMiddleware");
-			//ÔÝÊ±ÒÆ³ý
-			//ADD_METHOD_TO(DbInfoController::ImportUsers, "/debug/import", drogon::Post, "CorsMiddleware");
-			//user
+
             ADD_METHOD_TO(DbInfoController::GetUserById, "/user/get_user", drogon::Get, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::ModifyName, "/user/modify/username", drogon::Post, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::ModifyPassword, "/user/modify/password", drogon::Post, "CorsMiddleware");

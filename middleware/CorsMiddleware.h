@@ -1,4 +1,5 @@
-#pragma once
+#pragma 
+
 #include <drogon/HttpMiddleware.h>
 
 class CorsMiddleware : public drogon::HttpMiddleware<CorsMiddleware>

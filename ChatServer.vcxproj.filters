@@ -63,6 +63,27 @@
     <ClCompile Include="manager\SendManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="models\GroupMembers.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\Groups.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\Relationships.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="controllers\RelationshipController.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="filter\TokenVerifyFilter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="manager\NotificationManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\Notifications.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
@@ -111,6 +132,27 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="manager\SendManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\GroupMembers.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\Groups.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\Relationships.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="controllers\RelationshipController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="filter\TokenVerifyFilter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="manager\NotificationManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\Notifications.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

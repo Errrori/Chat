@@ -14,11 +14,15 @@ using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
 const std::string ChatRecords::Cols::_message_id = "message_id";
-const std::string ChatRecords::Cols::_sender_name = "sender_name";
 const std::string ChatRecords::Cols::_sender_uid = "sender_uid";
+const std::string ChatRecords::Cols::_sender_name = "sender_name";
+const std::string ChatRecords::Cols::_sender_avatar = "sender_avatar";
+const std::string ChatRecords::Cols::_conversation_id = "conversation_id";
+const std::string ChatRecords::Cols::_conversation_name = "conversation_name";
+const std::string ChatRecords::Cols::_receiver_uid = "receiver_uid";
 const std::string ChatRecords::Cols::_content = "content";
-const std::string ChatRecords::Cols::_avatar = "avatar";
-const std::string ChatRecords::Cols::_message_type = "message_type";
+const std::string ChatRecords::Cols::_content_type = "content_type";
+const std::string ChatRecords::Cols::_chat_type = "chat_type";
 const std::string ChatRecords::Cols::_create_time = "create_time";
 const std::string ChatRecords::primaryKeyName = "message_id";
 const bool ChatRecords::hasPrimaryKey = true;
@@ -26,12 +30,16 @@ const std::string ChatRecords::tableName = "chat_records";
 
 const std::vector<typename ChatRecords::MetaData> ChatRecords::metaData_={
 {"message_id","int64_t","bigint",8,0,1,0},
-{"sender_name","std::string","text",0,0,0,1},
-{"sender_uid","std::string","text",0,0,0,1},
+{"sender_uid","std::string","text",0,0,0,0},
+{"sender_name","std::string","text",0,0,0,0},
+{"sender_avatar","std::string","text",0,0,0,0},
+{"conversation_id","std::string","text",0,0,0,0},
+{"conversation_name","std::string","text",0,0,0,0},
+{"receiver_uid","std::string","text",0,0,0,1},
 {"content","std::string","text",0,0,0,1},
-{"avatar","std::string","text",0,0,0,0},
-{"message_type","std::string","text",0,0,0,1},
-{"create_time","std::string","text",0,0,0,0}
+{"content_type","std::string","text",0,0,0,1},
+{"chat_type","std::string","text",0,0,0,1},
+{"create_time","std::string","timestamp",0,0,0,0}
 };
 const std::string &ChatRecords::getColumnName(size_t index) noexcept(false)
 {
@@ -46,25 +54,41 @@ ChatRecords::ChatRecords(const Row &r, const ssize_t indexOffset) noexcept
         {
             messageId_=std::make_shared<int64_t>(r["message_id"].as<int64_t>());
         }
+        if(!r["sender_uid"].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(r["sender_uid"].as<std::string>());
+        }
         if(!r["sender_name"].isNull())
         {
             senderName_=std::make_shared<std::string>(r["sender_name"].as<std::string>());
         }
-        if(!r["sender_uid"].isNull())
+        if(!r["sender_avatar"].isNull())
         {
-            senderUid_=std::make_shared<std::string>(r["sender_uid"].as<std::string>());
+            senderAvatar_=std::make_shared<std::string>(r["sender_avatar"].as<std::string>());
+        }
+        if(!r["conversation_id"].isNull())
+        {
+            conversationId_=std::make_shared<std::string>(r["conversation_id"].as<std::string>());
+        }
+        if(!r["conversation_name"].isNull())
+        {
+            conversationName_=std::make_shared<std::string>(r["conversation_name"].as<std::string>());
+        }
+        if(!r["receiver_uid"].isNull())
+        {
+            receiverUid_=std::make_shared<std::string>(r["receiver_uid"].as<std::string>());
         }
         if(!r["content"].isNull())
         {
             content_=std::make_shared<std::string>(r["content"].as<std::string>());
         }
-        if(!r["avatar"].isNull())
+        if(!r["content_type"].isNull())
         {
-            avatar_=std::make_shared<std::string>(r["avatar"].as<std::string>());
+            contentType_=std::make_shared<std::string>(r["content_type"].as<std::string>());
         }
-        if(!r["message_type"].isNull())
+        if(!r["chat_type"].isNull())
         {
-            messageType_=std::make_shared<std::string>(r["message_type"].as<std::string>());
+            chatType_=std::make_shared<std::string>(r["chat_type"].as<std::string>());
         }
         if(!r["create_time"].isNull())
         {
@@ -92,7 +116,7 @@ ChatRecords::ChatRecords(const Row &r, const ssize_t indexOffset) noexcept
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 7 > r.size())
+        if(offset + 11 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -106,29 +130,49 @@ ChatRecords::ChatRecords(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 1;
         if(!r[index].isNull())
         {
-            senderName_=std::make_shared<std::string>(r[index].as<std::string>());
+            senderUid_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 2;
         if(!r[index].isNull())
         {
-            senderUid_=std::make_shared<std::string>(r[index].as<std::string>());
+            senderName_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 3;
         if(!r[index].isNull())
         {
-            content_=std::make_shared<std::string>(r[index].as<std::string>());
+            senderAvatar_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 4;
         if(!r[index].isNull())
         {
-            avatar_=std::make_shared<std::string>(r[index].as<std::string>());
+            conversationId_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 5;
         if(!r[index].isNull())
         {
-            messageType_=std::make_shared<std::string>(r[index].as<std::string>());
+            conversationName_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 6;
+        if(!r[index].isNull())
+        {
+            receiverUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 7;
+        if(!r[index].isNull())
+        {
+            content_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 8;
+        if(!r[index].isNull())
+        {
+            contentType_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 9;
+        if(!r[index].isNull())
+        {
+            chatType_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 10;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -157,7 +201,7 @@ ChatRecords::ChatRecords(const Row &r, const ssize_t indexOffset) noexcept
 
 ChatRecords::ChatRecords(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 7)
+    if(pMasqueradingVector.size() != 11)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -175,7 +219,7 @@ ChatRecords::ChatRecords(const Json::Value &pJson, const std::vector<std::string
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            senderName_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+            senderUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
     if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
@@ -183,7 +227,7 @@ ChatRecords::ChatRecords(const Json::Value &pJson, const std::vector<std::string
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            senderUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+            senderName_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -191,7 +235,7 @@ ChatRecords::ChatRecords(const Json::Value &pJson, const std::vector<std::string
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            content_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+            senderAvatar_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
         }
     }
     if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
@@ -199,7 +243,7 @@ ChatRecords::ChatRecords(const Json::Value &pJson, const std::vector<std::string
         dirtyFlag_[4] = true;
         if(!pJson[pMasqueradingVector[4]].isNull())
         {
-            avatar_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+            conversationId_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
         }
     }
     if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
@@ -207,7 +251,7 @@ ChatRecords::ChatRecords(const Json::Value &pJson, const std::vector<std::string
         dirtyFlag_[5] = true;
         if(!pJson[pMasqueradingVector[5]].isNull())
         {
-            messageType_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
+            conversationName_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
         }
     }
     if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
@@ -215,7 +259,39 @@ ChatRecords::ChatRecords(const Json::Value &pJson, const std::vector<std::string
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+            receiverUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+        }
+    }
+    if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+    {
+        dirtyFlag_[7] = true;
+        if(!pJson[pMasqueradingVector[7]].isNull())
+        {
+            content_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
+        }
+    }
+    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson[pMasqueradingVector[8]].isNull())
+        {
+            contentType_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+        }
+    }
+    if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
+    {
+        dirtyFlag_[9] = true;
+        if(!pJson[pMasqueradingVector[9]].isNull())
+        {
+            chatType_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
+        }
+    }
+    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson[pMasqueradingVector[10]].isNull())
+        {
+            createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 }
@@ -230,49 +306,81 @@ ChatRecords::ChatRecords(const Json::Value &pJson) noexcept(false)
             messageId_=std::make_shared<int64_t>((int64_t)pJson["message_id"].asInt64());
         }
     }
-    if(pJson.isMember("sender_name"))
-    {
-        dirtyFlag_[1]=true;
-        if(!pJson["sender_name"].isNull())
-        {
-            senderName_=std::make_shared<std::string>(pJson["sender_name"].asString());
-        }
-    }
     if(pJson.isMember("sender_uid"))
     {
-        dirtyFlag_[2]=true;
+        dirtyFlag_[1]=true;
         if(!pJson["sender_uid"].isNull())
         {
             senderUid_=std::make_shared<std::string>(pJson["sender_uid"].asString());
         }
     }
-    if(pJson.isMember("content"))
+    if(pJson.isMember("sender_name"))
+    {
+        dirtyFlag_[2]=true;
+        if(!pJson["sender_name"].isNull())
+        {
+            senderName_=std::make_shared<std::string>(pJson["sender_name"].asString());
+        }
+    }
+    if(pJson.isMember("sender_avatar"))
     {
         dirtyFlag_[3]=true;
+        if(!pJson["sender_avatar"].isNull())
+        {
+            senderAvatar_=std::make_shared<std::string>(pJson["sender_avatar"].asString());
+        }
+    }
+    if(pJson.isMember("conversation_id"))
+    {
+        dirtyFlag_[4]=true;
+        if(!pJson["conversation_id"].isNull())
+        {
+            conversationId_=std::make_shared<std::string>(pJson["conversation_id"].asString());
+        }
+    }
+    if(pJson.isMember("conversation_name"))
+    {
+        dirtyFlag_[5]=true;
+        if(!pJson["conversation_name"].isNull())
+        {
+            conversationName_=std::make_shared<std::string>(pJson["conversation_name"].asString());
+        }
+    }
+    if(pJson.isMember("receiver_uid"))
+    {
+        dirtyFlag_[6]=true;
+        if(!pJson["receiver_uid"].isNull())
+        {
+            receiverUid_=std::make_shared<std::string>(pJson["receiver_uid"].asString());
+        }
+    }
+    if(pJson.isMember("content"))
+    {
+        dirtyFlag_[7]=true;
         if(!pJson["content"].isNull())
         {
             content_=std::make_shared<std::string>(pJson["content"].asString());
         }
     }
-    if(pJson.isMember("avatar"))
+    if(pJson.isMember("content_type"))
     {
-        dirtyFlag_[4]=true;
-        if(!pJson["avatar"].isNull())
+        dirtyFlag_[8]=true;
+        if(!pJson["content_type"].isNull())
         {
-            avatar_=std::make_shared<std::string>(pJson["avatar"].asString());
+            contentType_=std::make_shared<std::string>(pJson["content_type"].asString());
         }
     }
-    if(pJson.isMember("message_type"))
+    if(pJson.isMember("chat_type"))
     {
-        dirtyFlag_[5]=true;
-        if(!pJson["message_type"].isNull())
+        dirtyFlag_[9]=true;
+        if(!pJson["chat_type"].isNull())
         {
-            messageType_=std::make_shared<std::string>(pJson["message_type"].asString());
+            chatType_=std::make_shared<std::string>(pJson["chat_type"].asString());
         }
     }
     if(pJson.isMember("create_time"))
     {
-        dirtyFlag_[6]=true;
+        dirtyFlag_[10]=true;
         if(!pJson["create_time"].isNull())
         {
             createTime_=std::make_shared<std::string>(pJson["create_time"].asString());
@@ -283,7 +391,7 @@ ChatRecords::ChatRecords(const Json::Value &pJson) noexcept(false)
 void ChatRecords::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 7)
+    if(pMasqueradingVector.size() != 11)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -300,7 +408,7 @@ void ChatRecords::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            senderName_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+            senderUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
     if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
@@ -308,7 +416,7 @@ void ChatRecords::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            senderUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+            senderName_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -316,7 +424,7 @@ void ChatRecords::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            content_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+            senderAvatar_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
         }
     }
     if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
@@ -324,7 +432,7 @@ void ChatRecords::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[4] = true;
         if(!pJson[pMasqueradingVector[4]].isNull())
         {
-            avatar_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+            conversationId_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
         }
     }
     if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
@@ -332,7 +440,7 @@ void ChatRecords::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[5] = true;
         if(!pJson[pMasqueradingVector[5]].isNull())
         {
-            messageType_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
+            conversationName_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
         }
     }
     if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
@@ -340,7 +448,39 @@ void ChatRecords::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+            receiverUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+        }
+    }
+    if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+    {
+        dirtyFlag_[7] = true;
+        if(!pJson[pMasqueradingVector[7]].isNull())
+        {
+            content_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
+        }
+    }
+    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson[pMasqueradingVector[8]].isNull())
+        {
+            contentType_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+        }
+    }
+    if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
+    {
+        dirtyFlag_[9] = true;
+        if(!pJson[pMasqueradingVector[9]].isNull())
+        {
+            chatType_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
+        }
+    }
+    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson[pMasqueradingVector[10]].isNull())
+        {
+            createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 }
@@ -354,49 +494,81 @@ void ChatRecords::updateByJson(const Json::Value &pJson) noexcept(false)
             messageId_=std::make_shared<int64_t>((int64_t)pJson["message_id"].asInt64());
         }
     }
-    if(pJson.isMember("sender_name"))
-    {
-        dirtyFlag_[1] = true;
-        if(!pJson["sender_name"].isNull())
-        {
-            senderName_=std::make_shared<std::string>(pJson["sender_name"].asString());
-        }
-    }
     if(pJson.isMember("sender_uid"))
     {
-        dirtyFlag_[2] = true;
+        dirtyFlag_[1] = true;
         if(!pJson["sender_uid"].isNull())
         {
             senderUid_=std::make_shared<std::string>(pJson["sender_uid"].asString());
         }
     }
-    if(pJson.isMember("content"))
+    if(pJson.isMember("sender_name"))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson["sender_name"].isNull())
+        {
+            senderName_=std::make_shared<std::string>(pJson["sender_name"].asString());
+        }
+    }
+    if(pJson.isMember("sender_avatar"))
     {
         dirtyFlag_[3] = true;
+        if(!pJson["sender_avatar"].isNull())
+        {
+            senderAvatar_=std::make_shared<std::string>(pJson["sender_avatar"].asString());
+        }
+    }
+    if(pJson.isMember("conversation_id"))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson["conversation_id"].isNull())
+        {
+            conversationId_=std::make_shared<std::string>(pJson["conversation_id"].asString());
+        }
+    }
+    if(pJson.isMember("conversation_name"))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson["conversation_name"].isNull())
+        {
+            conversationName_=std::make_shared<std::string>(pJson["conversation_name"].asString());
+        }
+    }
+    if(pJson.isMember("receiver_uid"))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson["receiver_uid"].isNull())
+        {
+            receiverUid_=std::make_shared<std::string>(pJson["receiver_uid"].asString());
+        }
+    }
+    if(pJson.isMember("content"))
+    {
+        dirtyFlag_[7] = true;
         if(!pJson["content"].isNull())
         {
             content_=std::make_shared<std::string>(pJson["content"].asString());
         }
     }
-    if(pJson.isMember("avatar"))
+    if(pJson.isMember("content_type"))
     {
-        dirtyFlag_[4] = true;
-        if(!pJson["avatar"].isNull())
+        dirtyFlag_[8] = true;
+        if(!pJson["content_type"].isNull())
         {
-            avatar_=std::make_shared<std::string>(pJson["avatar"].asString());
+            contentType_=std::make_shared<std::string>(pJson["content_type"].asString());
         }
     }
-    if(pJson.isMember("message_type"))
+    if(pJson.isMember("chat_type"))
     {
-        dirtyFlag_[5] = true;
-        if(!pJson["message_type"].isNull())
+        dirtyFlag_[9] = true;
+        if(!pJson["chat_type"].isNull())
         {
-            messageType_=std::make_shared<std::string>(pJson["message_type"].asString());
+            chatType_=std::make_shared<std::string>(pJson["chat_type"].asString());
         }
     }
     if(pJson.isMember("create_time"))
     {
-        dirtyFlag_[6] = true;
+        dirtyFlag_[10] = true;
         if(!pJson["create_time"].isNull())
         {
             createTime_=std::make_shared<std::string>(pJson["create_time"].asString());
@@ -431,28 +603,6 @@ const typename ChatRecords::PrimaryKeyType & ChatRecords::getPrimaryKey() const
     return *messageId_;
 }
 
-const std::string &ChatRecords::getValueOfSenderName() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(senderName_)
-        return *senderName_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &ChatRecords::getSenderName() const noexcept
-{
-    return senderName_;
-}
-void ChatRecords::setSenderName(const std::string &pSenderName) noexcept
-{
-    senderName_ = std::make_shared<std::string>(pSenderName);
-    dirtyFlag_[1] = true;
-}
-void ChatRecords::setSenderName(std::string &&pSenderName) noexcept
-{
-    senderName_ = std::make_shared<std::string>(std::move(pSenderName));
-    dirtyFlag_[1] = true;
-}
-
 const std::string &ChatRecords::getValueOfSenderUid() const noexcept
 {
     static const std::string defaultValue = std::string();
@@ -467,12 +617,147 @@ const std::shared_ptr<std::string> &ChatRecords::getSenderUid() const noexcept
 void ChatRecords::setSenderUid(const std::string &pSenderUid) noexcept
 {
     senderUid_ = std::make_shared<std::string>(pSenderUid);
-    dirtyFlag_[2] = true;
+    dirtyFlag_[1] = true;
 }
 void ChatRecords::setSenderUid(std::string &&pSenderUid) noexcept
 {
     senderUid_ = std::make_shared<std::string>(std::move(pSenderUid));
+    dirtyFlag_[1] = true;
+}
+void ChatRecords::setSenderUidToNull() noexcept
+{
+    senderUid_.reset();
+    dirtyFlag_[1] = true;
+}
+
+const std::string &ChatRecords::getValueOfSenderName() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(senderName_)
+        return *senderName_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &ChatRecords::getSenderName() const noexcept
+{
+    return senderName_;
+}
+void ChatRecords::setSenderName(const std::string &pSenderName) noexcept
+{
+    senderName_ = std::make_shared<std::string>(pSenderName);
     dirtyFlag_[2] = true;
+}
+void ChatRecords::setSenderName(std::string &&pSenderName) noexcept
+{
+    senderName_ = std::make_shared<std::string>(std::move(pSenderName));
+    dirtyFlag_[2] = true;
+}
+void ChatRecords::setSenderNameToNull() noexcept
+{
+    senderName_.reset();
+    dirtyFlag_[2] = true;
+}
+
+const std::string &ChatRecords::getValueOfSenderAvatar() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(senderAvatar_)
+        return *senderAvatar_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &ChatRecords::getSenderAvatar() const noexcept
+{
+    return senderAvatar_;
+}
+void ChatRecords::setSenderAvatar(const std::string &pSenderAvatar) noexcept
+{
+    senderAvatar_ = std::make_shared<std::string>(pSenderAvatar);
+    dirtyFlag_[3] = true;
+}
+void ChatRecords::setSenderAvatar(std::string &&pSenderAvatar) noexcept
+{
+    senderAvatar_ = std::make_shared<std::string>(std::move(pSenderAvatar));
+    dirtyFlag_[3] = true;
+}
+void ChatRecords::setSenderAvatarToNull() noexcept
+{
+    senderAvatar_.reset();
+    dirtyFlag_[3] = true;
+}
+
+const std::string &ChatRecords::getValueOfConversationId() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(conversationId_)
+        return *conversationId_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &ChatRecords::getConversationId() const noexcept
+{
+    return conversationId_;
+}
+void ChatRecords::setConversationId(const std::string &pConversationId) noexcept
+{
+    conversationId_ = std::make_shared<std::string>(pConversationId);
+    dirtyFlag_[4] = true;
+}
+void ChatRecords::setConversationId(std::string &&pConversationId) noexcept
+{
+    conversationId_ = std::make_shared<std::string>(std::move(pConversationId));
+    dirtyFlag_[4] = true;
+}
+void ChatRecords::setConversationIdToNull() noexcept
+{
+    conversationId_.reset();
+    dirtyFlag_[4] = true;
+}
+
+const std::string &ChatRecords::getValueOfConversationName() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(conversationName_)
+        return *conversationName_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &ChatRecords::getConversationName() const noexcept
+{
+    return conversationName_;
+}
+void ChatRecords::setConversationName(const std::string &pConversationName) noexcept
+{
+    conversationName_ = std::make_shared<std::string>(pConversationName);
+    dirtyFlag_[5] = true;
+}
+void ChatRecords::setConversationName(std::string &&pConversationName) noexcept
+{
+    conversationName_ = std::make_shared<std::string>(std::move(pConversationName));
+    dirtyFlag_[5] = true;
+}
+void ChatRecords::setConversationNameToNull() noexcept
+{
+    conversationName_.reset();
+    dirtyFlag_[5] = true;
+}
+
+const std::string &ChatRecords::getValueOfReceiverUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(receiverUid_)
+        return *receiverUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &ChatRecords::getReceiverUid() const noexcept
+{
+    return receiverUid_;
+}
+void ChatRecords::setReceiverUid(const std::string &pReceiverUid) noexcept
+{
+    receiverUid_ = std::make_shared<std::string>(pReceiverUid);
+    dirtyFlag_[6] = true;
+}
+void ChatRecords::setReceiverUid(std::string &&pReceiverUid) noexcept
+{
+    receiverUid_ = std::make_shared<std::string>(std::move(pReceiverUid));
+    dirtyFlag_[6] = true;
 }
 
 const std::string &ChatRecords::getValueOfContent() const noexcept
@@ -489,61 +774,56 @@ const std::shared_ptr<std::string> &ChatRecords::getContent() const noexcept
 void ChatRecords::setContent(const std::string &pContent) noexcept
 {
     content_ = std::make_shared<std::string>(pContent);
-    dirtyFlag_[3] = true;
+    dirtyFlag_[7] = true;
 }
 void ChatRecords::setContent(std::string &&pContent) noexcept
 {
     content_ = std::make_shared<std::string>(std::move(pContent));
-    dirtyFlag_[3] = true;
+    dirtyFlag_[7] = true;
 }
 
-const std::string &ChatRecords::getValueOfAvatar() const noexcept
+const std::string &ChatRecords::getValueOfContentType() const noexcept
 {
     static const std::string defaultValue = std::string();
-    if(avatar_)
-        return *avatar_;
+    if(contentType_)
+        return *contentType_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &ChatRecords::getAvatar() const noexcept
+const std::shared_ptr<std::string> &ChatRecords::getContentType() const noexcept
 {
-    return avatar_;
+    return contentType_;
 }
-void ChatRecords::setAvatar(const std::string &pAvatar) noexcept
+void ChatRecords::setContentType(const std::string &pContentType) noexcept
 {
-    avatar_ = std::make_shared<std::string>(pAvatar);
-    dirtyFlag_[4] = true;
+    contentType_ = std::make_shared<std::string>(pContentType);
+    dirtyFlag_[8] = true;
 }
-void ChatRecords::setAvatar(std::string &&pAvatar) noexcept
+void ChatRecords::setContentType(std::string &&pContentType) noexcept
 {
-    avatar_ = std::make_shared<std::string>(std::move(pAvatar));
-    dirtyFlag_[4] = true;
-}
-void ChatRecords::setAvatarToNull() noexcept
-{
-    avatar_.reset();
-    dirtyFlag_[4] = true;
+    contentType_ = std::make_shared<std::string>(std::move(pContentType));
+    dirtyFlag_[8] = true;
 }
 
-const std::string &ChatRecords::getValueOfMessageType() const noexcept
+const std::string &ChatRecords::getValueOfChatType() const noexcept
 {
     static const std::string defaultValue = std::string();
-    if(messageType_)
-        return *messageType_;
+    if(chatType_)
+        return *chatType_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &ChatRecords::getMessageType() const noexcept
+const std::shared_ptr<std::string> &ChatRecords::getChatType() const noexcept
 {
-    return messageType_;
+    return chatType_;
 }
-void ChatRecords::setMessageType(const std::string &pMessageType) noexcept
+void ChatRecords::setChatType(const std::string &pChatType) noexcept
 {
-    messageType_ = std::make_shared<std::string>(pMessageType);
-    dirtyFlag_[5] = true;
+    chatType_ = std::make_shared<std::string>(pChatType);
+    dirtyFlag_[9] = true;
 }
-void ChatRecords::setMessageType(std::string &&pMessageType) noexcept
+void ChatRecords::setChatType(std::string &&pChatType) noexcept
 {
-    messageType_ = std::make_shared<std::string>(std::move(pMessageType));
-    dirtyFlag_[5] = true;
+    chatType_ = std::make_shared<std::string>(std::move(pChatType));
+    dirtyFlag_[9] = true;
 }
 
 const std::string &ChatRecords::getValueOfCreateTime() const noexcept
@@ -560,17 +840,17 @@ const std::shared_ptr<std::string> &ChatRecords::getCreateTime() const noexcept
 void ChatRecords::setCreateTime(const std::string &pCreateTime) noexcept
 {
     createTime_ = std::make_shared<std::string>(pCreateTime);
-    dirtyFlag_[6] = true;
+    dirtyFlag_[10] = true;
 }
 void ChatRecords::setCreateTime(std::string &&pCreateTime) noexcept
 {
     createTime_ = std::make_shared<std::string>(std::move(pCreateTime));
-    dirtyFlag_[6] = true;
+    dirtyFlag_[10] = true;
 }
 void ChatRecords::setCreateTimeToNull() noexcept
 {
     createTime_.reset();
-    dirtyFlag_[6] = true;
+    dirtyFlag_[10] = true;
 }
 
 void ChatRecords::updateId(const uint64_t id)
@@ -581,11 +861,15 @@ const std::vector<std::string> &ChatRecords::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
         "message_id",
-        "sender_name",
         "sender_uid",
+        "sender_name",
+        "sender_avatar",
+        "conversation_id",
+        "conversation_name",
+        "receiver_uid",
         "content",
-        "avatar",
-        "message_type",
+        "content_type",
+        "chat_type",
         "create_time"
     };
     return inCols;
@@ -606,17 +890,6 @@ void ChatRecords::outputArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[1])
     {
-        if(getSenderName())
-        {
-            binder << getValueOfSenderName();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-    if(dirtyFlag_[2])
-    {
         if(getSenderUid())
         {
             binder << getValueOfSenderUid();
@@ -626,7 +899,62 @@ void ChatRecords::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
+    if(dirtyFlag_[2])
+    {
+        if(getSenderName())
+        {
+            binder << getValueOfSenderName();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
     if(dirtyFlag_[3])
+    {
+        if(getSenderAvatar())
+        {
+            binder << getValueOfSenderAvatar();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getConversationId())
+        {
+            binder << getValueOfConversationId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
+        if(getConversationName())
+        {
+            binder << getValueOfConversationName();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[6])
+    {
+        if(getReceiverUid())
+        {
+            binder << getValueOfReceiverUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[7])
     {
         if(getContent())
         {
@@ -637,29 +965,29 @@ void ChatRecords::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[4])
+    if(dirtyFlag_[8])
     {
-        if(getAvatar())
+        if(getContentType())
         {
-            binder << getValueOfAvatar();
+            binder << getValueOfContentType();
         }
         else
         {
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[5])
+    if(dirtyFlag_[9])
     {
-        if(getMessageType())
+        if(getChatType())
         {
-            binder << getValueOfMessageType();
+            binder << getValueOfChatType();
         }
         else
         {
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[6])
+    if(dirtyFlag_[10])
     {
         if(getCreateTime())
         {
@@ -703,6 +1031,22 @@ const std::vector<std::string> ChatRecords::updateColumns() const
     {
         ret.push_back(getColumnName(6));
     }
+    if(dirtyFlag_[7])
+    {
+        ret.push_back(getColumnName(7));
+    }
+    if(dirtyFlag_[8])
+    {
+        ret.push_back(getColumnName(8));
+    }
+    if(dirtyFlag_[9])
+    {
+        ret.push_back(getColumnName(9));
+    }
+    if(dirtyFlag_[10])
+    {
+        ret.push_back(getColumnName(10));
+    }
     return ret;
 }
 
@@ -721,17 +1065,6 @@ void ChatRecords::updateArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[1])
     {
-        if(getSenderName())
-        {
-            binder << getValueOfSenderName();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-    if(dirtyFlag_[2])
-    {
         if(getSenderUid())
         {
             binder << getValueOfSenderUid();
@@ -741,7 +1074,62 @@ void ChatRecords::updateArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
+    if(dirtyFlag_[2])
+    {
+        if(getSenderName())
+        {
+            binder << getValueOfSenderName();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
     if(dirtyFlag_[3])
+    {
+        if(getSenderAvatar())
+        {
+            binder << getValueOfSenderAvatar();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getConversationId())
+        {
+            binder << getValueOfConversationId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
+        if(getConversationName())
+        {
+            binder << getValueOfConversationName();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[6])
+    {
+        if(getReceiverUid())
+        {
+            binder << getValueOfReceiverUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[7])
     {
         if(getContent())
         {
@@ -752,29 +1140,29 @@ void ChatRecords::updateArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[4])
+    if(dirtyFlag_[8])
     {
-        if(getAvatar())
+        if(getContentType())
         {
-            binder << getValueOfAvatar();
+            binder << getValueOfContentType();
         }
         else
         {
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[5])
+    if(dirtyFlag_[9])
     {
-        if(getMessageType())
+        if(getChatType())
         {
-            binder << getValueOfMessageType();
+            binder << getValueOfChatType();
         }
         else
         {
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[6])
+    if(dirtyFlag_[10])
     {
         if(getCreateTime())
         {
@@ -797,6 +1185,14 @@ Json::Value ChatRecords::toJson() const
     {
         ret["message_id"]=Json::Value();
     }
+    if(getSenderUid())
+    {
+        ret["sender_uid"]=getValueOfSenderUid();
+    }
+    else
+    {
+        ret["sender_uid"]=Json::Value();
+    }
     if(getSenderName())
     {
         ret["sender_name"]=getValueOfSenderName();
@@ -805,13 +1201,37 @@ Json::Value ChatRecords::toJson() const
     {
         ret["sender_name"]=Json::Value();
     }
-    if(getSenderUid())
+    if(getSenderAvatar())
     {
-        ret["sender_uid"]=getValueOfSenderUid();
+        ret["sender_avatar"]=getValueOfSenderAvatar();
     }
     else
     {
-        ret["sender_uid"]=Json::Value();
+        ret["sender_avatar"]=Json::Value();
+    }
+    if(getConversationId())
+    {
+        ret["conversation_id"]=getValueOfConversationId();
+    }
+    else
+    {
+        ret["conversation_id"]=Json::Value();
+    }
+    if(getConversationName())
+    {
+        ret["conversation_name"]=getValueOfConversationName();
+    }
+    else
+    {
+        ret["conversation_name"]=Json::Value();
+    }
+    if(getReceiverUid())
+    {
+        ret["receiver_uid"]=getValueOfReceiverUid();
+    }
+    else
+    {
+        ret["receiver_uid"]=Json::Value();
     }
     if(getContent())
     {
@@ -821,21 +1241,21 @@ Json::Value ChatRecords::toJson() const
     {
         ret["content"]=Json::Value();
     }
-    if(getAvatar())
+    if(getContentType())
     {
-        ret["avatar"]=getValueOfAvatar();
+        ret["content_type"]=getValueOfContentType();
     }
     else
     {
-        ret["avatar"]=Json::Value();
+        ret["content_type"]=Json::Value();
     }
-    if(getMessageType())
+    if(getChatType())
     {
-        ret["message_type"]=getValueOfMessageType();
+        ret["chat_type"]=getValueOfChatType();
     }
     else
     {
-        ret["message_type"]=Json::Value();
+        ret["chat_type"]=Json::Value();
     }
     if(getCreateTime())
     {
@@ -852,7 +1272,7 @@ Json::Value ChatRecords::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 7)
+    if(pMasqueradingVector.size() == 11)
     {
         if(!pMasqueradingVector[0].empty())
         {
@@ -867,9 +1287,9 @@ Json::Value ChatRecords::toMasqueradedJson(
         }
         if(!pMasqueradingVector[1].empty())
         {
-            if(getSenderName())
+            if(getSenderUid())
             {
-                ret[pMasqueradingVector[1]]=getValueOfSenderName();
+                ret[pMasqueradingVector[1]]=getValueOfSenderUid();
             }
             else
             {
@@ -878,9 +1298,9 @@ Json::Value ChatRecords::toMasqueradedJson(
         }
         if(!pMasqueradingVector[2].empty())
         {
-            if(getSenderUid())
+            if(getSenderName())
             {
-                ret[pMasqueradingVector[2]]=getValueOfSenderUid();
+                ret[pMasqueradingVector[2]]=getValueOfSenderName();
             }
             else
             {
@@ -889,9 +1309,9 @@ Json::Value ChatRecords::toMasqueradedJson(
         }
         if(!pMasqueradingVector[3].empty())
         {
-            if(getContent())
+            if(getSenderAvatar())
             {
-                ret[pMasqueradingVector[3]]=getValueOfContent();
+                ret[pMasqueradingVector[3]]=getValueOfSenderAvatar();
             }
             else
             {
@@ -900,9 +1320,9 @@ Json::Value ChatRecords::toMasqueradedJson(
         }
         if(!pMasqueradingVector[4].empty())
         {
-            if(getAvatar())
+            if(getConversationId())
             {
-                ret[pMasqueradingVector[4]]=getValueOfAvatar();
+                ret[pMasqueradingVector[4]]=getValueOfConversationId();
             }
             else
             {
@@ -911,9 +1331,9 @@ Json::Value ChatRecords::toMasqueradedJson(
         }
         if(!pMasqueradingVector[5].empty())
         {
-            if(getMessageType())
+            if(getConversationName())
             {
-                ret[pMasqueradingVector[5]]=getValueOfMessageType();
+                ret[pMasqueradingVector[5]]=getValueOfConversationName();
             }
             else
             {
@@ -922,13 +1342,57 @@ Json::Value ChatRecords::toMasqueradedJson(
         }
         if(!pMasqueradingVector[6].empty())
         {
-            if(getCreateTime())
+            if(getReceiverUid())
             {
-                ret[pMasqueradingVector[6]]=getValueOfCreateTime();
+                ret[pMasqueradingVector[6]]=getValueOfReceiverUid();
             }
             else
             {
                 ret[pMasqueradingVector[6]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[7].empty())
+        {
+            if(getContent())
+            {
+                ret[pMasqueradingVector[7]]=getValueOfContent();
+            }
+            else
+            {
+                ret[pMasqueradingVector[7]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[8].empty())
+        {
+            if(getContentType())
+            {
+                ret[pMasqueradingVector[8]]=getValueOfContentType();
+            }
+            else
+            {
+                ret[pMasqueradingVector[8]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[9].empty())
+        {
+            if(getChatType())
+            {
+                ret[pMasqueradingVector[9]]=getValueOfChatType();
+            }
+            else
+            {
+                ret[pMasqueradingVector[9]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[10].empty())
+        {
+            if(getCreateTime())
+            {
+                ret[pMasqueradingVector[10]]=getValueOfCreateTime();
+            }
+            else
+            {
+                ret[pMasqueradingVector[10]]=Json::Value();
             }
         }
         return ret;
@@ -942,6 +1406,14 @@ Json::Value ChatRecords::toMasqueradedJson(
     {
         ret["message_id"]=Json::Value();
     }
+    if(getSenderUid())
+    {
+        ret["sender_uid"]=getValueOfSenderUid();
+    }
+    else
+    {
+        ret["sender_uid"]=Json::Value();
+    }
     if(getSenderName())
     {
         ret["sender_name"]=getValueOfSenderName();
@@ -950,13 +1422,37 @@ Json::Value ChatRecords::toMasqueradedJson(
     {
         ret["sender_name"]=Json::Value();
     }
-    if(getSenderUid())
+    if(getSenderAvatar())
     {
-        ret["sender_uid"]=getValueOfSenderUid();
+        ret["sender_avatar"]=getValueOfSenderAvatar();
     }
     else
     {
-        ret["sender_uid"]=Json::Value();
+        ret["sender_avatar"]=Json::Value();
+    }
+    if(getConversationId())
+    {
+        ret["conversation_id"]=getValueOfConversationId();
+    }
+    else
+    {
+        ret["conversation_id"]=Json::Value();
+    }
+    if(getConversationName())
+    {
+        ret["conversation_name"]=getValueOfConversationName();
+    }
+    else
+    {
+        ret["conversation_name"]=Json::Value();
+    }
+    if(getReceiverUid())
+    {
+        ret["receiver_uid"]=getValueOfReceiverUid();
+    }
+    else
+    {
+        ret["receiver_uid"]=Json::Value();
     }
     if(getContent())
     {
@@ -966,21 +1462,21 @@ Json::Value ChatRecords::toMasqueradedJson(
     {
         ret["content"]=Json::Value();
     }
-    if(getAvatar())
+    if(getContentType())
     {
-        ret["avatar"]=getValueOfAvatar();
+        ret["content_type"]=getValueOfContentType();
     }
     else
     {
-        ret["avatar"]=Json::Value();
+        ret["content_type"]=Json::Value();
     }
-    if(getMessageType())
+    if(getChatType())
     {
-        ret["message_type"]=getValueOfMessageType();
+        ret["chat_type"]=getValueOfChatType();
     }
     else
     {
-        ret["message_type"]=Json::Value();
+        ret["chat_type"]=Json::Value();
     }
     if(getCreateTime())
     {
@@ -1000,29 +1496,44 @@ bool ChatRecords::validateJsonForCreation(const Json::Value &pJson, std::string 
         if(!validJsonOfField(0, "message_id", pJson["message_id"], err, true))
             return false;
     }
-    if(pJson.isMember("sender_name"))
-    {
-        if(!validJsonOfField(1, "sender_name", pJson["sender_name"], err, true))
-            return false;
-    }
-    else
-    {
-        err="The sender_name column cannot be null";
-        return false;
-    }
     if(pJson.isMember("sender_uid"))
     {
-        if(!validJsonOfField(2, "sender_uid", pJson["sender_uid"], err, true))
+        if(!validJsonOfField(1, "sender_uid", pJson["sender_uid"], err, true))
+            return false;
+    }
+    if(pJson.isMember("sender_name"))
+    {
+        if(!validJsonOfField(2, "sender_name", pJson["sender_name"], err, true))
+            return false;
+    }
+    if(pJson.isMember("sender_avatar"))
+    {
+        if(!validJsonOfField(3, "sender_avatar", pJson["sender_avatar"], err, true))
+            return false;
+    }
+    if(pJson.isMember("conversation_id"))
+    {
+        if(!validJsonOfField(4, "conversation_id", pJson["conversation_id"], err, true))
+            return false;
+    }
+    if(pJson.isMember("conversation_name"))
+    {
+        if(!validJsonOfField(5, "conversation_name", pJson["conversation_name"], err, true))
+            return false;
+    }
+    if(pJson.isMember("receiver_uid"))
+    {
+        if(!validJsonOfField(6, "receiver_uid", pJson["receiver_uid"], err, true))
             return false;
     }
     else
     {
-        err="The sender_uid column cannot be null";
+        err="The receiver_uid column cannot be null";
         return false;
     }
     if(pJson.isMember("content"))
     {
-        if(!validJsonOfField(3, "content", pJson["content"], err, true))
+        if(!validJsonOfField(7, "content", pJson["content"], err, true))
             return false;
     }
     else
@@ -1030,24 +1541,29 @@ bool ChatRecords::validateJsonForCreation(const Json::Value &pJson, std::string 
         err="The content column cannot be null";
         return false;
     }
-    if(pJson.isMember("avatar"))
+    if(pJson.isMember("content_type"))
     {
-        if(!validJsonOfField(4, "avatar", pJson["avatar"], err, true))
-            return false;
-    }
-    if(pJson.isMember("message_type"))
-    {
-        if(!validJsonOfField(5, "message_type", pJson["message_type"], err, true))
+        if(!validJsonOfField(8, "content_type", pJson["content_type"], err, true))
             return false;
     }
     else
     {
-        err="The message_type column cannot be null";
+        err="The content_type column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("chat_type"))
+    {
+        if(!validJsonOfField(9, "chat_type", pJson["chat_type"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The chat_type column cannot be null";
         return false;
     }
     if(pJson.isMember("create_time"))
     {
-        if(!validJsonOfField(6, "create_time", pJson["create_time"], err, true))
+        if(!validJsonOfField(10, "create_time", pJson["create_time"], err, true))
             return false;
     }
     return true;
@@ -1056,7 +1572,7 @@ bool ChatRecords::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                      const std::vector<std::string> &pMasqueradingVector,
                                                      std::string &err)
 {
-    if(pMasqueradingVector.size() != 7)
+    if(pMasqueradingVector.size() != 11)
     {
         err = "Bad masquerading vector";
         return false;
@@ -1077,11 +1593,6 @@ bool ChatRecords::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, true))
                   return false;
           }
-        else
-        {
-            err="The " + pMasqueradingVector[1] + " column cannot be null";
-            return false;
-        }
       }
       if(!pMasqueradingVector[2].empty())
       {
@@ -1090,11 +1601,6 @@ bool ChatRecords::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, true))
                   return false;
           }
-        else
-        {
-            err="The " + pMasqueradingVector[2] + " column cannot be null";
-            return false;
-        }
       }
       if(!pMasqueradingVector[3].empty())
       {
@@ -1103,11 +1609,6 @@ bool ChatRecords::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, true))
                   return false;
           }
-        else
-        {
-            err="The " + pMasqueradingVector[3] + " column cannot be null";
-            return false;
-        }
       }
       if(!pMasqueradingVector[4].empty())
       {
@@ -1124,17 +1625,64 @@ bool ChatRecords::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, true))
                   return false;
           }
-        else
-        {
-            err="The " + pMasqueradingVector[5] + " column cannot be null";
-            return false;
-        }
       }
       if(!pMasqueradingVector[6].empty())
       {
           if(pJson.isMember(pMasqueradingVector[6]))
           {
               if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[6] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[7].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[7]))
+          {
+              if(!validJsonOfField(7, pMasqueradingVector[7], pJson[pMasqueradingVector[7]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[7] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[8].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[8]))
+          {
+              if(!validJsonOfField(8, pMasqueradingVector[8], pJson[pMasqueradingVector[8]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[8] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[9].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[9]))
+          {
+              if(!validJsonOfField(9, pMasqueradingVector[9], pJson[pMasqueradingVector[9]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[9] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[10].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[10]))
+          {
+              if(!validJsonOfField(10, pMasqueradingVector[10], pJson[pMasqueradingVector[10]], err, true))
                   return false;
           }
       }
@@ -1158,34 +1706,54 @@ bool ChatRecords::validateJsonForUpdate(const Json::Value &pJson, std::string &e
         err = "The value of primary key must be set in the json object for update";
         return false;
     }
-    if(pJson.isMember("sender_name"))
-    {
-        if(!validJsonOfField(1, "sender_name", pJson["sender_name"], err, false))
-            return false;
-    }
     if(pJson.isMember("sender_uid"))
     {
-        if(!validJsonOfField(2, "sender_uid", pJson["sender_uid"], err, false))
+        if(!validJsonOfField(1, "sender_uid", pJson["sender_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("sender_name"))
+    {
+        if(!validJsonOfField(2, "sender_name", pJson["sender_name"], err, false))
+            return false;
+    }
+    if(pJson.isMember("sender_avatar"))
+    {
+        if(!validJsonOfField(3, "sender_avatar", pJson["sender_avatar"], err, false))
+            return false;
+    }
+    if(pJson.isMember("conversation_id"))
+    {
+        if(!validJsonOfField(4, "conversation_id", pJson["conversation_id"], err, false))
+            return false;
+    }
+    if(pJson.isMember("conversation_name"))
+    {
+        if(!validJsonOfField(5, "conversation_name", pJson["conversation_name"], err, false))
+            return false;
+    }
+    if(pJson.isMember("receiver_uid"))
+    {
+        if(!validJsonOfField(6, "receiver_uid", pJson["receiver_uid"], err, false))
             return false;
     }
     if(pJson.isMember("content"))
     {
-        if(!validJsonOfField(3, "content", pJson["content"], err, false))
+        if(!validJsonOfField(7, "content", pJson["content"], err, false))
             return false;
     }
-    if(pJson.isMember("avatar"))
+    if(pJson.isMember("content_type"))
     {
-        if(!validJsonOfField(4, "avatar", pJson["avatar"], err, false))
+        if(!validJsonOfField(8, "content_type", pJson["content_type"], err, false))
             return false;
     }
-    if(pJson.isMember("message_type"))
+    if(pJson.isMember("chat_type"))
     {
-        if(!validJsonOfField(5, "message_type", pJson["message_type"], err, false))
+        if(!validJsonOfField(9, "chat_type", pJson["chat_type"], err, false))
             return false;
     }
     if(pJson.isMember("create_time"))
     {
-        if(!validJsonOfField(6, "create_time", pJson["create_time"], err, false))
+        if(!validJsonOfField(10, "create_time", pJson["create_time"], err, false))
             return false;
     }
     return true;
@@ -1194,7 +1762,7 @@ bool ChatRecords::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                    const std::vector<std::string> &pMasqueradingVector,
                                                    std::string &err)
 {
-    if(pMasqueradingVector.size() != 7)
+    if(pMasqueradingVector.size() != 11)
     {
         err = "Bad masquerading vector";
         return false;
@@ -1240,6 +1808,26 @@ bool ChatRecords::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
           if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, false))
               return false;
       }
+      if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+      {
+          if(!validJsonOfField(7, pMasqueradingVector[7], pJson[pMasqueradingVector[7]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+      {
+          if(!validJsonOfField(8, pMasqueradingVector[8], pJson[pMasqueradingVector[8]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
+      {
+          if(!validJsonOfField(9, pMasqueradingVector[9], pJson[pMasqueradingVector[9]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+      {
+          if(!validJsonOfField(10, pMasqueradingVector[10], pJson[pMasqueradingVector[10]], err, false))
+              return false;
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -1270,8 +1858,7 @@ bool ChatRecords::validJsonOfField(size_t index,
         case 1:
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
             if(!pJson.isString())
             {
@@ -1282,8 +1869,7 @@ bool ChatRecords::validJsonOfField(size_t index,
         case 2:
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
             if(!pJson.isString())
             {
@@ -1294,8 +1880,7 @@ bool ChatRecords::validJsonOfField(size_t index,
         case 3:
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
             if(!pJson.isString())
             {
@@ -1317,6 +1902,17 @@ bool ChatRecords::validJsonOfField(size_t index,
         case 5:
             if(pJson.isNull())
             {
+                return true;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 6:
+            if(pJson.isNull())
+            {
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
@@ -1326,7 +1922,43 @@ bool ChatRecords::validJsonOfField(size_t index,
                 return false;
             }
             break;
-        case 6:
+        case 7:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 8:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 9:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 10:
             if(pJson.isNull())
             {
                 return true;

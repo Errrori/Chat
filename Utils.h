@@ -14,10 +14,39 @@ namespace Utils
         std::string account;
 	};
 
+    namespace Type
+    {
+        #define CONTENT_TYPE_MEMBERS \
+        			X(Text, "Text") \
+        			X(Image, "Image") \
+                    X(File, "File") \
+                    X(Video, "Video") \
+                    X(Audio, "Audio") \
+                    X(Notice, "Notice") \
+                    X(ErrorMsg, "ErrorMsg") \
+                    X(Unknown, "Unknown")
+        
+        #define CHAT_TYPE_MEMBERS \
+                    X(Group, "Group") \
+                    X(Private, "Private") \
+                    X(System, "System") \
+                    X(Public, "Public") \
+                    X(Unknown, "Unknown")
+        
+        #define ACTION_TYPE_MEMBERS \
+        			X(FriendRequest,"FriendRequest")\
+        			X(FriendResponse,"FriendResponse")\
+        			X(GroupRequest,"GroupRequest")\
+        			X(GroupResponse,"GroupResponse")\
+        			X(BlockUser,"BlockUser")\
+        			X(UnblockUser,"UnblockUser")\
+        			X(Unfriend,"Unfriend")\
+                    X(Unknown, "Unknown")
+    }
+
 	namespace Authentication
 	{
         bool IsValidAccount(const std::string& account);
-        int64_t GenerateMsgId();
         std::string GenerateUid();
         std::string GenerateSecret(size_t len = SecretLength);
         std::string GetJwtSecret();
@@ -25,6 +54,7 @@ namespace Utils
         std::string LoadJwtSecret(const std::string& file_path = SecretFilePath);
         std::string GenerateJWT(const UserInfo& info);
         bool VerifyJWT(const std::string& token, UserInfo& info);
+        std::string GetToken(const drogon::HttpRequestPtr& req);
 	}
     
     namespace Message
@@ -73,7 +103,7 @@ namespace Utils
         };
 
         namespace Content {
-            enum class ContentType :std::uint8_t {
+            /*enum class ContentType :std::uint8_t {
                 Text,
                 Image,
                 File,
@@ -86,12 +116,44 @@ namespace Utils
 
             std::string TypeToString(ContentType type);
             ContentType StringToType(const std::string& type_str);
-            bool IsValid(const std::string& type_str);
+            bool IsValid(const std::string& type_str);*/
+
+            enum class ContentType : std::uint8_t {
+				#define X(EnumName, StringName) EnumName,
+            	CONTENT_TYPE_MEMBERS
+				#undef X
+			};
+
+			inline std::string TypeToString(ContentType type) {
+				switch (type)
+				{
+					#define X(EnumName, StringName) case ContentType::EnumName: return StringName;
+						CONTENT_TYPE_MEMBERS
+					#undef X
+					default: return "Unknown";
+				}
+			}
+
+            inline ContentType StringToType(const std::string& type_str)
+        	{
+				#define X(EnumName, StringName) if (type_str == StringName) return ContentType::EnumName;
+					CONTENT_TYPE_MEMBERS
+				#undef X
+				return ContentType::Unknown;
+			}
+
+            inline bool IsValid(const std::string& type_str)
+		    {
+		    	#define X(EnumName, StringName) if (type_str == StringName) return true;
+		    		CONTENT_TYPE_MEMBERS
+		    	#undef X
+                return false;
+            }
         }
 
         namespace Chat
 		{
-            enum class ChatType :std::uint8_t
+            /*enum class ChatType :std::uint8_t
             {
                 Group,
                 Private,
@@ -101,10 +163,78 @@ namespace Utils
             };
             std::string TypeToString(ChatType type);
             ChatType StringToType(const std::string& type_str);
-            bool IsValid(const std::string& type_str);
+            bool IsValid(const std::string& type_str);*/
+            enum class ChatType : std::uint8_t {
+				#define X(EnumName, StringName) EnumName,
+            	CHAT_TYPE_MEMBERS
+				#undef X
+			};
+
+			inline std::string TypeToString(ChatType type) {
+				switch (type)
+				{
+					#define X(EnumName, StringName) case ChatType::EnumName: return StringName;
+						CHAT_TYPE_MEMBERS
+					#undef X
+					default: return "Unknown";
+				}
+			}
+
+            inline ChatType StringToType(const std::string& type_str)
+        	{
+				#define X(EnumName, StringName) if (type_str == StringName) return ChatType::EnumName;
+					CHAT_TYPE_MEMBERS
+				#undef X
+				return ChatType::Unknown;
+			}
+
+            inline bool IsValid(const std::string& type_str)
+		    {
+		    	#define X(EnumName, StringName) if (type_str == StringName) return true;
+					CHAT_TYPE_MEMBERS
+		    	#undef X
+                return false;
+            }
         }
 	}
-   
+
+    namespace Notice
+	{
+        enum class ActionType : std::uint8_t {
+				#define X(EnumName, StringName) EnumName,
+            		ACTION_TYPE_MEMBERS
+				#undef X
+			};
+
+    	inline std::string TypeToString(ActionType type) {
+    		switch (type)
+				{
+					#define X(EnumName, StringName) case ActionType::EnumName: return StringName;
+					ACTION_TYPE_MEMBERS
+
+					#undef X
+					default: return "Unknown";
+				}
+			}
+
+            inline ActionType StringToType(const std::string& type_str)
+        	{
+				#define X(EnumName, StringName) if (type_str == StringName) return ActionType::EnumName;
+                ACTION_TYPE_MEMBERS
+				#undef X
+				return ActionType::Unknown;
+			}
+
+            inline bool IsValid(const std::string& type_str)
+		    {
+		    	#define X(EnumName, StringName) if (type_str == StringName) return true;
+                ACTION_TYPE_MEMBERS
+
+		    	#undef X
+                return false;
+            }
+	}
+
     // 统一错误响应处理函数
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message);
 

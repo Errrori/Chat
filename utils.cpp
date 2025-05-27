@@ -16,7 +16,7 @@ namespace Utils {
                 return false;
             }
             static const std::regex limit{ "^[a-zA-Z0-9]{8,15}$" };
-            if (!std::regex_match(account,limit)) {
+            if (!std::regex_match(account, limit)) {
                 return false;
             }
             static const std::vector<std::string> reservedWords = { "admin", "root", "system" };
@@ -169,14 +169,13 @@ namespace Utils {
                 auto data = jwt::decode(token);
 
                 auto verifier = jwt::verify()
-                    .allow_algorithm(jwt::algorithm::hs256{ LoadJwtSecret() });
-
+                    .allow_algorithm(jwt::algorithm::hs256{ GetJwtSecret() }); // <--- 修改：使用 GetJwtSecret()
                 verifier.verify(data);
 
                 auto exp = data.get_expires_at();
                 if (exp < std::chrono::system_clock::now())
                 {
-                    LOG_ERROR << "token is not effective!\n\n";
+                    LOG_ERROR << "token is not effective!"; // <--- 修改：移除多余的 \n
                     return false;
                 }
 
@@ -189,6 +188,30 @@ namespace Utils {
                 LOG_ERROR << "Error: " << e.what();
                 return false;
             }
+        }
+
+        std::string GetToken(const drogon::HttpRequestPtr& req)
+        {
+            std::string token{};
+            //1.find token in authorization
+            std::string authHeader = req->getHeader("Authorization");
+            if (!authHeader.empty()) {
+                if (authHeader.substr(0, 4) == "JWT ") {
+                    token = authHeader.substr(4);
+                }
+                else {
+                    token = authHeader;
+                }
+            }
+            // 2.find token in Json
+            else if (auto jsonObj = req->getJsonObject(); jsonObj && jsonObj->isMember("token")) {
+                token = (*jsonObj)["token"].asString();
+            }
+            // 3.find token in parameter
+            else if (!req->getParameter("token").empty()) {
+                token = req->getParameter("token");
+            }
+            return token;
         }
     }
 
@@ -274,88 +297,15 @@ namespace Utils {
             error_json["content"] = error_msg;
             return error_json;
         }
-
-        std::string Content::TypeToString(ContentType type)
-        {
-            switch (type) {
-            case ContentType::Text: return "Text";
-            case ContentType::Image: return "Image";
-            case ContentType::File: return "File";
-            case ContentType::Video: return "Video";
-            case ContentType::Audio: return "Audio";
-            case ContentType::Notice: return "Notice";
-            case ContentType::ErrorMsg: return "ErrorMsg";
-            default: return "Unknown";
-            }
-        }
-
-        Content::ContentType Content::StringToType(const std::string& type_str)
-        {
-            static const std::unordered_map<std::string, Content::ContentType> typeMap = {
-           {"Text", Content::ContentType::Text},
-           {"Image", Content::ContentType::Image},
-           {"File", Content::ContentType::File},
-           {"Video", Content::ContentType::Video},
-           {"Audio", Content::ContentType::Audio},
-           {"Notice", Content::ContentType::Notice},
-           {"ErrorMsg", Content::ContentType::ErrorMsg}
-            };
-            auto it = typeMap.find(type_str);
-            return (it != typeMap.end()) ? it->second : ContentType::Unknown;
-        }
-
-        bool Content::IsValid(const std::string& type_str)
-        {
-            return StringToType(type_str) != ContentType::Unknown;
-        }
-
-        std::string Chat::TypeToString(ChatType type)
-        {
-            switch (type)
-            {
-            case ChatType::Group:
-                return "Group";
-            case ChatType::Private:
-                return "Private";
-            case ChatType::System:
-                return "System";
-            case ChatType::Public:
-                return "Public";
-            default:
-                return "Unknown";
-            }
-        }
-
-        Chat::ChatType Chat::StringToType(const std::string& type_str)
-        {
-            static const std::unordered_map<std::string, ChatType> typeMap = {
-                {"Group",ChatType::Group},
-                {"Private",ChatType::Private},
-				{"System",ChatType::System},
-				{"Public",ChatType::Public}
-            };
-            auto it = typeMap.find(type_str);
-            return (it != typeMap.end()) ? it->second : ChatType::Unknown;
-        }
-
-        bool Chat::IsValid(const std::string& type_str)
-        {
-            return StringToType(type_str) != ChatType::Unknown;
-        }
     }
-
-    
-
     // 统一错误响应处理函数实现
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message)
     {
         Json::Value response;
         response["code"] = code;
         response["message"] = message;
-
         auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
         resp->setStatusCode(static_cast<drogon::HttpStatusCode>(statusCode));
-        resp->addHeader("content-type", "application/json");
         return resp;
     }
 }
