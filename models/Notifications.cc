@@ -17,7 +17,7 @@ const std::string Notifications::Cols::_id = "id";
 const std::string Notifications::Cols::_notification_id = "notification_id";
 const std::string Notifications::Cols::_actor_uid = "actor_uid";
 const std::string Notifications::Cols::_reactor_uid = "reactor_uid";
-const std::string Notifications::Cols::_action_type = "action_type";
+const std::string Notifications::Cols::_notification_type = "notification_type";
 const std::string Notifications::Cols::_content = "content";
 const std::string Notifications::Cols::_status = "status";
 const std::string Notifications::Cols::_create_time = "create_time";
@@ -30,7 +30,7 @@ const std::vector<typename Notifications::MetaData> Notifications::metaData_={
 {"notification_id","std::string","text",0,0,0,1},
 {"actor_uid","std::string","text",0,0,0,1},
 {"reactor_uid","std::string","text",0,0,0,1},
-{"action_type","std::string","text",0,0,0,1},
+{"notification_type","std::string","text",0,0,0,1},
 {"content","std::string","text",0,0,0,1},
 {"status","std::string","text",0,0,0,0},
 {"create_time","std::string","",0,0,0,0}
@@ -60,9 +60,9 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         {
             reactorUid_=std::make_shared<std::string>(r["reactor_uid"].as<std::string>());
         }
-        if(!r["action_type"].isNull())
+        if(!r["notification_type"].isNull())
         {
-            actionType_=std::make_shared<std::string>(r["action_type"].as<std::string>());
+            notificationType_=std::make_shared<std::string>(r["notification_type"].as<std::string>());
         }
         if(!r["content"].isNull())
         {
@@ -109,7 +109,7 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 4;
         if(!r[index].isNull())
         {
-            actionType_=std::make_shared<std::string>(r[index].as<std::string>());
+            notificationType_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 5;
         if(!r[index].isNull())
@@ -174,7 +174,7 @@ Notifications::Notifications(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[4] = true;
         if(!pJson[pMasqueradingVector[4]].isNull())
         {
-            actionType_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+            notificationType_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
         }
     }
     if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
@@ -237,12 +237,12 @@ Notifications::Notifications(const Json::Value &pJson) noexcept(false)
             reactorUid_=std::make_shared<std::string>(pJson["reactor_uid"].asString());
         }
     }
-    if(pJson.isMember("action_type"))
+    if(pJson.isMember("notification_type"))
     {
         dirtyFlag_[4]=true;
-        if(!pJson["action_type"].isNull())
+        if(!pJson["notification_type"].isNull())
         {
-            actionType_=std::make_shared<std::string>(pJson["action_type"].asString());
+            notificationType_=std::make_shared<std::string>(pJson["notification_type"].asString());
         }
     }
     if(pJson.isMember("content"))
@@ -315,7 +315,7 @@ void Notifications::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[4] = true;
         if(!pJson[pMasqueradingVector[4]].isNull())
         {
-            actionType_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+            notificationType_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
         }
     }
     if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
@@ -377,12 +377,12 @@ void Notifications::updateByJson(const Json::Value &pJson) noexcept(false)
             reactorUid_=std::make_shared<std::string>(pJson["reactor_uid"].asString());
         }
     }
-    if(pJson.isMember("action_type"))
+    if(pJson.isMember("notification_type"))
     {
         dirtyFlag_[4] = true;
-        if(!pJson["action_type"].isNull())
+        if(!pJson["notification_type"].isNull())
         {
-            actionType_=std::make_shared<std::string>(pJson["action_type"].asString());
+            notificationType_=std::make_shared<std::string>(pJson["notification_type"].asString());
         }
     }
     if(pJson.isMember("content"))
@@ -504,25 +504,25 @@ void Notifications::setReactorUid(std::string &&pReactorUid) noexcept
     dirtyFlag_[3] = true;
 }
 
-const std::string &Notifications::getValueOfActionType() const noexcept
+const std::string &Notifications::getValueOfNotificationType() const noexcept
 {
     static const std::string defaultValue = std::string();
-    if(actionType_)
-        return *actionType_;
+    if(notificationType_)
+        return *notificationType_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &Notifications::getActionType() const noexcept
+const std::shared_ptr<std::string> &Notifications::getNotificationType() const noexcept
 {
-    return actionType_;
+    return notificationType_;
 }
-void Notifications::setActionType(const std::string &pActionType) noexcept
+void Notifications::setNotificationType(const std::string &pNotificationType) noexcept
 {
-    actionType_ = std::make_shared<std::string>(pActionType);
+    notificationType_ = std::make_shared<std::string>(pNotificationType);
     dirtyFlag_[4] = true;
 }
-void Notifications::setActionType(std::string &&pActionType) noexcept
+void Notifications::setNotificationType(std::string &&pNotificationType) noexcept
 {
-    actionType_ = std::make_shared<std::string>(std::move(pActionType));
+    notificationType_ = std::make_shared<std::string>(std::move(pNotificationType));
     dirtyFlag_[4] = true;
 }
 
@@ -613,7 +613,7 @@ const std::vector<std::string> &Notifications::insertColumns() noexcept
         "notification_id",
         "actor_uid",
         "reactor_uid",
-        "action_type",
+        "notification_type",
         "content",
         "status",
         "create_time"
@@ -658,9 +658,9 @@ void Notifications::outputArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[4])
     {
-        if(getActionType())
+        if(getNotificationType())
         {
-            binder << getValueOfActionType();
+            binder << getValueOfNotificationType();
         }
         else
         {
@@ -773,9 +773,9 @@ void Notifications::updateArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[4])
     {
-        if(getActionType())
+        if(getNotificationType())
         {
-            binder << getValueOfActionType();
+            binder << getValueOfNotificationType();
         }
         else
         {
@@ -851,13 +851,13 @@ Json::Value Notifications::toJson() const
     {
         ret["reactor_uid"]=Json::Value();
     }
-    if(getActionType())
+    if(getNotificationType())
     {
-        ret["action_type"]=getValueOfActionType();
+        ret["notification_type"]=getValueOfNotificationType();
     }
     else
     {
-        ret["action_type"]=Json::Value();
+        ret["notification_type"]=Json::Value();
     }
     if(getContent())
     {
@@ -938,9 +938,9 @@ Json::Value Notifications::toMasqueradedJson(
         }
         if(!pMasqueradingVector[4].empty())
         {
-            if(getActionType())
+            if(getNotificationType())
             {
-                ret[pMasqueradingVector[4]]=getValueOfActionType();
+                ret[pMasqueradingVector[4]]=getValueOfNotificationType();
             }
             else
             {
@@ -1015,13 +1015,13 @@ Json::Value Notifications::toMasqueradedJson(
     {
         ret["reactor_uid"]=Json::Value();
     }
-    if(getActionType())
+    if(getNotificationType())
     {
-        ret["action_type"]=getValueOfActionType();
+        ret["notification_type"]=getValueOfNotificationType();
     }
     else
     {
-        ret["action_type"]=Json::Value();
+        ret["notification_type"]=Json::Value();
     }
     if(getContent())
     {
@@ -1087,14 +1087,14 @@ bool Notifications::validateJsonForCreation(const Json::Value &pJson, std::strin
         err="The reactor_uid column cannot be null";
         return false;
     }
-    if(pJson.isMember("action_type"))
+    if(pJson.isMember("notification_type"))
     {
-        if(!validJsonOfField(4, "action_type", pJson["action_type"], err, true))
+        if(!validJsonOfField(4, "notification_type", pJson["notification_type"], err, true))
             return false;
     }
     else
     {
-        err="The action_type column cannot be null";
+        err="The notification_type column cannot be null";
         return false;
     }
     if(pJson.isMember("content"))
@@ -1253,9 +1253,9 @@ bool Notifications::validateJsonForUpdate(const Json::Value &pJson, std::string 
         if(!validJsonOfField(3, "reactor_uid", pJson["reactor_uid"], err, false))
             return false;
     }
-    if(pJson.isMember("action_type"))
+    if(pJson.isMember("notification_type"))
     {
-        if(!validJsonOfField(4, "action_type", pJson["action_type"], err, false))
+        if(!validJsonOfField(4, "notification_type", pJson["notification_type"], err, false))
             return false;
     }
     if(pJson.isMember("content"))

@@ -29,9 +29,24 @@ add_executable(${PROJECT_NAME}
     middleware/CorsMiddleware.cpp
     models/ChatRecords.cc
     models/Users.cc
+    models/Notifications.cc
+    models/Groups.cc
+    models/GroupMembers.cc
+    models/Relationships.cc
+    DTOs/NotificationDTO.cpp
+    DTOs/MessageDTO.cpp
+    DTOs/RelationshipDTO.cpp
+    RelationshipService.cpp
     manager/ConnectionManager.cpp
     controllers/EchoController.cpp
     controllers/PublicChatController.cpp
+    controllers/ChatController.cpp
+    controllers/FileController.cpp
+    controllers/RelationshipController.cpp
+    manager/FileManager.cpp
+    manager/NotificationManager.cpp
+    manager/SendManager.cpp
+    filter/TokenVerifyFilter.cpp
     pch.cpp
 )
 

@@ -43,6 +43,8 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
             std::function<void(const drogon::HttpResponsePtr&)>&& callback);
         void ModifyUserAvatar(const drogon::HttpRequestPtr& req,
             std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+        void HandleGetFriendships(const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback);
 };
 
 

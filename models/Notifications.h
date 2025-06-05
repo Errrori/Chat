@@ -48,7 +48,7 @@ class Notifications
         static const std::string _notification_id;
         static const std::string _actor_uid;
         static const std::string _reactor_uid;
-        static const std::string _action_type;
+        static const std::string _notification_type;
         static const std::string _content;
         static const std::string _status;
         static const std::string _create_time;
@@ -139,14 +139,14 @@ class Notifications
     void setReactorUid(const std::string &pReactorUid) noexcept;
     void setReactorUid(std::string &&pReactorUid) noexcept;
 
-    /**  For column action_type  */
-    ///Get the value of the column action_type, returns the default value if the column is null
-    const std::string &getValueOfActionType() const noexcept;
+    /**  For column notification_type  */
+    ///Get the value of the column notification_type, returns the default value if the column is null
+    const std::string &getValueOfNotificationType() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getActionType() const noexcept;
-    ///Set the value of the column action_type
-    void setActionType(const std::string &pActionType) noexcept;
-    void setActionType(std::string &&pActionType) noexcept;
+    const std::shared_ptr<std::string> &getNotificationType() const noexcept;
+    ///Set the value of the column notification_type
+    void setNotificationType(const std::string &pNotificationType) noexcept;
+    void setNotificationType(std::string &&pNotificationType) noexcept;
 
     /**  For column content  */
     ///Get the value of the column content, returns the default value if the column is null
@@ -203,7 +203,7 @@ class Notifications
     std::shared_ptr<std::string> notificationId_;
     std::shared_ptr<std::string> actorUid_;
     std::shared_ptr<std::string> reactorUid_;
-    std::shared_ptr<std::string> actionType_;
+    std::shared_ptr<std::string> notificationType_;
     std::shared_ptr<std::string> content_;
     std::shared_ptr<std::string> status_;
     std::shared_ptr<std::string> createTime_;
@@ -253,7 +253,7 @@ class Notifications
         }
         if(dirtyFlag_[4])
         {
-            sql += "action_type,";
+            sql += "notification_type,";
             ++parametersCount;
         }
         if(dirtyFlag_[5])

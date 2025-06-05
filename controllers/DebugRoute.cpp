@@ -395,3 +395,9 @@ void DbInfoController::HandleDbInfoOptions(const drogon::HttpRequestPtr& req,
     resp->setStatusCode(drogon::k204NoContent);
     callback(resp);
 }
+
+void DbInfoController::HandleGetFriendships(const drogon::HttpRequestPtr& req,
+    std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    callback(drogon::HttpResponse::newHttpJsonResponse(DatabaseManager::GetRelationships()));
+}

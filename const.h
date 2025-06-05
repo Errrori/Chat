@@ -36,9 +36,10 @@ namespace DataBase
 		"create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
 		"update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"  
 		"FOREIGN KEY (first_uid) REFERENCES users(uid) ON DELETE CASCADE,"   
-		"FOREIGN KEY (second_uid) REFERENCES users(uid) ON DELETE CASCADE"   
+		"FOREIGN KEY (second_uid) REFERENCES users(uid) ON DELETE CASCADE,"
+		"UNIQUE (first_uid,second_uid)"
 		");";  
-	//STATUS : pending/block/friend
+	//STATUS : pending/blocking/friend/refuse/
 	//situation Pending : first_uid is the uid of actor
 	//situation Friend : first_uid is the smaller one among two users
 
@@ -67,17 +68,16 @@ namespace DataBase
 	const static std::string NOTIFICATION_TABLE = "CREATE TABLE IF NOT EXISTS notifications ("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"notification_id TEXT NOT NULL UNIQUE,"
+		"notification_type TEXT NOT NULL,"
 		"actor_uid TEXT NOT NULL,"
 		"reactor_uid TEXT NOT NULL,"
-		"action_type TEXT NOT NULL,"
-		"content TEXT NOT NULL,"
-		"status TEXT,"
+		"content TEXT,"
+		"is_read BOOLEAN DEFAULT FALSE,"
 		"create_time DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY (actor_uid) REFERENCES users(uid) ON DELETE CASCADE,"
 		"FOREIGN KEY (reactor_uid) REFERENCES users(uid) ON DELETE CASCADE,"
-		"UNIQUE (actor_uid, reactor_uid,action_type)"
+		"UNIQUE (actor_uid, reactor_uid,notification_type)"
 		");";
-
 
 	const static std::string CREATE_INDEX_1 = "CREATE INDEX IF NOT EXISTS idx_chat_records_sender_receiver ON chat_records(sender_uid, receiver_uid);";
 	const static std::string CREATE_INDEX_2 = "CREATE INDEX IF NOT EXISTS idx_chat_records_receiver_sender ON chat_records(receiver_uid, sender_uid);";

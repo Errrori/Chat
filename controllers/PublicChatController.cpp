@@ -4,7 +4,7 @@
 #include "../manager/DatabaseManager.h"
 
 //Message types:
-//Image,Text,ErrorMessage,Notice
+//Image,Text,ErrorMessage,Relationship
 
 void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn, std::string&& msg,
                                             const drogon::WebSocketMessageType& type)
@@ -102,7 +102,7 @@ void PublicChatController::handleNewConnection(const drogon::HttpRequestPtr& req
     Json::Value data;
     data["sender_name"] = info.username;
     data["sender_uid"] = info.uid;
-    data["message_type"] = "Notice";
+    data["message_type"] = "Relationship";
     data["forward"] = true;
     ConnectionManager::GetInstance().BroadcastMsg(info.uid,data);
 }

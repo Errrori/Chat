@@ -298,6 +298,121 @@ namespace Utils {
             return error_json;
         }
     }
+
+    namespace Relationship
+    {
+		std::string TypeToString(StatusType type)
+    {
+    	switch (type)
+    	{
+			#define X(EnumName, StringName) case StatusType::EnumName: return StringName;
+    			RELATIONSHIP_STATUS_MEMBERS
+			#undef X
+    		default: return "Unknown";
+    	}
+    }
+
+    StatusType StringToType(const std::string& type_str)
+    {
+		#define X(EnumName, StringName) if (type_str == StringName) return StatusType::EnumName;
+    		RELATIONSHIP_STATUS_MEMBERS
+		#undef X
+		return StatusType::Unknown;
+	}
+
+    bool IsValid(const std::string& type_str)
+	{
+	  	#define X(EnumName, StringName) if (type_str == StringName) return true;
+          RELATIONSHIP_STATUS_MEMBERS
+	  	#undef X
+    	return false;
+	}    
+    }
+
+    namespace UserAction
+    {
+        namespace RelationAction
+        {
+	         std::string TypeToString(RelationshipActionType type)
+             {
+                 switch (type)
+                 {
+	         		#define X(EnumName, StringName) case RelationshipActionType::EnumName: return StringName;
+	         			RELATIONSHIP_ACTION_TYPE
+	         		#undef X
+             		default: return "Unknown";
+                 }
+             }
+
+            RelationshipActionType StringToType(const std::string& type_str)
+            {
+                #define X(EnumName, StringName) if (type_str == StringName) return RelationshipActionType::EnumName;
+	        		RELATIONSHIP_ACTION_TYPE
+	        	#undef X
+	        	return RelationshipActionType::Unknown;
+            }
+
+            bool IsValid(const std::string& type_str)
+            {
+                #define X(EnumName, StringName) if (type_str == StringName) return true;
+	        		RELATIONSHIP_ACTION_TYPE
+	          	#undef X
+            	return false;
+            }
+
+            std::optional<Relationship::StatusType> ToStatus(RelationshipActionType action_type)
+            {
+	            switch (action_type)
+	            {
+	            case RelationshipActionType::Unfriend:
+	            case RelationshipActionType::RequestReject:
+	            case RelationshipActionType::UnblockUser:
+                    return std::nullopt;
+	            case RelationshipActionType::BlockUser:
+                    return Relationship::StatusType::Blocking;
+	            case RelationshipActionType::FriendRequest:
+                    return Relationship::StatusType::Pending;
+	            case RelationshipActionType::RequestAccept:
+                    return Relationship::StatusType::Friend;
+	            default:
+                    return Relationship::StatusType::Unknown;
+	            }
+            }
+        }
+    }
+
+    namespace Notification
+    {
+	        std::string TypeToString(NotificationSource type)
+    {
+        switch (type)
+    	{
+			#define X(EnumName, StringName) case NotificationSource::EnumName: return StringName;
+				NOTIFICATION_SOURCE
+			#undef X
+    		default: return "Unknown";
+    	}
+    }
+
+    NotificationSource StringToType(const std::string& type_str)
+    {
+        #define X(EnumName, StringName) if (type_str == StringName) return NotificationSource::EnumName;
+			NOTIFICATION_SOURCE
+		#undef X
+		return NotificationSource::Unknown;
+    }
+
+    bool IsValid(const std::string& type_str)
+    {
+        #define X(EnumName, StringName) if (type_str == StringName) return true;
+			NOTIFICATION_SOURCE
+	  	#undef X
+    	return false;
+    }
+    }
+
+
+
     // 统一错误响应处理函数实现
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message)
     {

@@ -7,7 +7,7 @@ void CorsMiddleware::invoke(const drogon::HttpRequestPtr &req,
                             drogon::MiddlewareCallback &&mcb)
 {
     // 在方法入口处添加日志
-    LOG_DEBUG << "CorsMiddleware: Invoked for path [" << req->getPath() << "] with method [" << req->getMethodString() << "]";
+    //LOG_DEBUG << "CorsMiddleware: Invoked for path [" << req->getPath() << "] with method [" << req->getMethodString() << "]";
 
     // 处理 OPTIONS 预检请求
     if (req->getMethod() == drogon::HttpMethod::Options)
@@ -29,7 +29,7 @@ void CorsMiddleware::invoke(const drogon::HttpRequestPtr &req,
     // 捕获请求路径用于日志
     auto originalPath = req->getPath(); 
     nextCb([mcb = std::move(mcb), originalPath](const drogon::HttpResponsePtr &resp) {
-        LOG_DEBUG << "CorsMiddleware: Post-processing for path [" << originalPath << "]";
+        //LOG_DEBUG << "CorsMiddleware: Post-processing for path [" << originalPath << "]";
         // 内层处理完成后，为响应添加 CORS 头部
         if (resp) {
              resp->addHeader("Access-Control-Allow-Origin", "*"); // 允许所有来源

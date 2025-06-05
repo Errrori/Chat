@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "NotificationManager.h"
+#include "DTOs/NotificationDTO.h"
 
 NotificationManager& NotificationManager::GetInstance()
 {
@@ -8,11 +9,9 @@ NotificationManager& NotificationManager::GetInstance()
 }
 
 NotificationManager::NotificationManager(ConnectionManager& connection_manager)
-	:_connection_manager(connection_manager),_is_processing(false)
-{
-}
+	:_connection_manager(connection_manager),_is_processing(false) {}
 
-void NotificationManager::CreateNotification(const Json::Value& msg)
+void NotificationManager::PushNotification(const NotificationDTO& msg)
 {
 	//check if target user is online,
 	//However, regardless of whether the user is online or not, the relationship table should be written
@@ -29,7 +28,7 @@ void NotificationManager::ProcessNotification()
 {
 	while (true)
 	{
-		Json::Value notice;
+		NotificationDTO dto;
 		{
 			std::lock_guard lock(_notice_mtx);
 			if (_notice_queue.empty())
@@ -37,48 +36,21 @@ void NotificationManager::ProcessNotification()
 				_is_processing = false;
 				return;
 			}
-			notice = _notice_queue.front();
+			dto = _notice_queue.front();
 			_notice_queue.pop();
 		}
-		//先要写入关系表（可能有记录已经存在的情况）
-		auto notice_type = Utils::Notice::StringToType(notice["action_type"].asString());
-		std::string receiver_uid;
-		switch (notice_type)
-		{
-		case Utils::Notice::ActionType::BlockUser:
-			continue;
-		case Utils::Notice::ActionType::UnblockUser:
-			continue;
-		case Utils::Notice::ActionType::FriendRequest:
-			DatabaseManager::WriteFriendRequest(notice);
-			receiver_uid = notice["receiver_uid"].asString();
-			break;
-		case Utils::Notice::ActionType::GroupRequest:
-			//通过目标id也就是群聊id找到群组管理员/群主,向他们发送消息
-			break;
-		case Utils::Notice::ActionType::FriendResponse:
-			receiver_uid = notice["receiver_uid"].asString();
-			break;
-		case Utils::Notice::ActionType::GroupResponse:
-			//通过目标id也就是群聊id找到群组管理员/群主,向他们发送消息
-			break;
-		case Utils::Notice::ActionType::Unfriend:
-			continue;
-		default:
-			LOG_ERROR << "Unknown action type";
-			continue;
-		}
+		
 		//查看目标用户是否在线,不考虑群聊
 
-		auto conn = _connection_manager.GetConnection(notice["receiver_uid"].asString());
+		auto conn = _connection_manager.GetConnection(dto.GetReceiverUid());
 		if (!conn)
 		{
-		//目标用户不在线，把需要写入通知表的写入(屏蔽用户或者解除屏蔽，解除好友关系不需要通知)
-			DatabaseManager::PushChatRecords(notice);
+			//目标用户不在线，把需要写入通知表的写入
+			DatabaseManager::WriteNotification(dto);
 			continue;
 		}
+
 		//目标用户在线，向该用户发送通知
-		notice["chat_type"] = "System";
-		conn->sendJson(notice);
+		conn->sendJson(dto.TransToJsonMsg());
 	}
 }

@@ -81,6 +81,18 @@
     <ClCompile Include="manager\NotificationManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="RelationshipService.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DTOs\MessageDTO.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DTOs\NotificationDTO.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DTOs\RelationshipDTO.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="models\Notifications.cc">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -150,6 +162,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="manager\NotificationManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RelationshipService.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DTOs\MessageDTO.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DTOs\NotificationDTO.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DTOs\RelationshipDTO.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="models\Notifications.h">

@@ -17,32 +17,50 @@ namespace Utils
     namespace Type
     {
         #define CONTENT_TYPE_MEMBERS \
-        			X(Text, "Text") \
-        			X(Image, "Image") \
-                    X(File, "File") \
-                    X(Video, "Video") \
-                    X(Audio, "Audio") \
-                    X(Notice, "Notice") \
-                    X(ErrorMsg, "ErrorMsg") \
-                    X(Unknown, "Unknown")
+        	X(Text, "Text") \
+        	X(Image, "Image") \
+            X(File, "File") \
+            X(Video, "Video") \
+            X(Audio, "Audio") \
+            X(ErrorMsg, "ErrorMsg") \
+            X(Unknown, "Unknown")
         
         #define CHAT_TYPE_MEMBERS \
-                    X(Group, "Group") \
-                    X(Private, "Private") \
-                    X(System, "System") \
-                    X(Public, "Public") \
-                    X(Unknown, "Unknown")
+            X(Group, "Group") \
+            X(Private, "Private") \
+            X(System, "System") \
+            X(Public, "Public") \
+            X(Unknown, "Unknown")
         
-        #define ACTION_TYPE_MEMBERS \
-        			X(FriendRequest,"FriendRequest")\
-        			X(FriendResponse,"FriendResponse")\
-        			X(GroupRequest,"GroupRequest")\
-        			X(GroupResponse,"GroupResponse")\
-        			X(BlockUser,"BlockUser")\
-        			X(UnblockUser,"UnblockUser")\
-        			X(Unfriend,"Unfriend")\
-                    X(Unknown, "Unknown")
-    }
+        #define RELATIONSHIP_ACTION_TYPE \
+       		X(FriendRequest,"FriendRequest")\
+            X(RequestAccept,"RequestAccept")\
+       		X(RequestReject,"RequestReject")\
+       		X(BlockUser,"BlockUser")\
+       		X(UnblockUser,"UnblockUser")\
+       		X(Unfriend,"Unfriend")\
+            X(Unknown, "Unknown")
+
+		#define RELATIONSHIP_STATUS_MEMBERS \
+			X(Pending,"Pending")\
+			X(Friend,"Friend")\
+			X(Blocking,"Blocking")\
+			X(Unknown, "Unknown")
+
+		#define GROUP_ACTION_TYPE \
+            X(GroupRequest,"GroupRequest")\
+			X(GroupAccept,"GroupAccept")
+        //...
+		//待定，还没写完
+
+
+        #define NOTIFICATION_SOURCE \
+            X(System,"System")\
+            X(Relationship,"Relationship")\
+            X(Group,"Group")\
+        	X(Unknown, "Unknown")
+
+    	}
 
 	namespace Authentication
 	{
@@ -109,14 +127,14 @@ namespace Utils
                 File,
                 Video,
                 Audio,
-                Notice,
+                Relationship,
                 ErrorMsg,
                 Unknown
             };
 
             std::string TypeToString(ContentType type);
             ContentType StringToType(const std::string& type_str);
-            bool IsValid(const std::string& type_str);*/
+            bool IsRelationshipActionValid(const std::string& type_str);*/
 
             enum class ContentType : std::uint8_t {
 				#define X(EnumName, StringName) EnumName,
@@ -153,17 +171,6 @@ namespace Utils
 
         namespace Chat
 		{
-            /*enum class ChatType :std::uint8_t
-            {
-                Group,
-                Private,
-                System,
-                Public,
-                Unknown
-            };
-            std::string TypeToString(ChatType type);
-            ChatType StringToType(const std::string& type_str);
-            bool IsValid(const std::string& type_str);*/
             enum class ChatType : std::uint8_t {
 				#define X(EnumName, StringName) EnumName,
             	CHAT_TYPE_MEMBERS
@@ -198,42 +205,72 @@ namespace Utils
         }
 	}
 
-    namespace Notice
-	{
-        enum class ActionType : std::uint8_t {
+    namespace Relationship
+    {
+	    enum class StatusType : std::uint8_t {
 				#define X(EnumName, StringName) EnumName,
-            		ACTION_TYPE_MEMBERS
+            		RELATIONSHIP_STATUS_MEMBERS
 				#undef X
 			};
 
-    	inline std::string TypeToString(ActionType type) {
-    		switch (type)
-				{
-					#define X(EnumName, StringName) case ActionType::EnumName: return StringName;
-					ACTION_TYPE_MEMBERS
+        std::string TypeToString(StatusType type);
 
-					#undef X
-					default: return "Unknown";
-				}
-			}
+        StatusType StringToType(const std::string& type_str);
 
-            inline ActionType StringToType(const std::string& type_str)
-        	{
-				#define X(EnumName, StringName) if (type_str == StringName) return ActionType::EnumName;
-                ACTION_TYPE_MEMBERS
+        bool IsValid(const std::string& type_str);
+
+    }
+
+
+    namespace UserAction
+    {
+        namespace RelationAction
+        {
+        	enum class RelationshipActionType : std::uint8_t {
+				#define X(EnumName, StringName) EnumName,
+            		RELATIONSHIP_ACTION_TYPE
 				#undef X
-				return ActionType::Unknown;
-			}
+			};
 
-            inline bool IsValid(const std::string& type_str)
-		    {
-		    	#define X(EnumName, StringName) if (type_str == StringName) return true;
-                ACTION_TYPE_MEMBERS
+            std::string TypeToString(RelationshipActionType type);
 
-		    	#undef X
-                return false;
-            }
-	}
+            RelationshipActionType StringToType(const std::string& type_str);
+
+            bool IsValid(const std::string& type_str);
+
+            std::optional<Relationship::StatusType> ToStatus(RelationshipActionType action_type);
+        }
+
+        namespace GroupAction
+    	{
+        	enum class GroupActionType : std::uint8_t {
+				#define X(EnumName, StringName) EnumName,
+					GROUP_ACTION_TYPE
+				#undef X
+			};
+
+			std::string TypeToString(GroupActionType type);
+
+			GroupActionType StringToType(const std::string& type_str);
+
+        	bool IsGroupActionValid(const std::string& type_str);
+        }
+    }
+
+    namespace Notification
+    {
+	    enum class NotificationSource : std::uint8_t {
+				#define X(EnumName, StringName) EnumName,
+            		NOTIFICATION_SOURCE
+				#undef X
+			};
+
+        std::string TypeToString(NotificationSource type);
+
+        NotificationSource StringToType(const std::string& type_str);
+
+        bool IsValid(const std::string& type_str);
+    }
 
     // 统一错误响应处理函数
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message);
