@@ -11,14 +11,16 @@ SendManager& SendManager::GetInstance()
 
 void SendManager::PushMessage(const Json::Value& msg, const drogon::WebSocketConnectionPtr& conn)
 {
-	std::lock_guard lock(_msg_mtx);
-	_msg_queue.emplace(conn, msg);
-	if (_is_processing)
 	{
-		return;
+		std::lock_guard lock(_msg_mtx);
+		_msg_queue.emplace(conn, msg);
+		if (_is_processing)
+		{
+			return;
+		}
+		_is_processing = true;
 	}
 	ProcessMessage();
-	_is_processing = true;
 }
 
 void SendManager::ProcessMessage()
@@ -26,27 +28,43 @@ void SendManager::ProcessMessage()
 	drogon::app().getIOLoop(drogon::app().getCurrentThreadIndex())->
 	queueInLoop([this]()
 	{
-		while (true)
+		try
 		{
-			MsgPair msg_pair;
+			unsigned short message_send = 0;
+			while (message_send < MAX_MESSAGE_SEND_ONCE)
 			{
-				std::lock_guard lock(_msg_mtx);
-				if (_msg_queue.empty()) {
-					_is_processing = false;
-					return;
+				MsgPair msg_pair;
+				{
+					std::lock_guard lock(_msg_mtx);
+					if (_msg_queue.empty()) {
+						_is_processing = false;
+						return;
+					}
+					msg_pair = _msg_queue.front();
+					_msg_queue.pop();
 				}
-				msg_pair = _msg_queue.front();
-				_msg_queue.pop();
+
+				std::string error;
+				if (!ValidateMsg(msg_pair, error))
+				{
+					LOG_INFO << "error to validate message: " << error;
+					msg_pair.first->sendJson(Message::GenerateErrorMsg(error));
+					continue;
+				}
+				auto send_pair = BuildDeliverMsg(msg_pair);
+				DeliverMessage(send_pair);
+				message_send++;
 			}
-			std::string error;
-			if (!ValidateMsg(msg_pair, error))
-			{
-				LOG_INFO << "error to validate message: "<<error;
-				msg_pair.first->sendJson(Message::GenerateErrorMsg(error));
-				continue;
-			}
-			auto send_pair = BuildDeliverMsg(msg_pair);
-			DeliverMessage(send_pair);
+			drogon::app().getIOLoop(drogon::app().getCurrentThreadIndex())
+				->runAfter(MESSAGE_SEND_WAIT_TIME, [this]()
+					{
+						ProcessMessage();
+					});
+		}
+		catch (const std::exception& e)
+		{
+			_is_processing = false;
+			LOG_ERROR << "exception process message: " << e.what();
 		}
 	});
 }

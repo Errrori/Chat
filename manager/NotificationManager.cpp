@@ -15,42 +15,61 @@ void NotificationManager::PushNotification(const NotificationDTO& msg)
 {
 	//check if target user is online,
 	//However, regardless of whether the user is online or not, the relationship table should be written
-	std::lock_guard lock(_notice_mtx);
-	_notice_queue.emplace(msg);
-	if (_is_processing)
 	{
-		return;
+		std::lock_guard lock(_notice_mtx);
+		_notice_queue.emplace(msg);
+		if (_is_processing)
+		{
+			return;
+		}
+		_is_processing = true;
 	}
 	ProcessNotification();
 }
 
 void NotificationManager::ProcessNotification()
 {
-	while (true)
-	{
-		NotificationDTO dto;
-		{
-			std::lock_guard lock(_notice_mtx);
-			if (_notice_queue.empty())
+	drogon::app().getIOLoop(drogon::app().getCurrentThreadIndex())
+		->queueInLoop([this]()
 			{
-				_is_processing = false;
-				return;
+			try
+			{
+				unsigned short message_send = 0;
+				while (message_send < MAX_MESSAGE_SEND_ONCE)
+				{
+					NotificationDTO dto;
+					{
+						std::lock_guard lock(_notice_mtx);
+						if (_notice_queue.empty())
+						{
+							_is_processing = false;
+							return;
+						}
+						dto = _notice_queue.front();
+						_notice_queue.pop();
+					}
+					auto conn = _connection_manager.GetConnection(dto.GetReceiverUid());
+					if (!conn)
+					{
+						//目标用户不在线，把需要写入通知表的写入
+						DatabaseManager::WriteNotification(dto);
+					}
+					else
+					{
+						//目标用户在线，向该用户发送通知
+						conn->sendJson(dto.TransToJsonMsg());
+					}
+				}
+				drogon::app().getIOLoop(drogon::app().getCurrentThreadIndex())
+					->runAfter(MESSAGE_SEND_WAIT_TIME, [this]()
+						{
+							ProcessNotification();
+						});
 			}
-			dto = _notice_queue.front();
-			_notice_queue.pop();
-		}
-		
-		//查看目标用户是否在线,不考虑群聊
-
-		auto conn = _connection_manager.GetConnection(dto.GetReceiverUid());
-		if (!conn)
-		{
-			//目标用户不在线，把需要写入通知表的写入
-			DatabaseManager::WriteNotification(dto);
-			continue;
-		}
-
-		//目标用户在线，向该用户发送通知
-		conn->sendJson(dto.TransToJsonMsg());
-	}
+			catch (const std::exception& e)
+			{
+				LOG_ERROR << "exception process notifications: " << e.what();
+				_is_processing = false;
+			}
+			});
 }

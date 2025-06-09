@@ -1,3 +1,4 @@
+client
 jwt_secret.json
 database.db
 config.yaml

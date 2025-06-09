@@ -46,11 +46,11 @@ class Notifications
     {
         static const std::string _id;
         static const std::string _notification_id;
-        static const std::string _actor_uid;
-        static const std::string _reactor_uid;
         static const std::string _notification_type;
+        static const std::string _sender_uid;
+        static const std::string _receiver_uid;
         static const std::string _content;
-        static const std::string _status;
+        static const std::string _is_read;
         static const std::string _create_time;
     };
 
@@ -121,24 +121,6 @@ class Notifications
     void setNotificationId(const std::string &pNotificationId) noexcept;
     void setNotificationId(std::string &&pNotificationId) noexcept;
 
-    /**  For column actor_uid  */
-    ///Get the value of the column actor_uid, returns the default value if the column is null
-    const std::string &getValueOfActorUid() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getActorUid() const noexcept;
-    ///Set the value of the column actor_uid
-    void setActorUid(const std::string &pActorUid) noexcept;
-    void setActorUid(std::string &&pActorUid) noexcept;
-
-    /**  For column reactor_uid  */
-    ///Get the value of the column reactor_uid, returns the default value if the column is null
-    const std::string &getValueOfReactorUid() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getReactorUid() const noexcept;
-    ///Set the value of the column reactor_uid
-    void setReactorUid(const std::string &pReactorUid) noexcept;
-    void setReactorUid(std::string &&pReactorUid) noexcept;
-
     /**  For column notification_type  */
     ///Get the value of the column notification_type, returns the default value if the column is null
     const std::string &getValueOfNotificationType() const noexcept;
@@ -148,6 +130,24 @@ class Notifications
     void setNotificationType(const std::string &pNotificationType) noexcept;
     void setNotificationType(std::string &&pNotificationType) noexcept;
 
+    /**  For column sender_uid  */
+    ///Get the value of the column sender_uid, returns the default value if the column is null
+    const std::string &getValueOfSenderUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getSenderUid() const noexcept;
+    ///Set the value of the column sender_uid
+    void setSenderUid(const std::string &pSenderUid) noexcept;
+    void setSenderUid(std::string &&pSenderUid) noexcept;
+
+    /**  For column receiver_uid  */
+    ///Get the value of the column receiver_uid, returns the default value if the column is null
+    const std::string &getValueOfReceiverUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getReceiverUid() const noexcept;
+    ///Set the value of the column receiver_uid
+    void setReceiverUid(const std::string &pReceiverUid) noexcept;
+    void setReceiverUid(std::string &&pReceiverUid) noexcept;
+
     /**  For column content  */
     ///Get the value of the column content, returns the default value if the column is null
     const std::string &getValueOfContent() const noexcept;
@@ -156,16 +156,17 @@ class Notifications
     ///Set the value of the column content
     void setContent(const std::string &pContent) noexcept;
     void setContent(std::string &&pContent) noexcept;
+    void setContentToNull() noexcept;
 
-    /**  For column status  */
-    ///Get the value of the column status, returns the default value if the column is null
-    const std::string &getValueOfStatus() const noexcept;
+    /**  For column is_read  */
+    ///Get the value of the column is_read, returns the default value if the column is null
+    const std::string &getValueOfIsRead() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getStatus() const noexcept;
-    ///Set the value of the column status
-    void setStatus(const std::string &pStatus) noexcept;
-    void setStatus(std::string &&pStatus) noexcept;
-    void setStatusToNull() noexcept;
+    const std::shared_ptr<std::string> &getIsRead() const noexcept;
+    ///Set the value of the column is_read
+    void setIsRead(const std::string &pIsRead) noexcept;
+    void setIsRead(std::string &&pIsRead) noexcept;
+    void setIsReadToNull() noexcept;
 
     /**  For column create_time  */
     ///Get the value of the column create_time, returns the default value if the column is null
@@ -201,11 +202,11 @@ class Notifications
     void updateId(const uint64_t id);
     std::shared_ptr<int64_t> id_;
     std::shared_ptr<std::string> notificationId_;
-    std::shared_ptr<std::string> actorUid_;
-    std::shared_ptr<std::string> reactorUid_;
     std::shared_ptr<std::string> notificationType_;
+    std::shared_ptr<std::string> senderUid_;
+    std::shared_ptr<std::string> receiverUid_;
     std::shared_ptr<std::string> content_;
-    std::shared_ptr<std::string> status_;
+    std::shared_ptr<std::string> isRead_;
     std::shared_ptr<std::string> createTime_;
     struct MetaData
     {
@@ -243,17 +244,17 @@ class Notifications
         }
         if(dirtyFlag_[2])
         {
-            sql += "actor_uid,";
+            sql += "notification_type,";
             ++parametersCount;
         }
         if(dirtyFlag_[3])
         {
-            sql += "reactor_uid,";
+            sql += "sender_uid,";
             ++parametersCount;
         }
         if(dirtyFlag_[4])
         {
-            sql += "notification_type,";
+            sql += "receiver_uid,";
             ++parametersCount;
         }
         if(dirtyFlag_[5])
@@ -263,8 +264,12 @@ class Notifications
         }
         if(dirtyFlag_[6])
         {
-            sql += "status,";
+            sql += "is_read,";
             ++parametersCount;
+        }
+        if(!dirtyFlag_[6])
+        {
+            needSelection=true;
         }
         if(dirtyFlag_[7])
         {

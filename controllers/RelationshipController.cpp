@@ -73,14 +73,12 @@ void RelationshipController::HandleRequestAccept(const drogon::HttpRequestPtr& r
 		return;
 	}
 
-	//����Ϸ���
 	if (!RelationshipService::IsPending(dto.GetReactorUid(), dto.GetActorUid()))
 	{
 		callback(Utils::CreateErrorResponse(400, 400, "can not accept friend request"));
 		return;
 	}
 
-	//�Ϸ���д���ϵ��
 	std::string msg;
 	if (!DatabaseManager::WriteRelationship(dto, msg))
 	{
@@ -88,7 +86,14 @@ void RelationshipController::HandleRequestAccept(const drogon::HttpRequestPtr& r
 		callback(Utils::CreateErrorResponse(400, 400, "can not write into relationship table"));
 		return;
 	}
-	//Ӧ�ý���֪ͨ
+
+	const auto& notification_dto = NotificationDTO::BuildFromDTO(dto, NotificationSource::Relationship);
+	if (!notification_dto.has_value())
+	{
+		callback(Utils::CreateErrorResponse(400, 400, "can not build notification from relationship DTO "));
+		return;
+	}
+	NotificationManager::GetInstance().PushNotification(notification_dto.value());
 
 
 	Json::Value json_resp;

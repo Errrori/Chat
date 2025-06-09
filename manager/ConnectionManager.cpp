@@ -43,6 +43,8 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 
 	_conn_map.emplace(uid, conn);
 
+	LOG_INFO << "Add Connection: " << uid;
+
 	return AddUIdToNameRef(uid, info.username);
 }
 
@@ -57,6 +59,8 @@ bool ConnectionManager::RemoveConnection(const std::string& uid)
 	}
 
 	_conn_map.erase(uid);
+
+	LOG_INFO << "Remove Connection: " << uid;
 	return true;
 }
 
@@ -65,6 +69,7 @@ bool ConnectionManager::RemoveConnection(const drogon::WebSocketConnectionPtr& c
 	auto info_ptr = conn->getContext<UserConnectionInfo>();
 	if (info_ptr)
 	{
+		LOG_INFO << "Remove Connection: " << info_ptr->uid;
 		return RemoveConnection(info_ptr->uid);
 	}
 	LOG_ERROR << "Error to get ConnectionPtr context";

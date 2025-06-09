@@ -1,4 +1,4 @@
-#pragma 
+#pragma once
 
 #include <drogon/HttpMiddleware.h>
 

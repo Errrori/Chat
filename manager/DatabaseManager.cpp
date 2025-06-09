@@ -196,7 +196,10 @@ bool DatabaseManager::UpsertRelationship
 
 	Mapper<Relationships> mapper(GetDbClient());
 	using Type = Utils::Relationship::StatusType;
-	bool is_success = false;
+
+	std::promise<bool> promise;
+	std::future<bool> result = promise.get_future();
+
 	switch (status)
 	{
 	case Type::Unknown:
@@ -209,18 +212,29 @@ bool DatabaseManager::UpsertRelationship
 		relationship.setFirstUid(first_uid);
 		relationship.setSecondUid(second_uid);
 		relationship.setStatus(Utils::Relationship::TypeToString(status));
-		mapper.insert(relationship,
-			[&is_success](const Relationships& relationship)
-			{
-				is_success = true;
-				LOG_INFO << "success insert a relationship: " << relationship.getValueOfStatus();
-			},
-			[&error_msg](const DrogonDbException& e)
-			{
-				LOG_ERROR<<"exception: "<<e.base().what();
-				error_msg = "Exception insert";
-				error_msg.append(e.base().what());
-			});
+		try
+		{
+			const auto& future = mapper.insertFuture(relationship).get();
+			promise.set_value(true);
+		}
+		catch (const std::exception& e)
+		{
+			promise.set_value(false);
+			LOG_ERROR << "exception insert relationship: " << e.what();
+		}
+
+		//mapper.insert(relationship,
+		//	[&promise](const Relationships& relationship)
+		//	{
+		//		promise.set_value(true);
+		//		LOG_INFO << "success insert a relationship: " << relationship.getValueOfStatus();
+		//	},
+		//	[&error_msg](const DrogonDbException& e)
+		//	{
+		//		LOG_ERROR<<"exception: "<<e.base().what();
+		//		error_msg = "Exception insert";
+		//		error_msg.append(e.base().what());
+		//	});
 		break;
 	}
 	case Type::Friend:
@@ -235,10 +249,18 @@ bool DatabaseManager::UpsertRelationship
 		Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, first_uid)
 			&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, second_uid));
 		using Cols = Relationships::Cols;
-		mapper.limit(1).updateBy({ Cols::_first_uid,Cols::_second_uid,Cols::_status },
-			[&is_success](const size_t)
+		bool is_success = mapper.limit(1).findBy(criteria).empty();
+
+			if (is_success)
 			{
-				is_success = true;
+				LOG_ERROR << "can not find record";
+				return false;
+			}
+
+		mapper.limit(1).updateBy({ Cols::_first_uid,Cols::_second_uid,Cols::_status },
+			[&promise](const size_t)
+			{
+				promise.set_value(true);
 			},
 			[&error_msg](const DrogonDbException& e)
 			{
@@ -250,7 +272,7 @@ bool DatabaseManager::UpsertRelationship
 		break;
 	}
 	}
-	return is_success;
+	return result.get();
 }
 
 bool DatabaseManager::WriteNotification(const NotificationDTO& dto)
@@ -604,11 +626,25 @@ Json::Value DatabaseManager::GetRelationships()
 {
 	Mapper<Relationships> mapper(GetDbClient());
 	Json::Value data(Json::arrayValue);
-	auto relationships = mapper.findAll();
+	const auto& relationships = mapper.findAll();
 
-	for (auto& relationship:relationships)
+	for (const auto& relationship:relationships)
 	{
 		data.append(relationship.toJson());
+	}
+
+	return data;
+}
+
+Json::Value DatabaseManager::GetNotifications()
+{
+	Mapper<Notifications> mapper(GetDbClient());
+	Json::Value data(Json::arrayValue);
+	const auto& notices = mapper.findAll();
+
+	for (const auto& notice : notices)
+	{
+		data.append(notice.toJson());
 	}
 
 	return data;
@@ -651,7 +687,7 @@ bool DatabaseManager::GetUserInfoByAccount(const std::string& account,Json::Valu
 bool DatabaseManager::GetUserNotification(const std::string& uid,Json::Value& data)
 {
 	Mapper<Notifications> mapper(GetDbClient());
-	Criteria criteria(Notifications::Cols::_reactor_uid, uid);
+	Criteria criteria(Notifications::Cols::_receiver_uid, uid);
 	const auto& results = mapper.findBy(criteria);
 	Json::Value notification_data(Json::arrayValue);
 	for (const auto& result : results)

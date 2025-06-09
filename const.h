@@ -69,14 +69,14 @@ namespace DataBase
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"notification_id TEXT NOT NULL UNIQUE,"
 		"notification_type TEXT NOT NULL,"
-		"actor_uid TEXT NOT NULL,"
-		"reactor_uid TEXT NOT NULL,"
+		"sender_uid TEXT NOT NULL,"
+		"receiver_uid TEXT NOT NULL,"
 		"content TEXT,"
 		"is_read BOOLEAN DEFAULT FALSE,"
 		"create_time DEFAULT CURRENT_TIMESTAMP,"
-		"FOREIGN KEY (actor_uid) REFERENCES users(uid) ON DELETE CASCADE,"
-		"FOREIGN KEY (reactor_uid) REFERENCES users(uid) ON DELETE CASCADE,"
-		"UNIQUE (actor_uid, reactor_uid,notification_type)"
+		"FOREIGN KEY (sender_uid) REFERENCES users(uid) ON DELETE CASCADE,"
+		"FOREIGN KEY (receiver_uid) REFERENCES users(uid) ON DELETE CASCADE,"
+		"UNIQUE (sender_uid, receiver_uid,notification_type)"
 		");";
 
 	const static std::string CREATE_INDEX_1 = "CREATE INDEX IF NOT EXISTS idx_chat_records_sender_receiver ON chat_records(sender_uid, receiver_uid);";
@@ -103,5 +103,9 @@ namespace DeFaultFilePath
 	const std::string UPLOAD_MEDIA_DIR = "media";
 	const std::string UPLOAD_DOCUMENT_DIR = "document";
 }
+
+
+static constexpr unsigned short MAX_MESSAGE_SEND_ONCE = 10;
+static constexpr std::chrono::milliseconds MESSAGE_SEND_WAIT_TIME = std::chrono::milliseconds(1);
 
 #endif

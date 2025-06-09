@@ -32,6 +32,7 @@ public:
 	static Json::Value GetChatRecords(int64_t existing_id,unsigned num = DataBase::DEFAULT_RECORDS_QUERY_LEN);
 	static Json::Value GetAllRecords(unsigned num = DataBase::DEFAULT_RECORDS_QUERY_LEN);
 	static Json::Value GetRelationships();
+	static Json::Value GetNotifications();
 	static bool GetUserInfoByUid(const std::string& uid, Json::Value& data);
 	static bool GetUserInfoByAccount(const std::string& account, Json::Value& data);
 	static bool GetUserNotification(const std::string& uid,Json::Value& data);

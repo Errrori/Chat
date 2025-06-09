@@ -363,6 +363,12 @@ void DbInfoController::GetAllRecords(const drogon::HttpRequestPtr& req,
     callback(resp);
 }
 
+void DbInfoController::GetAllNotifications(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    callback(drogon::HttpResponse::newHttpJsonResponse(DatabaseManager::GetNotifications()));
+}
+
 void DbInfoController::ModifyUserAvatar(const drogon::HttpRequestPtr& req,
                                         std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {

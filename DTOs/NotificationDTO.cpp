@@ -35,8 +35,8 @@ std::optional<Notifications> NotificationDTO::ToNotifications() const
 	Notifications notification;
 	if (GetNotificationType().has_value())
 		notification.setNotificationType(notification_type);
-	notification.setActorUid(sender_uid);
-	notification.setReactorUid(receiver_uid);
+	notification.setSenderUid(sender_uid);
+	notification.setReceiverUid(receiver_uid);
 	notification.setNotificationId(notification_id);
 	if (content.has_value()) notification.setContent(content.value());
 	//notification.setSource(TypeToString(source));
@@ -58,6 +58,7 @@ bool NotificationDTO::SetNotificationType(const std::string& type)
 	switch (source)
 	{
 	case NotificationSource::Unknown:
+		LOG_ERROR << "can not set Unknown type";
 		return false;
 	case NotificationSource::Group:
 		break;
@@ -65,7 +66,10 @@ bool NotificationDTO::SetNotificationType(const std::string& type)
 		break;
 	case NotificationSource::Relationship:
 		if (!Utils::UserAction::RelationAction::IsValid(type))
+		{
+			LOG_ERROR << "invalid relationship type";
 			return false;
+		}
 		notification_type = type;
 		return true;
 	}

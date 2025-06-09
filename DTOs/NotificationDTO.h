@@ -49,8 +49,11 @@ std::optional<NotificationDTO> NotificationDTO::BuildFromDTO(const T& dto, Utils
 		break;
 	case NotificationSource::Relationship:
 		notification_dto.SetSource(source);
-		if (notification_dto.SetNotificationType(Utils::UserAction::RelationAction::TypeToString(dto.GetActionType())))
+		if (!notification_dto.SetNotificationType(Utils::UserAction::RelationAction::TypeToString(dto.GetActionType())))
+		{
+			LOG_ERROR << "can not set notification type: " << Utils::UserAction::RelationAction::TypeToString(dto.GetActionType());
 			return std::nullopt;
+		}
 		notification_dto.SetSenderUid(dto.GetActorUid());
 		notification_dto.SetReceiverUid(dto.GetReactorUid());
 		notification_dto.SetContent(dto.GetContent().value());

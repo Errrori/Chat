@@ -15,11 +15,11 @@ using namespace drogon_model::sqlite3;
 
 const std::string Notifications::Cols::_id = "id";
 const std::string Notifications::Cols::_notification_id = "notification_id";
-const std::string Notifications::Cols::_actor_uid = "actor_uid";
-const std::string Notifications::Cols::_reactor_uid = "reactor_uid";
 const std::string Notifications::Cols::_notification_type = "notification_type";
+const std::string Notifications::Cols::_sender_uid = "sender_uid";
+const std::string Notifications::Cols::_receiver_uid = "receiver_uid";
 const std::string Notifications::Cols::_content = "content";
-const std::string Notifications::Cols::_status = "status";
+const std::string Notifications::Cols::_is_read = "is_read";
 const std::string Notifications::Cols::_create_time = "create_time";
 const std::string Notifications::primaryKeyName = "id";
 const bool Notifications::hasPrimaryKey = true;
@@ -28,11 +28,11 @@ const std::string Notifications::tableName = "notifications";
 const std::vector<typename Notifications::MetaData> Notifications::metaData_={
 {"id","int64_t","integer",8,1,1,0},
 {"notification_id","std::string","text",0,0,0,1},
-{"actor_uid","std::string","text",0,0,0,1},
-{"reactor_uid","std::string","text",0,0,0,1},
 {"notification_type","std::string","text",0,0,0,1},
-{"content","std::string","text",0,0,0,1},
-{"status","std::string","text",0,0,0,0},
+{"sender_uid","std::string","text",0,0,0,1},
+{"receiver_uid","std::string","text",0,0,0,1},
+{"content","std::string","text",0,0,0,0},
+{"is_read","std::string","boolean",0,0,0,0},
 {"create_time","std::string","",0,0,0,0}
 };
 const std::string &Notifications::getColumnName(size_t index) noexcept(false)
@@ -52,25 +52,25 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         {
             notificationId_=std::make_shared<std::string>(r["notification_id"].as<std::string>());
         }
-        if(!r["actor_uid"].isNull())
-        {
-            actorUid_=std::make_shared<std::string>(r["actor_uid"].as<std::string>());
-        }
-        if(!r["reactor_uid"].isNull())
-        {
-            reactorUid_=std::make_shared<std::string>(r["reactor_uid"].as<std::string>());
-        }
         if(!r["notification_type"].isNull())
         {
             notificationType_=std::make_shared<std::string>(r["notification_type"].as<std::string>());
+        }
+        if(!r["sender_uid"].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(r["sender_uid"].as<std::string>());
+        }
+        if(!r["receiver_uid"].isNull())
+        {
+            receiverUid_=std::make_shared<std::string>(r["receiver_uid"].as<std::string>());
         }
         if(!r["content"].isNull())
         {
             content_=std::make_shared<std::string>(r["content"].as<std::string>());
         }
-        if(!r["status"].isNull())
+        if(!r["is_read"].isNull())
         {
-            status_=std::make_shared<std::string>(r["status"].as<std::string>());
+            isRead_=std::make_shared<std::string>(r["is_read"].as<std::string>());
         }
         if(!r["create_time"].isNull())
         {
@@ -99,17 +99,17 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 2;
         if(!r[index].isNull())
         {
-            actorUid_=std::make_shared<std::string>(r[index].as<std::string>());
+            notificationType_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 3;
         if(!r[index].isNull())
         {
-            reactorUid_=std::make_shared<std::string>(r[index].as<std::string>());
+            senderUid_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 4;
         if(!r[index].isNull())
         {
-            notificationType_=std::make_shared<std::string>(r[index].as<std::string>());
+            receiverUid_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 5;
         if(!r[index].isNull())
@@ -119,7 +119,7 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 6;
         if(!r[index].isNull())
         {
-            status_=std::make_shared<std::string>(r[index].as<std::string>());
+            isRead_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 7;
         if(!r[index].isNull())
@@ -158,7 +158,7 @@ Notifications::Notifications(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            actorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+            notificationType_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -166,7 +166,7 @@ Notifications::Notifications(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            reactorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+            senderUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
         }
     }
     if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
@@ -174,7 +174,7 @@ Notifications::Notifications(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[4] = true;
         if(!pJson[pMasqueradingVector[4]].isNull())
         {
-            notificationType_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+            receiverUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
         }
     }
     if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
@@ -190,7 +190,7 @@ Notifications::Notifications(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            status_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+            isRead_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
         }
     }
     if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
@@ -221,28 +221,28 @@ Notifications::Notifications(const Json::Value &pJson) noexcept(false)
             notificationId_=std::make_shared<std::string>(pJson["notification_id"].asString());
         }
     }
-    if(pJson.isMember("actor_uid"))
-    {
-        dirtyFlag_[2]=true;
-        if(!pJson["actor_uid"].isNull())
-        {
-            actorUid_=std::make_shared<std::string>(pJson["actor_uid"].asString());
-        }
-    }
-    if(pJson.isMember("reactor_uid"))
-    {
-        dirtyFlag_[3]=true;
-        if(!pJson["reactor_uid"].isNull())
-        {
-            reactorUid_=std::make_shared<std::string>(pJson["reactor_uid"].asString());
-        }
-    }
     if(pJson.isMember("notification_type"))
     {
-        dirtyFlag_[4]=true;
+        dirtyFlag_[2]=true;
         if(!pJson["notification_type"].isNull())
         {
             notificationType_=std::make_shared<std::string>(pJson["notification_type"].asString());
+        }
+    }
+    if(pJson.isMember("sender_uid"))
+    {
+        dirtyFlag_[3]=true;
+        if(!pJson["sender_uid"].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(pJson["sender_uid"].asString());
+        }
+    }
+    if(pJson.isMember("receiver_uid"))
+    {
+        dirtyFlag_[4]=true;
+        if(!pJson["receiver_uid"].isNull())
+        {
+            receiverUid_=std::make_shared<std::string>(pJson["receiver_uid"].asString());
         }
     }
     if(pJson.isMember("content"))
@@ -253,12 +253,12 @@ Notifications::Notifications(const Json::Value &pJson) noexcept(false)
             content_=std::make_shared<std::string>(pJson["content"].asString());
         }
     }
-    if(pJson.isMember("status"))
+    if(pJson.isMember("is_read"))
     {
         dirtyFlag_[6]=true;
-        if(!pJson["status"].isNull())
+        if(!pJson["is_read"].isNull())
         {
-            status_=std::make_shared<std::string>(pJson["status"].asString());
+            isRead_=std::make_shared<std::string>(pJson["is_read"].asString());
         }
     }
     if(pJson.isMember("create_time"))
@@ -299,7 +299,7 @@ void Notifications::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            actorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+            notificationType_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -307,7 +307,7 @@ void Notifications::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            reactorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+            senderUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
         }
     }
     if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
@@ -315,7 +315,7 @@ void Notifications::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[4] = true;
         if(!pJson[pMasqueradingVector[4]].isNull())
         {
-            notificationType_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+            receiverUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
         }
     }
     if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
@@ -331,7 +331,7 @@ void Notifications::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            status_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+            isRead_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
         }
     }
     if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
@@ -361,28 +361,28 @@ void Notifications::updateByJson(const Json::Value &pJson) noexcept(false)
             notificationId_=std::make_shared<std::string>(pJson["notification_id"].asString());
         }
     }
-    if(pJson.isMember("actor_uid"))
-    {
-        dirtyFlag_[2] = true;
-        if(!pJson["actor_uid"].isNull())
-        {
-            actorUid_=std::make_shared<std::string>(pJson["actor_uid"].asString());
-        }
-    }
-    if(pJson.isMember("reactor_uid"))
-    {
-        dirtyFlag_[3] = true;
-        if(!pJson["reactor_uid"].isNull())
-        {
-            reactorUid_=std::make_shared<std::string>(pJson["reactor_uid"].asString());
-        }
-    }
     if(pJson.isMember("notification_type"))
     {
-        dirtyFlag_[4] = true;
+        dirtyFlag_[2] = true;
         if(!pJson["notification_type"].isNull())
         {
             notificationType_=std::make_shared<std::string>(pJson["notification_type"].asString());
+        }
+    }
+    if(pJson.isMember("sender_uid"))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson["sender_uid"].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(pJson["sender_uid"].asString());
+        }
+    }
+    if(pJson.isMember("receiver_uid"))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson["receiver_uid"].isNull())
+        {
+            receiverUid_=std::make_shared<std::string>(pJson["receiver_uid"].asString());
         }
     }
     if(pJson.isMember("content"))
@@ -393,12 +393,12 @@ void Notifications::updateByJson(const Json::Value &pJson) noexcept(false)
             content_=std::make_shared<std::string>(pJson["content"].asString());
         }
     }
-    if(pJson.isMember("status"))
+    if(pJson.isMember("is_read"))
     {
         dirtyFlag_[6] = true;
-        if(!pJson["status"].isNull())
+        if(!pJson["is_read"].isNull())
         {
-            status_=std::make_shared<std::string>(pJson["status"].asString());
+            isRead_=std::make_shared<std::string>(pJson["is_read"].asString());
         }
     }
     if(pJson.isMember("create_time"))
@@ -460,50 +460,6 @@ void Notifications::setNotificationId(std::string &&pNotificationId) noexcept
     dirtyFlag_[1] = true;
 }
 
-const std::string &Notifications::getValueOfActorUid() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(actorUid_)
-        return *actorUid_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &Notifications::getActorUid() const noexcept
-{
-    return actorUid_;
-}
-void Notifications::setActorUid(const std::string &pActorUid) noexcept
-{
-    actorUid_ = std::make_shared<std::string>(pActorUid);
-    dirtyFlag_[2] = true;
-}
-void Notifications::setActorUid(std::string &&pActorUid) noexcept
-{
-    actorUid_ = std::make_shared<std::string>(std::move(pActorUid));
-    dirtyFlag_[2] = true;
-}
-
-const std::string &Notifications::getValueOfReactorUid() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(reactorUid_)
-        return *reactorUid_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &Notifications::getReactorUid() const noexcept
-{
-    return reactorUid_;
-}
-void Notifications::setReactorUid(const std::string &pReactorUid) noexcept
-{
-    reactorUid_ = std::make_shared<std::string>(pReactorUid);
-    dirtyFlag_[3] = true;
-}
-void Notifications::setReactorUid(std::string &&pReactorUid) noexcept
-{
-    reactorUid_ = std::make_shared<std::string>(std::move(pReactorUid));
-    dirtyFlag_[3] = true;
-}
-
 const std::string &Notifications::getValueOfNotificationType() const noexcept
 {
     static const std::string defaultValue = std::string();
@@ -518,11 +474,55 @@ const std::shared_ptr<std::string> &Notifications::getNotificationType() const n
 void Notifications::setNotificationType(const std::string &pNotificationType) noexcept
 {
     notificationType_ = std::make_shared<std::string>(pNotificationType);
-    dirtyFlag_[4] = true;
+    dirtyFlag_[2] = true;
 }
 void Notifications::setNotificationType(std::string &&pNotificationType) noexcept
 {
     notificationType_ = std::make_shared<std::string>(std::move(pNotificationType));
+    dirtyFlag_[2] = true;
+}
+
+const std::string &Notifications::getValueOfSenderUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(senderUid_)
+        return *senderUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Notifications::getSenderUid() const noexcept
+{
+    return senderUid_;
+}
+void Notifications::setSenderUid(const std::string &pSenderUid) noexcept
+{
+    senderUid_ = std::make_shared<std::string>(pSenderUid);
+    dirtyFlag_[3] = true;
+}
+void Notifications::setSenderUid(std::string &&pSenderUid) noexcept
+{
+    senderUid_ = std::make_shared<std::string>(std::move(pSenderUid));
+    dirtyFlag_[3] = true;
+}
+
+const std::string &Notifications::getValueOfReceiverUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(receiverUid_)
+        return *receiverUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Notifications::getReceiverUid() const noexcept
+{
+    return receiverUid_;
+}
+void Notifications::setReceiverUid(const std::string &pReceiverUid) noexcept
+{
+    receiverUid_ = std::make_shared<std::string>(pReceiverUid);
+    dirtyFlag_[4] = true;
+}
+void Notifications::setReceiverUid(std::string &&pReceiverUid) noexcept
+{
+    receiverUid_ = std::make_shared<std::string>(std::move(pReceiverUid));
     dirtyFlag_[4] = true;
 }
 
@@ -547,31 +547,36 @@ void Notifications::setContent(std::string &&pContent) noexcept
     content_ = std::make_shared<std::string>(std::move(pContent));
     dirtyFlag_[5] = true;
 }
+void Notifications::setContentToNull() noexcept
+{
+    content_.reset();
+    dirtyFlag_[5] = true;
+}
 
-const std::string &Notifications::getValueOfStatus() const noexcept
+const std::string &Notifications::getValueOfIsRead() const noexcept
 {
     static const std::string defaultValue = std::string();
-    if(status_)
-        return *status_;
+    if(isRead_)
+        return *isRead_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &Notifications::getStatus() const noexcept
+const std::shared_ptr<std::string> &Notifications::getIsRead() const noexcept
 {
-    return status_;
+    return isRead_;
 }
-void Notifications::setStatus(const std::string &pStatus) noexcept
+void Notifications::setIsRead(const std::string &pIsRead) noexcept
 {
-    status_ = std::make_shared<std::string>(pStatus);
+    isRead_ = std::make_shared<std::string>(pIsRead);
     dirtyFlag_[6] = true;
 }
-void Notifications::setStatus(std::string &&pStatus) noexcept
+void Notifications::setIsRead(std::string &&pIsRead) noexcept
 {
-    status_ = std::make_shared<std::string>(std::move(pStatus));
+    isRead_ = std::make_shared<std::string>(std::move(pIsRead));
     dirtyFlag_[6] = true;
 }
-void Notifications::setStatusToNull() noexcept
+void Notifications::setIsReadToNull() noexcept
 {
-    status_.reset();
+    isRead_.reset();
     dirtyFlag_[6] = true;
 }
 
@@ -611,11 +616,11 @@ const std::vector<std::string> &Notifications::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
         "notification_id",
-        "actor_uid",
-        "reactor_uid",
         "notification_type",
+        "sender_uid",
+        "receiver_uid",
         "content",
-        "status",
+        "is_read",
         "create_time"
     };
     return inCols;
@@ -636,9 +641,9 @@ void Notifications::outputArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[2])
     {
-        if(getActorUid())
+        if(getNotificationType())
         {
-            binder << getValueOfActorUid();
+            binder << getValueOfNotificationType();
         }
         else
         {
@@ -647,9 +652,9 @@ void Notifications::outputArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[3])
     {
-        if(getReactorUid())
+        if(getSenderUid())
         {
-            binder << getValueOfReactorUid();
+            binder << getValueOfSenderUid();
         }
         else
         {
@@ -658,9 +663,9 @@ void Notifications::outputArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[4])
     {
-        if(getNotificationType())
+        if(getReceiverUid())
         {
-            binder << getValueOfNotificationType();
+            binder << getValueOfReceiverUid();
         }
         else
         {
@@ -680,9 +685,9 @@ void Notifications::outputArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[6])
     {
-        if(getStatus())
+        if(getIsRead())
         {
-            binder << getValueOfStatus();
+            binder << getValueOfIsRead();
         }
         else
         {
@@ -751,9 +756,9 @@ void Notifications::updateArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[2])
     {
-        if(getActorUid())
+        if(getNotificationType())
         {
-            binder << getValueOfActorUid();
+            binder << getValueOfNotificationType();
         }
         else
         {
@@ -762,9 +767,9 @@ void Notifications::updateArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[3])
     {
-        if(getReactorUid())
+        if(getSenderUid())
         {
-            binder << getValueOfReactorUid();
+            binder << getValueOfSenderUid();
         }
         else
         {
@@ -773,9 +778,9 @@ void Notifications::updateArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[4])
     {
-        if(getNotificationType())
+        if(getReceiverUid())
         {
-            binder << getValueOfNotificationType();
+            binder << getValueOfReceiverUid();
         }
         else
         {
@@ -795,9 +800,9 @@ void Notifications::updateArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[6])
     {
-        if(getStatus())
+        if(getIsRead())
         {
-            binder << getValueOfStatus();
+            binder << getValueOfIsRead();
         }
         else
         {
@@ -835,22 +840,6 @@ Json::Value Notifications::toJson() const
     {
         ret["notification_id"]=Json::Value();
     }
-    if(getActorUid())
-    {
-        ret["actor_uid"]=getValueOfActorUid();
-    }
-    else
-    {
-        ret["actor_uid"]=Json::Value();
-    }
-    if(getReactorUid())
-    {
-        ret["reactor_uid"]=getValueOfReactorUid();
-    }
-    else
-    {
-        ret["reactor_uid"]=Json::Value();
-    }
     if(getNotificationType())
     {
         ret["notification_type"]=getValueOfNotificationType();
@@ -858,6 +847,22 @@ Json::Value Notifications::toJson() const
     else
     {
         ret["notification_type"]=Json::Value();
+    }
+    if(getSenderUid())
+    {
+        ret["sender_uid"]=getValueOfSenderUid();
+    }
+    else
+    {
+        ret["sender_uid"]=Json::Value();
+    }
+    if(getReceiverUid())
+    {
+        ret["receiver_uid"]=getValueOfReceiverUid();
+    }
+    else
+    {
+        ret["receiver_uid"]=Json::Value();
     }
     if(getContent())
     {
@@ -867,13 +872,13 @@ Json::Value Notifications::toJson() const
     {
         ret["content"]=Json::Value();
     }
-    if(getStatus())
+    if(getIsRead())
     {
-        ret["status"]=getValueOfStatus();
+        ret["is_read"]=getValueOfIsRead();
     }
     else
     {
-        ret["status"]=Json::Value();
+        ret["is_read"]=Json::Value();
     }
     if(getCreateTime())
     {
@@ -916,9 +921,9 @@ Json::Value Notifications::toMasqueradedJson(
         }
         if(!pMasqueradingVector[2].empty())
         {
-            if(getActorUid())
+            if(getNotificationType())
             {
-                ret[pMasqueradingVector[2]]=getValueOfActorUid();
+                ret[pMasqueradingVector[2]]=getValueOfNotificationType();
             }
             else
             {
@@ -927,9 +932,9 @@ Json::Value Notifications::toMasqueradedJson(
         }
         if(!pMasqueradingVector[3].empty())
         {
-            if(getReactorUid())
+            if(getSenderUid())
             {
-                ret[pMasqueradingVector[3]]=getValueOfReactorUid();
+                ret[pMasqueradingVector[3]]=getValueOfSenderUid();
             }
             else
             {
@@ -938,9 +943,9 @@ Json::Value Notifications::toMasqueradedJson(
         }
         if(!pMasqueradingVector[4].empty())
         {
-            if(getNotificationType())
+            if(getReceiverUid())
             {
-                ret[pMasqueradingVector[4]]=getValueOfNotificationType();
+                ret[pMasqueradingVector[4]]=getValueOfReceiverUid();
             }
             else
             {
@@ -960,9 +965,9 @@ Json::Value Notifications::toMasqueradedJson(
         }
         if(!pMasqueradingVector[6].empty())
         {
-            if(getStatus())
+            if(getIsRead())
             {
-                ret[pMasqueradingVector[6]]=getValueOfStatus();
+                ret[pMasqueradingVector[6]]=getValueOfIsRead();
             }
             else
             {
@@ -999,22 +1004,6 @@ Json::Value Notifications::toMasqueradedJson(
     {
         ret["notification_id"]=Json::Value();
     }
-    if(getActorUid())
-    {
-        ret["actor_uid"]=getValueOfActorUid();
-    }
-    else
-    {
-        ret["actor_uid"]=Json::Value();
-    }
-    if(getReactorUid())
-    {
-        ret["reactor_uid"]=getValueOfReactorUid();
-    }
-    else
-    {
-        ret["reactor_uid"]=Json::Value();
-    }
     if(getNotificationType())
     {
         ret["notification_type"]=getValueOfNotificationType();
@@ -1022,6 +1011,22 @@ Json::Value Notifications::toMasqueradedJson(
     else
     {
         ret["notification_type"]=Json::Value();
+    }
+    if(getSenderUid())
+    {
+        ret["sender_uid"]=getValueOfSenderUid();
+    }
+    else
+    {
+        ret["sender_uid"]=Json::Value();
+    }
+    if(getReceiverUid())
+    {
+        ret["receiver_uid"]=getValueOfReceiverUid();
+    }
+    else
+    {
+        ret["receiver_uid"]=Json::Value();
     }
     if(getContent())
     {
@@ -1031,13 +1036,13 @@ Json::Value Notifications::toMasqueradedJson(
     {
         ret["content"]=Json::Value();
     }
-    if(getStatus())
+    if(getIsRead())
     {
-        ret["status"]=getValueOfStatus();
+        ret["is_read"]=getValueOfIsRead();
     }
     else
     {
-        ret["status"]=Json::Value();
+        ret["is_read"]=Json::Value();
     }
     if(getCreateTime())
     {
@@ -1067,29 +1072,9 @@ bool Notifications::validateJsonForCreation(const Json::Value &pJson, std::strin
         err="The notification_id column cannot be null";
         return false;
     }
-    if(pJson.isMember("actor_uid"))
-    {
-        if(!validJsonOfField(2, "actor_uid", pJson["actor_uid"], err, true))
-            return false;
-    }
-    else
-    {
-        err="The actor_uid column cannot be null";
-        return false;
-    }
-    if(pJson.isMember("reactor_uid"))
-    {
-        if(!validJsonOfField(3, "reactor_uid", pJson["reactor_uid"], err, true))
-            return false;
-    }
-    else
-    {
-        err="The reactor_uid column cannot be null";
-        return false;
-    }
     if(pJson.isMember("notification_type"))
     {
-        if(!validJsonOfField(4, "notification_type", pJson["notification_type"], err, true))
+        if(!validJsonOfField(2, "notification_type", pJson["notification_type"], err, true))
             return false;
     }
     else
@@ -1097,19 +1082,34 @@ bool Notifications::validateJsonForCreation(const Json::Value &pJson, std::strin
         err="The notification_type column cannot be null";
         return false;
     }
+    if(pJson.isMember("sender_uid"))
+    {
+        if(!validJsonOfField(3, "sender_uid", pJson["sender_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The sender_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("receiver_uid"))
+    {
+        if(!validJsonOfField(4, "receiver_uid", pJson["receiver_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The receiver_uid column cannot be null";
+        return false;
+    }
     if(pJson.isMember("content"))
     {
         if(!validJsonOfField(5, "content", pJson["content"], err, true))
             return false;
     }
-    else
+    if(pJson.isMember("is_read"))
     {
-        err="The content column cannot be null";
-        return false;
-    }
-    if(pJson.isMember("status"))
-    {
-        if(!validJsonOfField(6, "status", pJson["status"], err, true))
+        if(!validJsonOfField(6, "is_read", pJson["is_read"], err, true))
             return false;
     }
     if(pJson.isMember("create_time"))
@@ -1196,11 +1196,6 @@ bool Notifications::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, true))
                   return false;
           }
-        else
-        {
-            err="The " + pMasqueradingVector[5] + " column cannot be null";
-            return false;
-        }
       }
       if(!pMasqueradingVector[6].empty())
       {
@@ -1243,19 +1238,19 @@ bool Notifications::validateJsonForUpdate(const Json::Value &pJson, std::string 
         if(!validJsonOfField(1, "notification_id", pJson["notification_id"], err, false))
             return false;
     }
-    if(pJson.isMember("actor_uid"))
-    {
-        if(!validJsonOfField(2, "actor_uid", pJson["actor_uid"], err, false))
-            return false;
-    }
-    if(pJson.isMember("reactor_uid"))
-    {
-        if(!validJsonOfField(3, "reactor_uid", pJson["reactor_uid"], err, false))
-            return false;
-    }
     if(pJson.isMember("notification_type"))
     {
-        if(!validJsonOfField(4, "notification_type", pJson["notification_type"], err, false))
+        if(!validJsonOfField(2, "notification_type", pJson["notification_type"], err, false))
+            return false;
+    }
+    if(pJson.isMember("sender_uid"))
+    {
+        if(!validJsonOfField(3, "sender_uid", pJson["sender_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("receiver_uid"))
+    {
+        if(!validJsonOfField(4, "receiver_uid", pJson["receiver_uid"], err, false))
             return false;
     }
     if(pJson.isMember("content"))
@@ -1263,9 +1258,9 @@ bool Notifications::validateJsonForUpdate(const Json::Value &pJson, std::string 
         if(!validJsonOfField(5, "content", pJson["content"], err, false))
             return false;
     }
-    if(pJson.isMember("status"))
+    if(pJson.isMember("is_read"))
     {
-        if(!validJsonOfField(6, "status", pJson["status"], err, false))
+        if(!validJsonOfField(6, "is_read", pJson["is_read"], err, false))
             return false;
     }
     if(pJson.isMember("create_time"))
@@ -1413,8 +1408,7 @@ bool Notifications::validJsonOfField(size_t index,
         case 5:
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
             if(!pJson.isString())
             {

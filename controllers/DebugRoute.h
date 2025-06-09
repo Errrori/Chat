@@ -10,6 +10,7 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
 			//database
             ADD_METHOD_TO(DbInfoController::GetDbInfo, "/debug/db_info", drogon::Get,"CorsMiddleware");
 			ADD_METHOD_TO(DbInfoController::GetOnlineUsers, "/debug/online_users", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetAllNotifications, "/debug/get_notifications", drogon::Get, "CorsMiddleware");
 
             ADD_METHOD_TO(DbInfoController::GetUserById, "/user/get_user", drogon::Get, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::ModifyName, "/user/modify/username", drogon::Post, "CorsMiddleware");
@@ -40,6 +41,8 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
 		void GetChatRecords(const drogon::HttpRequestPtr& req,
             std::function<void(const drogon::HttpResponsePtr&)>&& callback);
         void GetAllRecords(const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+        void GetAllNotifications(const drogon::HttpRequestPtr& req,
             std::function<void(const drogon::HttpResponsePtr&)>&& callback);
         void ModifyUserAvatar(const drogon::HttpRequestPtr& req,
             std::function<void(const drogon::HttpResponsePtr&)>&& callback);
