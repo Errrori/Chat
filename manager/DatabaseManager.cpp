@@ -10,7 +10,7 @@
 #include "DTOs/RelationshipDTO.h"
 
 using namespace DataBase;
-using ChatRecord = drogon_model::sqlite3::ChatRecords;
+using ChatRecords = drogon_model::sqlite3::ChatRecords;
 using Users = drogon_model::sqlite3::Users;
 using Relationships = drogon_model::sqlite3::Relationships;
 using Notifications = drogon_model::sqlite3::Notifications;
@@ -78,7 +78,7 @@ Json::Value DatabaseManager::GetAllUsersInfo()
 	return users_data;
 }
 
-void DatabaseManager::PushChatRecords(const Json::Value& message)
+void DatabaseManager::PushChatRecords(const drogon_model::sqlite3::ChatRecords& chat_record)
 {
 	//如果想要保持数据库中插入json数据的一致，要手动创建
 	//auto sender_name = message["sender_name"].asString();
@@ -89,12 +89,11 @@ void DatabaseManager::PushChatRecords(const Json::Value& message)
 	//chat_record->setSenderUid(sender_uid);
 	//chat_record->setContent(msg);
 	//chat_record->setMessageId(msg_id);
-	auto chat_record = std::make_shared<ChatRecord>(message);
 
-	Mapper<ChatRecord> mapper(GetDbClient());
+	Mapper<ChatRecords> mapper(GetDbClient());
 
-	mapper.insert(*chat_record,
-		[](const ChatRecord& chat){
+	mapper.insert(chat_record,
+		[](const ChatRecords& chat){
 			LOG_INFO << "Insert success,message id:" << chat.getValueOfMessageId();
 		},
 		[](const DrogonDbException& e) {
@@ -344,250 +343,29 @@ bool DatabaseManager::DeleteRelationship
 	return is_success;
 }
 
-//bool DatabaseManager::WriteRelationship(const RelationshipDTO& dto, std::string& error_msg)
-//{
-//	using Type = Utils::UserAction::RelationshipActionType;
-//	std::string status;
-//	bool is_update = false;
-//	//检查操作合法性
-//	switch (Utils::UserAction::StringToType(dto.GetActionType()))
-//	{
-//	case Type::Unknown:
-//		error_msg = "unknown type";
-//		return false;
-//	case Type::FriendRequest:
-//		//申请好友,如果屏蔽对方/被屏蔽的话要先解除屏蔽才能申请,如果对方给你发送过好友请求，你需要处理完请求之后才能发送请求
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(),"Pending"))
-//		{
-//			error_msg = "you already sent a request";
-//			return false;
-//		}
-//		if (ValidateRelationship(dto.GetReactorUid(), dto.GetActorUid(), "Pending"))
-//		{
-//			error_msg = "you need to handle the request from target user";
-//			return false;
-//		}
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Blocking"))
-//		{
-//			error_msg = "you need to unblock the user";
-//			return false;
-//		}
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Friend"))
-//		{
-//			error_msg = "you are already friends";
-//			return false;
-//		}
-//		status = "Pending";
-//		break;
-//	case Type::RequestReject:
-//		//拒绝好友申请的话，对方必须要给当前用户发送好友申请
-//		if (!ValidateRelationship(dto.GetReactorUid(), dto.GetActorUid(), "Pending"))
-//		{
-//			error_msg = "target user did not send request";
-//			return false;
-//		}
-//		status = "Rejected";
-//		is_update = true;
-//		break;
-//	case Type::RequestAccept:
-//		if (!ValidateRelationship(dto.GetReactorUid(), dto.GetActorUid(), "Pending"))
-//		{
-//			error_msg = "target user did not send request";
-//			return false;
-//		}
-//		status = "Friend";
-//		is_update = true;
-//		break;
-//	case Type::BlockUser:
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Blocking"))
-//		{
-//			error_msg = "you had already blocked the user";
-//			return false;
-//		}
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Friend"))
-//		{
-//			status = "BlockFriend";
-//			is_update = true;
-//		}
-//		else
-//			status = "Blocking";
-//		break;
-//	case Type::UnblockUser:
-//		//如果之前是朋友，就恢复朋友关系，不是就删除关系
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Blocking"))
-//		{
-//			DeleteRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Blocking");
-//			return true;
-//		}
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(), "BlockFriend"))
-//		{
-//			is_update = true;
-//			status = "Friend";
-//		}
-//		else
-//		{
-//			error_msg = "you did not block the user";
-//			return false;
-//		}
-//		break;
-//	case Type::Unfriend:
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Friend"))
-//		{
-//			DeleteRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Friend");
-//			return true;
-//		}
-//		if (ValidateRelationship(dto.GetActorUid(), dto.GetReactorUid(), "BlockFriend"))
-//		{
-//			DeleteRelationship(dto.GetActorUid(), dto.GetReactorUid(), "BlockFriend");
-//			return true;
-//		}
-//		else
-//		{
-//			error_msg = "you are not friend";
-//			return false;
-//		}
-//	}
-//
-//	//UpdateOrInsertRelationship(dto.GetActorUid(), dto.GetReactorUid(), status, is_update);
-//
-//}
-
-//bool DatabaseManager::WriteRelationship(const RelationshipDTO& dto, std::string& error_msg)
-//{
-//	//pending/refuse/friend/block/unblock(解除屏蔽就删除在关系表中原有的记录)
-//	Mapper<Relationships> mapper(GetDbClient());
-//
-//	Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, dto.GetActorUid()) &&
-//		Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, dto.GetReactorUid()));
-//
-//	using RelationshipActionType = Utils::UserAction::RelationshipActionType;
-//	switch (Utils::UserAction::StringToType(dto.GetActionType()))
-//	{
-//	case RelationshipActionType::BlockUser:
-//		if (ValidateIsBlock(dto.GetActorUid(), dto.GetReactorUid()))
-//		{
-//			LOG_INFO << "block user repeatedly";
-//			return true;
-//		}
-//		if (ValidateIsFriend(dto.GetActorUid(),dto.GetReactorUid()))
-//		{
-//			auto result = mapper.updateBy({ Relationships::Cols::_status }, criteria, "BlockFriend");
-//			return result == 1;
-//		}
-//		else
-//		{
-//			auto data = dto.ToRelationshipJson();
-//			data["status"] = "Blocking";
-//			Relationships relationship(data);
-//			bool is_success = false;
-//			mapper.insert(relationship,
-//				[&is_success](const Relationships& relationship) {
-//					is_success = true;
-//					LOG_INFO << "insert relationship: " << relationship.getValueOfStatus();
-//				},
-//				[](const DrogonDbException& e) {
-//					LOG_ERROR << "Exception to insert notification," << e.base().what();
-//				});
-//			return is_success;
-//		}
-//	case RelationshipActionType::UnblockUser:
-//		if (!ValidateIsBlock(dto.GetActorUid(), dto.GetReactorUid()))
-//		{
-//			LOG_ERROR << "can not unblock user that is not blocked";
-//			return false;
-//		}
-//		if (ValidateIsFriend(dto.GetActorUid(), dto.GetReactorUid()))
-//		{
-//			auto result = mapper.updateBy({ Relationships::Cols::_status }, criteria, "Friend");
-//			return result == 1;
-//		}
-//		else//解除屏蔽，但是两个用户此前没有关系，所以删除该记录
-//		{
-//			mapper.limit(1).deleteBy(criteria);
-//			return true;
-//		}
-//	case RelationshipActionType::FriendRequest:
-//		//这里没有检测是否已经是好友或者已经发送好友申请
-//		if (ValidateIsFriend(dto.GetActorUid(),dto.GetReactorUid()))
-//		{
-//			return false;
-//		}
-//		if (ValidateHasRelationship(dto.GetActorUid(),dto.GetReactorUid()))
-//		{
-//			//这里只可能是被屏蔽或者已经发送过申请了，所以直接返回
-//			return true;
-//		}
-//	case RelationshipActionType::FriendResponse:
-//	{
-//		if (!dto.GetAccept().has_value())
-//		{
-//			LOG_ERROR << "lack of field: is_accept";
-//			return false;
-//		}
-//		if (dto.GetAccept().value())
-//		{
-//			std::string normalized_first_uid = dto.GetActorUid();
-//			std::string	normalized_second_uid = dto.GetReactorUid();
-//			//因为uid的长度是一致的，所以采用字典序比较
-//			if (normalized_first_uid < normalized_second_uid)
-//			{
-//				std::swap(normalized_first_uid, normalized_second_uid);
-//			}
-//			Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, dto.GetReactorUid())
-//				&& Criteria(Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, dto.GetReactorUid())));
-//			mapper.limit(1).updateBy({ Relationships::Cols::_first_uid,Relationships::Cols::_second_uid,Relationships::Cols::_status },
-//				criteria, normalized_first_uid,normalized_second_uid,"Friend");
-//			return true;
-//		}
-//		else
-//		{
-//			Criteria criteria(Criteria(Relationships::Cols::_first_uid,CompareOperator::EQ,dto.GetReactorUid())
-//			&&Criteria(Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, dto.GetReactorUid())));
-//			mapper.limit(1).updateBy({ Relationships::Cols::_status },criteria,"refuse");
-//			return true;
-//		}
-//	}
-//		case RelationshipActionType::Unfriend:
-//			std::string normalized_first_uid = dto.GetActorUid();
-//			std::string	normalized_second_uid = dto.GetReactorUid();
-//			//因为uid的长度是一致的，所以采用字典序比较
-//			if (normalized_first_uid < normalized_second_uid)
-//			{
-//				std::swap(normalized_first_uid, normalized_second_uid);
-//			}
-//			Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, normalized_first_uid)
-//				&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, normalized_second_uid));
-//			auto result = mapper.limit(1).deleteBy(criteria);
-//			return result == 1;
-//	default:
-//		LOG_ERROR << "unsupported type";
-//		return false;
-//	}
-//}
-
 Json::Value DatabaseManager::GetChatRecords(int64_t existing_id, unsigned num)
 {
-	Mapper<ChatRecord> mapper(GetDbClient());
+	Mapper<ChatRecords> mapper(GetDbClient());
 
 	//如果现有id不存在，直接返回
 	auto exist_record =
-		mapper.limit(1).findBy(Criteria(ChatRecord::Cols::_message_id, CompareOperator::EQ, existing_id));
+		mapper.limit(1).findBy(Criteria(ChatRecords::Cols::_message_id, CompareOperator::EQ, existing_id));
 	if (exist_record.empty())
 	{
 		LOG_ERROR << "can not find existing id:" << existing_id;
 		return Json::nullValue;
 	}
 
-	Criteria criteria(ChatRecord::Cols::_message_id, CompareOperator::GT, existing_id);
-	auto index_record = mapper.orderBy(ChatRecord::Cols::_message_id, SortOrder::ASC)
+	Criteria criteria(ChatRecords::Cols::_message_id, CompareOperator::GT, existing_id);
+	auto index_record = mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::ASC)
 		.offset(num).limit(1).findBy(criteria);
-	auto latest_record = mapper.orderBy(ChatRecord::Cols::_message_id, SortOrder::DESC).limit(1).findAll();
+	auto latest_record = mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::DESC).limit(1).findAll();
 	auto latest_id = latest_record[0].getValueOfMessageId();
 	Json::Value data(Json::arrayValue);
 	//找不到，就从这个已有的位置开始向后返回到最新的
 	if (index_record.empty())
 	{
-		const auto& records = mapper.orderBy(ChatRecord::Cols::_message_id,SortOrder::DESC).findBy(criteria);
+		const auto& records = mapper.orderBy(ChatRecords::Cols::_message_id,SortOrder::DESC).findBy(criteria);
 		Json::Value json_records(Json::arrayValue);
 		for (auto it = records.rbegin();it!=records.rend();++it)
 		{
@@ -597,7 +375,7 @@ Json::Value DatabaseManager::GetChatRecords(int64_t existing_id, unsigned num)
 	}
 	
 	//找到了，就从最新的往前返回message_number条
-	auto records = mapper.orderBy(ChatRecord::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
+	auto records = mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
 	Json::Value json_records(Json::arrayValue);
 	for (auto it = records.rbegin(); it != records.rend(); ++it)
 	{
@@ -609,10 +387,10 @@ Json::Value DatabaseManager::GetChatRecords(int64_t existing_id, unsigned num)
 
 Json::Value DatabaseManager::GetAllRecords(unsigned num)
 {
-	Mapper<ChatRecord> mapper(GetDbClient());
+	Mapper<ChatRecords> mapper(GetDbClient());
 	Json::Value data(Json::arrayValue);
 	auto records =
-		mapper.orderBy(ChatRecord::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
+		mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
 
 	for (auto it = records.rbegin(); it != records.rend(); ++it)
 	{
@@ -755,18 +533,18 @@ bool DatabaseManager::ValidateUid(const std::string& uid)
 }
 
 bool DatabaseManager::ValidateRelationship(const std::string& actor_uid, const std::string& reactor_uid,
-                                           const std::string& relationship)
+                                           Utils::Relationship::StatusType status)
 {
 	using Type = Utils::Relationship::StatusType;
 	Mapper<Relationships> mapper(GetDbClient());
-	switch (Utils::Relationship::StringToType(relationship))
+	switch (status)
 	{
 	case Type::Pending:
 	case Type::Blocking:
 		{
 		Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, actor_uid)
 			&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, reactor_uid)
-			&& Criteria(Relationships::Cols::_status, CompareOperator::EQ, relationship));
+			&& Criteria(Relationships::Cols::_status, CompareOperator::EQ, status));
 		return !mapper.findBy(criteria).empty();
 		}
 	case Type::Friend:
@@ -780,7 +558,7 @@ bool DatabaseManager::ValidateRelationship(const std::string& actor_uid, const s
 		}
 		Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, normalized_first_uid)
 			&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, normalized_second_uid)
-			&& Criteria(Relationships::Cols::_status, CompareOperator::EQ, relationship));
+			&& Criteria(Relationships::Cols::_status, CompareOperator::EQ, status));
 		return !mapper.findBy(criteria).empty();
 		}
 	default:

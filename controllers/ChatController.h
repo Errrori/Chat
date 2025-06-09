@@ -12,6 +12,7 @@ public:
         const drogon::WebSocketConnectionPtr& conn) override;
     void handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn) override;
 
+    bool WriteSenderInfo(const drogon::WebSocketConnectionPtr& conn, Json::Value& json_msg);
     WS_PATH_LIST_BEGIN
         WS_PATH_ADD("/ws/chat");
     WS_PATH_LIST_END

@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "SendManager.h"
+#include "models/ChatRecords.h"
+
 
 using namespace Utils;
 
@@ -9,11 +11,11 @@ SendManager& SendManager::GetInstance()
 	return send_manager;
 }
 
-void SendManager::PushMessage(const Json::Value& msg, const drogon::WebSocketConnectionPtr& conn)
+void SendManager::PushMessage(const MessageDTO& dto)
 {
 	{
 		std::lock_guard lock(_msg_mtx);
-		_msg_queue.emplace(conn, msg);
+		_msg_queue.emplace(dto);
 		if (_is_processing)
 		{
 			return;
@@ -33,26 +35,25 @@ void SendManager::ProcessMessage()
 			unsigned short message_send = 0;
 			while (message_send < MAX_MESSAGE_SEND_ONCE)
 			{
-				MsgPair msg_pair;
+				MessageDTO dto;
 				{
 					std::lock_guard lock(_msg_mtx);
 					if (_msg_queue.empty()) {
 						_is_processing = false;
 						return;
 					}
-					msg_pair = _msg_queue.front();
+					dto = _msg_queue.front();
 					_msg_queue.pop();
 				}
 
 				std::string error;
-				if (!ValidateMsg(msg_pair, error))
+				if (!ValidateMsg(dto, error))
 				{
 					LOG_INFO << "error to validate message: " << error;
-					msg_pair.first->sendJson(Message::GenerateErrorMsg(error));
+
 					continue;
 				}
-				auto send_pair = BuildDeliverMsg(msg_pair);
-				DeliverMessage(send_pair);
+				DeliverMessage(dto);
 				message_send++;
 			}
 			drogon::app().getIOLoop(drogon::app().getCurrentThreadIndex())
@@ -70,53 +71,24 @@ void SendManager::ProcessMessage()
 }
 
 
-bool SendManager::ValidateMsg(const MsgPair& msg_pair, std::string& error)
+bool SendManager::ValidateMsg(const MessageDTO& dto, std::string& error)
 {
-	const auto& msg = msg_pair.second;
-	const auto& conn = msg_pair.first;
-	Json::Value deliver_msg;
-	if (!msg.isMember("content_type") || !msg.isMember("content") || !msg.isMember("chat_type"))
+	if (!DatabaseManager::ValidateUid(dto.GetSenderUid()))
 	{
-		error = "lack of field";
+		error = "sender_uid is not valid";
 		return false;
 	}
-
-	if (msg.isMember("receiver_uid"))
+	switch (dto.GetChatType())
 	{
-		if (!DatabaseManager::ValidateUid(msg["receiver_uid"].asString()))
+	case ChatType::Private:
+		if (!DatabaseManager::ValidateUid(dto.GetReceiverUid().value()))
 		{
-			error = "user uid is not correct";
+			error = "receiver_uid is not valid";
 			return false;
 		}
-	}
-	else
-	{
-		error = "lack of receiver receiver uid";
-		return false;
-	}
-
-	auto content_type = msg["content_type"].asString();
-	if (!Message::Content::IsValid(content_type))
-	{
-		error = "content_type is not supported: "+content_type;
-		return false;
-	}
-
-	auto chat_type = msg["chat_type"].asString();
-	if (!Message::Chat::IsValid(chat_type))
-	{
-		error = "chat Type is not supported: " + chat_type;
-		return false;
-	}
-
-	switch (Message::Chat::StringToType(chat_type))
-	{
-	case Message::Chat::ChatType::Group:
-		if (!msg.isMember("conversation_id"))
-		{
-			error = "lack of conversation id";
-			return false;
-		}
+		break;
+	case ChatType::Group:
+		//validate group id
 		break;
 	default:
 		break;
@@ -124,51 +96,23 @@ bool SendManager::ValidateMsg(const MsgPair& msg_pair, std::string& error)
 	return true;
 }
 
-SendPair SendManager::BuildDeliverMsg(const MsgPair& msg_pair)
+void SendManager::DeliverMessage(const MessageDTO& message_dto)
 {
-	const auto& sender_conn = msg_pair.first;
-	const auto& msg = msg_pair.second;
-	Json::Value deliver_msg;
-	auto sender_info = *(sender_conn->getContext<Connection::UserConnectionInfo>());
-	deliver_msg["message_id"] = Message::GenerateMsgId();
-	deliver_msg["create_time"] = trantor::Date::now().toDbString();
-	deliver_msg["sender_uid"] = sender_info.uid;
-	deliver_msg["sender_avatar"] = sender_info.avatar;
-	deliver_msg["sender_name"] = sender_info.username;
-	deliver_msg["content"] = msg["content"].asString();
-	deliver_msg["content_type"] = msg["content_type"].asString();
-	deliver_msg["chat_type"] = msg["chat_type"].asString();
-	std::vector<std::string> targets;
-
-	if (msg.isMember("conversation_id"))
+	auto conn = ConnectionManager::GetInstance().GetConnection(message_dto.GetReceiverUid().value());
+	auto chat_record = message_dto.TransToChatRecords();
+	DatabaseManager::PushChatRecords(chat_record.value());
+	if (!chat_record.has_value())
 	{
-		deliver_msg["conversation_id"] = msg["conversation_id"].asString();
-		deliver_msg["conversation_name"] = msg["conversation_name"].asString();
-		//auto group_member = DatabaseManager::GetGroupMember();
-		//targets.emplace_back(group_member);
-
-	}
-	if (msg.isMember("receiver_uid"))
-	{
-		deliver_msg["receiver_uid"] = msg["receiver_uid"].asString();
-		targets.emplace_back(msg["receiver_uid"].asString());
+		LOG_ERROR << "can not trans to chat record";
+		return;
 	}
 
-	DatabaseManager::PushChatRecords(deliver_msg);
-
-	return std::make_pair(targets, deliver_msg);
-}
-
-void SendManager::DeliverMessage(const SendPair& send_pair)
-{
-	const auto& targets = send_pair.first;
-	auto msg = send_pair.second;
-	for (const auto& target:targets)
+	if (!conn.has_value())
 	{
-		const auto& conn = ConnectionManager::GetInstance().GetConnection(target);
-		if (conn!=nullptr)
-		{
-			conn->sendJson(msg);
-		}
+		LOG_INFO << "can not find conn";
+		return;
 	}
+	conn.value()->sendJson(message_dto.TransToJsonMsg());
+	//∑¢ÀÕ»∑»œ
+	
 }

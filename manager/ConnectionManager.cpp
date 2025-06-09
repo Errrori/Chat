@@ -156,20 +156,19 @@ std::string ConnectionManager::GetName(const std::string& uid)
 	return it->second;
 }
 
-drogon::WebSocketConnectionPtr ConnectionManager::GetConnection(const std::string& uid)
+std::optional<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnection(const std::string& uid)
 {
 	std::lock_guard lock(_conn_mtx);
 	auto it = _conn_map.find(uid);
 	if (it == _conn_map.end())
 	{
 		LOG_INFO << "can not find connection, uid:" << uid;
-		return nullptr;
+		return std::nullopt;
 	}
 	return it->second;
 }
 
-std::vector<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnection(
-	const std::vector<std::string>& uids)
+std::vector<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnection(const std::vector<std::string>& uids)
 {
 	return {};
 }

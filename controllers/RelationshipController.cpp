@@ -257,8 +257,6 @@ void RelationshipController::HandleUnfriend(const drogon::HttpRequestPtr& req,
 		callback(Utils::CreateErrorResponse(400, 400, "can not write into relationship table"));
 		return;
 	}
-	//Ӧ�ý���֪ͨ
-
 
 	Json::Value json_resp;
 	json_resp["code"] = 200;
@@ -285,13 +283,29 @@ bool RelationshipController::ValidateBody(const drogon::HttpRequestPtr& req)
 		LOG_ERROR << "lack essential field";
 		return false;
 	}
-	auto sender_uid = (*body)["sender_uid"].asString();
+
+	const auto& sender_uid = (*body)["sender_uid"].asString();
+	const auto& receiver_uid = (*body)["receiver_uid"].asString();
+	//can not send relationship request to self
+	if (sender_uid == receiver_uid)
+	{
+		LOG_ERROR << "sender uid is the same as receiver uid";
+		return false;
+	}
+
 	auto visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
 	if (visitor_info.uid != sender_uid)
 	{
 		LOG_ERROR << "sender info is not the same as body info";
 		return false;
 	}
+
+	if (DatabaseManager::ValidateRelationship(sender_uid, receiver_uid, Utils::Relationship::StatusType::Blocking))
+	{
+		LOG_ERROR << "sender is blocked by receiver";
+		return false;
+	}
+
 	return true;
 }
 

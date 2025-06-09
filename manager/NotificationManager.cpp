@@ -57,7 +57,7 @@ void NotificationManager::ProcessNotification()
 					else
 					{
 						//目标用户在线，向该用户发送通知
-						conn->sendJson(dto.TransToJsonMsg());
+						conn.value()->sendJson(dto.TransToJsonMsg());
 					}
 				}
 				drogon::app().getIOLoop(drogon::app().getCurrentThreadIndex())

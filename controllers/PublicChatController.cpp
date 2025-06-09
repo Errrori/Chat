@@ -45,7 +45,7 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
         LOG_INFO << "Put message into records : " << json_msg.toStyledString();
         std::string create_time_str = trantor::Date::now().toDbString();
         json_msg["create_time"] = create_time_str;
-        DatabaseManager::PushChatRecords(json_msg);
+       // DatabaseManager::PushChatRecords(json_msg);
         //Add to records before setting forwarded
         json_msg["forwarded"] = true;
 

@@ -32,7 +32,7 @@ public:
 	Json::Value GetOnlineUsers();
 
 	std::string GetName(const std::string& uid);
-	drogon::WebSocketConnectionPtr GetConnection(const std::string& uid);
+	std::optional<drogon::WebSocketConnectionPtr> GetConnection(const std::string& uid);
 	std::vector<drogon::WebSocketConnectionPtr> GetConnection(const std::vector<std::string>& uids);
 
 private:

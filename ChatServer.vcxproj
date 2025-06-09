@@ -90,6 +90,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DTOs\ChatRecordDTO.cpp" />
     <ClCompile Include="controllers\Authentication.cpp" />
     <ClCompile Include="controllers\FileController.cpp" />
     <ClCompile Include="DTOs\NotificationDTO.cpp" />
@@ -122,6 +123,7 @@
     <ClCompile Include="controllers\EchoController.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DTOs\ChatRecordDTO.h" />
     <ClInclude Include="const.h" />
     <ClInclude Include="controllers\Authentication.h" />
     <ClInclude Include="controllers\FileController.h" />

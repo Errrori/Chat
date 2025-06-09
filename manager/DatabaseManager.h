@@ -21,7 +21,7 @@ public:
 	static drogon::orm::DbClientPtr GetDbClient();
 
 	static bool PushUser(const Json::Value& user_info);
-	static void PushChatRecords(const Json::Value& message);
+	static void PushChatRecords(const drogon_model::sqlite3::ChatRecords& chat_record);
 	static void PushNotification(const Json::Value& data);
 	static bool WriteRelationship(const RelationshipDTO& dto, std::string& error_msg);
 	static bool UpsertRelationship
@@ -47,7 +47,7 @@ public:
 	(const std::string& first_uid, const std::string& second_uid, Utils::Relationship::StatusType status, std::string&error_msg);
 	static bool ValidateAccount(const std::string& account);
 	static bool ValidateUid(const std::string& uid);
-	static bool ValidateRelationship(const std::string& actor_uid, const std::string& reactor_uid, const std::string& relationship);
+	static bool ValidateRelationship(const std::string& actor_uid, const std::string& reactor_uid, Utils::Relationship::StatusType status);
 
 	static std::vector<std::string> GetGroupMember(const std::string& group_id);
 };

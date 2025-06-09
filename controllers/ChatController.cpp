@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "ChatController.h"
-
+#include "DTOs/MessageDTO.h"
 #include "manager/ConnectionManager.h"
 using ChatType = Utils::Message::Chat::ChatType;
 
@@ -14,7 +14,21 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         conn->sendJson(Utils::Message::GenerateErrorMsg("can not parse the message: " + msg));
         return;
     }
-    SendManager::GetInstance().PushMessage(json_msg, conn);
+    if (!WriteSenderInfo(conn,json_msg))
+    {
+        return;
+    }
+    std::string error;
+    const auto& message_dto = MessageDTO::BuildFromClientMsg(json_msg,error);
+    if (message_dto.has_value())
+    {
+        const auto& conn_info = conn->getContext<Connection::UserConnectionInfo>();
+    	auto dto_data = message_dto.value();
+		
+        SendManager::GetInstance().PushMessage(message_dto.value());
+    }
+    else
+        LOG_ERROR << "message can not transform to DTO";
 }
 
 void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
@@ -60,6 +74,20 @@ void ChatController::handleConnectionClosed(const drogon::WebSocketConnectionPtr
 {
     LOG_INFO << "client connection closed";
     ConnectionManager::GetInstance().RemoveConnection(conn);
+}
+
+bool ChatController::WriteSenderInfo(const drogon::WebSocketConnectionPtr& conn, Json::Value& json_msg)
+{
+    const auto& conn_info = conn->getContext<Connection::UserConnectionInfo>();
+    if (!conn_info)
+    {
+        LOG_ERROR << "can not get connection info";
+        return false;
+    }
+    json_msg["sender_uid"] = conn_info->uid;
+    json_msg["sender_avatar"] = conn_info->avatar;
+    json_msg["sender_name"] = conn_info->username;
+    return true;
 }
 
 
