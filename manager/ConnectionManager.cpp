@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "ConnectionManager.h"
 
-using namespace Connection;
 
 ConnectionManager& ConnectionManager::GetInstance()
 {
@@ -27,17 +26,18 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 		}
 	}
 
-	//这里采用实时查询数据库的方式获取，而不是获取jwt的信息的方式，保证实时性（可能使用了过时的jwt)
 	Json::Value user_data;
 	if (!DatabaseManager::GetUserInfoByUid(uid, user_data))
 	{
 		return false;
 	}
-	UserConnectionInfo conn_info;
+	Utils::UserInfo conn_info;
 	conn_info.uid = user_data["uid"].asString();
-	conn_info.avatar = user_data["avatar"].asString();
+	conn_info.account = user_data["account"].asString();
 	conn_info.username = user_data["username"].asString();
-	conn->setContext(std::make_shared<UserConnectionInfo>(conn_info));
+	conn_info.avatar = user_data["avatar"].asString();
+	LOG_INFO << "user info:" << conn_info.ToString();
+	conn->setContext(std::make_shared<Utils::UserInfo>(conn_info));
 
 	std::lock_guard lock(_conn_mtx);
 
@@ -66,7 +66,7 @@ bool ConnectionManager::RemoveConnection(const std::string& uid)
 
 bool ConnectionManager::RemoveConnection(const drogon::WebSocketConnectionPtr& conn)
 {
-	auto info_ptr = conn->getContext<UserConnectionInfo>();
+	auto info_ptr = conn->getContext<Utils::UserInfo>();
 	if (info_ptr)
 	{
 		LOG_INFO << "Remove Connection: " << info_ptr->uid;
@@ -96,7 +96,14 @@ bool ConnectionManager::AddUIdToNameRef(const std::string& uid, const std::strin
 
 void ConnectionManager::BroadcastMsg(const std::string& uid, const Json::Value& msg)
 {
+	LOG_INFO << "broadcast message\n";
 	std::lock_guard lock(_conn_mtx);
+	if (msg.empty())
+	{
+		return;
+	}
+	DatabaseManager::PushMessage(TransMsg::BuildFromJson(msg));
+	LOG_INFO << "push new message into database:"+msg.toStyledString();
 	for (const auto& it : _conn_map)
 	{
 		if (it.first!=uid)

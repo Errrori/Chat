@@ -11,10 +11,10 @@ namespace Utils {
     namespace Authentication
     {
         bool IsValidAccount(const std::string& account) {
-            if (!DatabaseManager::ValidateAccount(account))
-            {
-                return false;
-            }
+            //if (!DatabaseManager::ValidateAccount(account))
+            //{
+            //    return false;
+            //}
             static const std::regex limit{ "^[a-zA-Z0-9]{8,15}$" };
             if (!std::regex_match(account, limit)) {
                 return false;
@@ -145,6 +145,7 @@ namespace Utils {
             auto name = info.username;
             auto uid = info.uid;
             auto account = info.account;
+            auto avatar = info.avatar;
 
             auto now = std::chrono::system_clock::now();
             auto expiry = now + std::chrono::seconds{ EffectiveTime };
@@ -157,6 +158,7 @@ namespace Utils {
                 .set_payload_claim("uid", jwt::claim(uid))
                 .set_payload_claim("username", jwt::claim(name))
                 .set_payload_claim("account", jwt::claim(account))
+				.set_payload_claim("avatar",jwt::claim(avatar))
                 .sign(jwt::algorithm::hs256{ secret });
 
             return token;
@@ -166,7 +168,7 @@ namespace Utils {
         {
             try
             {
-                auto data = jwt::decode(token);
+                const auto& data = jwt::decode(token);
 
                 auto verifier = jwt::verify()
                     .allow_algorithm(jwt::algorithm::hs256{ GetJwtSecret() }); // <--- 修改：使用 GetJwtSecret()
@@ -181,6 +183,8 @@ namespace Utils {
 
                 info.username = data.get_payload_claim("username").as_string();
                 info.uid = data.get_payload_claim("uid").as_string();
+                info.avatar = data.get_payload_claim("avatar").as_string();
+                info.account = data.get_payload_claim("account").as_string();
                 return true;
             }
             catch (const std::exception& e)
@@ -290,7 +294,7 @@ namespace Utils {
             return MessageIDGenerator::GetInstance().NextId();
         }
 
-        Json::Value Utils::Message::GenerateErrorMsg(const std::string& error_msg)
+        Json::Value GenerateErrorMsg(const std::string& error_msg)
         {
             Json::Value error_json;
             error_json["content_type"] = "ErrorMsg";

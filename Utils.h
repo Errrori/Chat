@@ -12,6 +12,12 @@ namespace Utils
 		std::string username;
 		std::string uid;
         std::string account;
+        std::string avatar;
+
+        std::string ToString() const
+        {
+            return "name: " + username + ", uid: " + uid + ", account: " + account + ", avatar: " + avatar;
+        }
 	};
 
     namespace Type

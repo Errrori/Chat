@@ -96,7 +96,19 @@
     <ClCompile Include="models\Notifications.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DTOs\ChatRecordDTO.cpp">
+    <ClCompile Include="ChatRecordsManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\GroupChats.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\Messages.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\PrivateChats.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\Threads.cc">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -182,8 +194,23 @@
     <ClInclude Include="models\Notifications.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DTOs\ChatRecordDTO.h">
+    <ClInclude Include="ChatRecordsManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="models\GroupChats.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\Messages.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\PrivateChats.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\Threads.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="models\model.json" />
   </ItemGroup>
 </Project>

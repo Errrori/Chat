@@ -5,6 +5,7 @@
  *
  */
 #include "pch.h"
+
 #include "GroupMembers.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
@@ -13,20 +14,18 @@ using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
-const std::string GroupMembers::Cols::_id = "id";
-const std::string GroupMembers::Cols::_group_id = "group_id";
-const std::string GroupMembers::Cols::_member_uid = "member_uid";
+const std::string GroupMembers::Cols::_thread_id = "thread_id";
+const std::string GroupMembers::Cols::_user_uid = "user_uid";
 const std::string GroupMembers::Cols::_role = "role";
 const std::string GroupMembers::Cols::_join_time = "join_time";
-const std::string GroupMembers::primaryKeyName = "id";
+const std::vector<std::string> GroupMembers::primaryKeyName = {"thread_id","user_uid"};
 const bool GroupMembers::hasPrimaryKey = true;
 const std::string GroupMembers::tableName = "group_members";
 
 const std::vector<typename GroupMembers::MetaData> GroupMembers::metaData_={
-{"id","int64_t","integer",8,1,1,0},
-{"group_id","std::string","text",0,0,0,1},
-{"member_uid","std::string","text",0,0,0,1},
-{"role","std::string","text",0,0,0,1},
+{"thread_id","int64_t","integer",8,0,1,1},
+{"user_uid","std::string","text",0,0,1,1},
+{"role","int64_t","integer",8,0,0,1},
 {"join_time","std::string","timestamp",0,0,0,0}
 };
 const std::string &GroupMembers::getColumnName(size_t index) noexcept(false)
@@ -38,21 +37,17 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
 {
     if(indexOffset < 0)
     {
-        if(!r["id"].isNull())
+        if(!r["thread_id"].isNull())
         {
-            id_=std::make_shared<int64_t>(r["id"].as<int64_t>());
+            threadId_=std::make_shared<int64_t>(r["thread_id"].as<int64_t>());
         }
-        if(!r["group_id"].isNull())
+        if(!r["user_uid"].isNull())
         {
-            groupId_=std::make_shared<std::string>(r["group_id"].as<std::string>());
-        }
-        if(!r["member_uid"].isNull())
-        {
-            memberUid_=std::make_shared<std::string>(r["member_uid"].as<std::string>());
+            userUid_=std::make_shared<std::string>(r["user_uid"].as<std::string>());
         }
         if(!r["role"].isNull())
         {
-            role_=std::make_shared<std::string>(r["role"].as<std::string>());
+            role_=std::make_shared<int64_t>(r["role"].as<int64_t>());
         }
         if(!r["join_time"].isNull())
         {
@@ -73,15 +68,14 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                joinTime_=std::make_shared<std::string>(timeStr);
-                
+                joinTime_= std::make_shared<std::string>(timeStr);
             }
         }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 5 > r.size())
+        if(offset + 4 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -90,24 +84,19 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 0;
         if(!r[index].isNull())
         {
-            id_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            threadId_=std::make_shared<int64_t>(r[index].as<int64_t>());
         }
         index = offset + 1;
         if(!r[index].isNull())
         {
-            groupId_=std::make_shared<std::string>(r[index].as<std::string>());
+            userUid_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 2;
         if(!r[index].isNull())
         {
-            memberUid_=std::make_shared<std::string>(r[index].as<std::string>());
+            role_=std::make_shared<int64_t>(r[index].as<int64_t>());
         }
         index = offset + 3;
-        if(!r[index].isNull())
-        {
-            role_=std::make_shared<std::string>(r[index].as<std::string>());
-        }
-        index = offset + 4;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -136,7 +125,7 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
 
 GroupMembers::GroupMembers(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 5)
+    if(pMasqueradingVector.size() != 4)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -146,7 +135,7 @@ GroupMembers::GroupMembers(const Json::Value &pJson, const std::vector<std::stri
         dirtyFlag_[0] = true;
         if(!pJson[pMasqueradingVector[0]].isNull())
         {
-            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+            threadId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
         }
     }
     if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
@@ -154,7 +143,7 @@ GroupMembers::GroupMembers(const Json::Value &pJson, const std::vector<std::stri
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            groupId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+            userUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
     if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
@@ -162,7 +151,7 @@ GroupMembers::GroupMembers(const Json::Value &pJson, const std::vector<std::stri
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            memberUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+            role_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -170,56 +159,40 @@ GroupMembers::GroupMembers(const Json::Value &pJson, const std::vector<std::stri
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            role_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
-        }
-    }
-    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
-    {
-        dirtyFlag_[4] = true;
-        if(!pJson[pMasqueradingVector[4]].isNull())
-        {
-            joinTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+            joinTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
         }
     }
 }
 
 GroupMembers::GroupMembers(const Json::Value &pJson) noexcept(false)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("thread_id"))
     {
         dirtyFlag_[0]=true;
-        if(!pJson["id"].isNull())
+        if(!pJson["thread_id"].isNull())
         {
-            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+            threadId_=std::make_shared<int64_t>((int64_t)pJson["thread_id"].asInt64());
         }
     }
-    if(pJson.isMember("group_id"))
+    if(pJson.isMember("user_uid"))
     {
         dirtyFlag_[1]=true;
-        if(!pJson["group_id"].isNull())
+        if(!pJson["user_uid"].isNull())
         {
-            groupId_=std::make_shared<std::string>(pJson["group_id"].asString());
-        }
-    }
-    if(pJson.isMember("member_uid"))
-    {
-        dirtyFlag_[2]=true;
-        if(!pJson["member_uid"].isNull())
-        {
-            memberUid_=std::make_shared<std::string>(pJson["member_uid"].asString());
+            userUid_=std::make_shared<std::string>(pJson["user_uid"].asString());
         }
     }
     if(pJson.isMember("role"))
     {
-        dirtyFlag_[3]=true;
+        dirtyFlag_[2]=true;
         if(!pJson["role"].isNull())
         {
-            role_=std::make_shared<std::string>(pJson["role"].asString());
+            role_=std::make_shared<int64_t>((int64_t)pJson["role"].asInt64());
         }
     }
     if(pJson.isMember("join_time"))
     {
-        dirtyFlag_[4]=true;
+        dirtyFlag_[3]=true;
         if(!pJson["join_time"].isNull())
         {
             joinTime_=std::make_shared<std::string>(pJson["join_time"].asString());
@@ -230,7 +203,7 @@ GroupMembers::GroupMembers(const Json::Value &pJson) noexcept(false)
 void GroupMembers::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 5)
+    if(pMasqueradingVector.size() != 4)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -239,15 +212,14 @@ void GroupMembers::updateByMasqueradedJson(const Json::Value &pJson,
     {
         if(!pJson[pMasqueradingVector[0]].isNull())
         {
-            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+            threadId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
         }
     }
     if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
     {
-        dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            groupId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+            userUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
     if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
@@ -255,7 +227,7 @@ void GroupMembers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            memberUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+            role_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -263,55 +235,38 @@ void GroupMembers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            role_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
-        }
-    }
-    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
-    {
-        dirtyFlag_[4] = true;
-        if(!pJson[pMasqueradingVector[4]].isNull())
-        {
-            joinTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+            joinTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
         }
     }
 }
 
 void GroupMembers::updateByJson(const Json::Value &pJson) noexcept(false)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("thread_id"))
     {
-        if(!pJson["id"].isNull())
+        if(!pJson["thread_id"].isNull())
         {
-            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+            threadId_=std::make_shared<int64_t>((int64_t)pJson["thread_id"].asInt64());
         }
     }
-    if(pJson.isMember("group_id"))
+    if(pJson.isMember("user_uid"))
     {
-        dirtyFlag_[1] = true;
-        if(!pJson["group_id"].isNull())
+        if(!pJson["user_uid"].isNull())
         {
-            groupId_=std::make_shared<std::string>(pJson["group_id"].asString());
-        }
-    }
-    if(pJson.isMember("member_uid"))
-    {
-        dirtyFlag_[2] = true;
-        if(!pJson["member_uid"].isNull())
-        {
-            memberUid_=std::make_shared<std::string>(pJson["member_uid"].asString());
+            userUid_=std::make_shared<std::string>(pJson["user_uid"].asString());
         }
     }
     if(pJson.isMember("role"))
     {
-        dirtyFlag_[3] = true;
+        dirtyFlag_[2] = true;
         if(!pJson["role"].isNull())
         {
-            role_=std::make_shared<std::string>(pJson["role"].asString());
+            role_=std::make_shared<int64_t>((int64_t)pJson["role"].asInt64());
         }
     }
     if(pJson.isMember("join_time"))
     {
-        dirtyFlag_[4] = true;
+        dirtyFlag_[3] = true;
         if(!pJson["join_time"].isNull())
         {
             joinTime_=std::make_shared<std::string>(pJson["join_time"].asString());
@@ -319,97 +274,60 @@ void GroupMembers::updateByJson(const Json::Value &pJson) noexcept(false)
     }
 }
 
-const int64_t &GroupMembers::getValueOfId() const noexcept
+const int64_t &GroupMembers::getValueOfThreadId() const noexcept
 {
     static const int64_t defaultValue = int64_t();
-    if(id_)
-        return *id_;
+    if(threadId_)
+        return *threadId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GroupMembers::getId() const noexcept
+const std::shared_ptr<int64_t> &GroupMembers::getThreadId() const noexcept
 {
-    return id_;
+    return threadId_;
 }
-void GroupMembers::setId(const int64_t &pId) noexcept
+void GroupMembers::setThreadId(const int64_t &pThreadId) noexcept
 {
-    id_ = std::make_shared<int64_t>(pId);
+    threadId_ = std::make_shared<int64_t>(pThreadId);
     dirtyFlag_[0] = true;
-}
-void GroupMembers::setIdToNull() noexcept
-{
-    id_.reset();
-    dirtyFlag_[0] = true;
-}
-const typename GroupMembers::PrimaryKeyType & GroupMembers::getPrimaryKey() const
-{
-    assert(id_);
-    return *id_;
 }
 
-const std::string &GroupMembers::getValueOfGroupId() const noexcept
+const std::string &GroupMembers::getValueOfUserUid() const noexcept
 {
     static const std::string defaultValue = std::string();
-    if(groupId_)
-        return *groupId_;
+    if(userUid_)
+        return *userUid_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &GroupMembers::getGroupId() const noexcept
+const std::shared_ptr<std::string> &GroupMembers::getUserUid() const noexcept
 {
-    return groupId_;
+    return userUid_;
 }
-void GroupMembers::setGroupId(const std::string &pGroupId) noexcept
+void GroupMembers::setUserUid(const std::string &pUserUid) noexcept
 {
-    groupId_ = std::make_shared<std::string>(pGroupId);
+    userUid_ = std::make_shared<std::string>(pUserUid);
     dirtyFlag_[1] = true;
 }
-void GroupMembers::setGroupId(std::string &&pGroupId) noexcept
+void GroupMembers::setUserUid(std::string &&pUserUid) noexcept
 {
-    groupId_ = std::make_shared<std::string>(std::move(pGroupId));
+    userUid_ = std::make_shared<std::string>(std::move(pUserUid));
     dirtyFlag_[1] = true;
 }
 
-const std::string &GroupMembers::getValueOfMemberUid() const noexcept
+const int64_t &GroupMembers::getValueOfRole() const noexcept
 {
-    static const std::string defaultValue = std::string();
-    if(memberUid_)
-        return *memberUid_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &GroupMembers::getMemberUid() const noexcept
-{
-    return memberUid_;
-}
-void GroupMembers::setMemberUid(const std::string &pMemberUid) noexcept
-{
-    memberUid_ = std::make_shared<std::string>(pMemberUid);
-    dirtyFlag_[2] = true;
-}
-void GroupMembers::setMemberUid(std::string &&pMemberUid) noexcept
-{
-    memberUid_ = std::make_shared<std::string>(std::move(pMemberUid));
-    dirtyFlag_[2] = true;
-}
-
-const std::string &GroupMembers::getValueOfRole() const noexcept
-{
-    static const std::string defaultValue = std::string();
+    static const int64_t defaultValue = int64_t();
     if(role_)
         return *role_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &GroupMembers::getRole() const noexcept
+const std::shared_ptr<int64_t> &GroupMembers::getRole() const noexcept
 {
     return role_;
 }
-void GroupMembers::setRole(const std::string &pRole) noexcept
+void GroupMembers::setRole(const int64_t &pRole) noexcept
 {
-    role_ = std::make_shared<std::string>(pRole);
-    dirtyFlag_[3] = true;
-}
-void GroupMembers::setRole(std::string &&pRole) noexcept
-{
-    role_ = std::make_shared<std::string>(std::move(pRole));
-    dirtyFlag_[3] = true;
+    role_ = std::make_shared<int64_t>(pRole);
+    dirtyFlag_[2] = true;
 }
 
 const std::string &GroupMembers::getValueOfJoinTime() const noexcept
@@ -426,29 +344,32 @@ const std::shared_ptr<std::string> &GroupMembers::getJoinTime() const noexcept
 void GroupMembers::setJoinTime(const std::string &pJoinTime) noexcept
 {
     joinTime_ = std::make_shared<std::string>(pJoinTime);
-    dirtyFlag_[4] = true;
+    dirtyFlag_[3] = true;
 }
 void GroupMembers::setJoinTime(std::string &&pJoinTime) noexcept
 {
     joinTime_ = std::make_shared<std::string>(std::move(pJoinTime));
-    dirtyFlag_[4] = true;
+    dirtyFlag_[3] = true;
 }
 void GroupMembers::setJoinTimeToNull() noexcept
 {
     joinTime_.reset();
-    dirtyFlag_[4] = true;
+    dirtyFlag_[3] = true;
 }
 
 void GroupMembers::updateId(const uint64_t id)
 {
-    id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
+}
+typename GroupMembers::PrimaryKeyType GroupMembers::getPrimaryKey() const
+{
+    return std::make_tuple(*threadId_,*userUid_);
 }
 
 const std::vector<std::string> &GroupMembers::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
-        "group_id",
-        "member_uid",
+        "thread_id",
+        "user_uid",
         "role",
         "join_time"
     };
@@ -457,11 +378,22 @@ const std::vector<std::string> &GroupMembers::insertColumns() noexcept
 
 void GroupMembers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[0])
+    {
+        if(getThreadId())
+        {
+            binder << getValueOfThreadId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
     if(dirtyFlag_[1])
     {
-        if(getGroupId())
+        if(getUserUid())
         {
-            binder << getValueOfGroupId();
+            binder << getValueOfUserUid();
         }
         else
         {
@@ -469,17 +401,6 @@ void GroupMembers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
     if(dirtyFlag_[2])
-    {
-        if(getMemberUid())
-        {
-            binder << getValueOfMemberUid();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-    if(dirtyFlag_[3])
     {
         if(getRole())
         {
@@ -490,7 +411,7 @@ void GroupMembers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[4])
+    if(dirtyFlag_[3])
     {
         if(getJoinTime())
         {
@@ -506,6 +427,10 @@ void GroupMembers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 const std::vector<std::string> GroupMembers::updateColumns() const
 {
     std::vector<std::string> ret;
+    if(dirtyFlag_[0])
+    {
+        ret.push_back(getColumnName(0));
+    }
     if(dirtyFlag_[1])
     {
         ret.push_back(getColumnName(1));
@@ -518,20 +443,27 @@ const std::vector<std::string> GroupMembers::updateColumns() const
     {
         ret.push_back(getColumnName(3));
     }
-    if(dirtyFlag_[4])
-    {
-        ret.push_back(getColumnName(4));
-    }
     return ret;
 }
 
 void GroupMembers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[0])
+    {
+        if(getThreadId())
+        {
+            binder << getValueOfThreadId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
     if(dirtyFlag_[1])
     {
-        if(getGroupId())
+        if(getUserUid())
         {
-            binder << getValueOfGroupId();
+            binder << getValueOfUserUid();
         }
         else
         {
@@ -539,17 +471,6 @@ void GroupMembers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
     if(dirtyFlag_[2])
-    {
-        if(getMemberUid())
-        {
-            binder << getValueOfMemberUid();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-    if(dirtyFlag_[3])
     {
         if(getRole())
         {
@@ -560,7 +481,7 @@ void GroupMembers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[4])
+    if(dirtyFlag_[3])
     {
         if(getJoinTime())
         {
@@ -575,33 +496,25 @@ void GroupMembers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 Json::Value GroupMembers::toJson() const
 {
     Json::Value ret;
-    if(getId())
+    if(getThreadId())
     {
-        ret["id"]=(Json::Int64)getValueOfId();
+        ret["thread_id"]=(Json::Int64)getValueOfThreadId();
     }
     else
     {
-        ret["id"]=Json::Value();
+        ret["thread_id"]=Json::Value();
     }
-    if(getGroupId())
+    if(getUserUid())
     {
-        ret["group_id"]=getValueOfGroupId();
-    }
-    else
-    {
-        ret["group_id"]=Json::Value();
-    }
-    if(getMemberUid())
-    {
-        ret["member_uid"]=getValueOfMemberUid();
+        ret["user_uid"]=getValueOfUserUid();
     }
     else
     {
-        ret["member_uid"]=Json::Value();
+        ret["user_uid"]=Json::Value();
     }
     if(getRole())
     {
-        ret["role"]=getValueOfRole();
+        ret["role"]=(Json::Int64)getValueOfRole();
     }
     else
     {
@@ -622,13 +535,13 @@ Json::Value GroupMembers::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 5)
+    if(pMasqueradingVector.size() == 4)
     {
         if(!pMasqueradingVector[0].empty())
         {
-            if(getId())
+            if(getThreadId())
             {
-                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfId();
+                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfThreadId();
             }
             else
             {
@@ -637,9 +550,9 @@ Json::Value GroupMembers::toMasqueradedJson(
         }
         if(!pMasqueradingVector[1].empty())
         {
-            if(getGroupId())
+            if(getUserUid())
             {
-                ret[pMasqueradingVector[1]]=getValueOfGroupId();
+                ret[pMasqueradingVector[1]]=getValueOfUserUid();
             }
             else
             {
@@ -648,9 +561,9 @@ Json::Value GroupMembers::toMasqueradedJson(
         }
         if(!pMasqueradingVector[2].empty())
         {
-            if(getMemberUid())
+            if(getRole())
             {
-                ret[pMasqueradingVector[2]]=getValueOfMemberUid();
+                ret[pMasqueradingVector[2]]=(Json::Int64)getValueOfRole();
             }
             else
             {
@@ -659,56 +572,37 @@ Json::Value GroupMembers::toMasqueradedJson(
         }
         if(!pMasqueradingVector[3].empty())
         {
-            if(getRole())
+            if(getJoinTime())
             {
-                ret[pMasqueradingVector[3]]=getValueOfRole();
+                ret[pMasqueradingVector[3]]=getValueOfJoinTime();
             }
             else
             {
                 ret[pMasqueradingVector[3]]=Json::Value();
             }
         }
-        if(!pMasqueradingVector[4].empty())
-        {
-            if(getJoinTime())
-            {
-                ret[pMasqueradingVector[4]]=getValueOfJoinTime();
-            }
-            else
-            {
-                ret[pMasqueradingVector[4]]=Json::Value();
-            }
-        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
-    if(getId())
+    if(getThreadId())
     {
-        ret["id"]=(Json::Int64)getValueOfId();
+        ret["thread_id"]=(Json::Int64)getValueOfThreadId();
     }
     else
     {
-        ret["id"]=Json::Value();
+        ret["thread_id"]=Json::Value();
     }
-    if(getGroupId())
+    if(getUserUid())
     {
-        ret["group_id"]=getValueOfGroupId();
-    }
-    else
-    {
-        ret["group_id"]=Json::Value();
-    }
-    if(getMemberUid())
-    {
-        ret["member_uid"]=getValueOfMemberUid();
+        ret["user_uid"]=getValueOfUserUid();
     }
     else
     {
-        ret["member_uid"]=Json::Value();
+        ret["user_uid"]=Json::Value();
     }
     if(getRole())
     {
-        ret["role"]=getValueOfRole();
+        ret["role"]=(Json::Int64)getValueOfRole();
     }
     else
     {
@@ -727,39 +621,34 @@ Json::Value GroupMembers::toMasqueradedJson(
 
 bool GroupMembers::validateJsonForCreation(const Json::Value &pJson, std::string &err)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("thread_id"))
     {
-        if(!validJsonOfField(0, "id", pJson["id"], err, true))
-            return false;
-    }
-    if(pJson.isMember("group_id"))
-    {
-        if(!validJsonOfField(1, "group_id", pJson["group_id"], err, true))
+        if(!validJsonOfField(0, "thread_id", pJson["thread_id"], err, true))
             return false;
     }
     else
     {
-        err="The group_id column cannot be null";
+        err="The thread_id column cannot be null";
         return false;
     }
-    if(pJson.isMember("member_uid"))
+    if(pJson.isMember("user_uid"))
     {
-        if(!validJsonOfField(2, "member_uid", pJson["member_uid"], err, true))
+        if(!validJsonOfField(1, "user_uid", pJson["user_uid"], err, true))
             return false;
     }
     else
     {
-        err="The member_uid column cannot be null";
+        err="The user_uid column cannot be null";
         return false;
     }
     if(pJson.isMember("role"))
     {
-        if(!validJsonOfField(3, "role", pJson["role"], err, true))
+        if(!validJsonOfField(2, "role", pJson["role"], err, true))
             return false;
     }
     if(pJson.isMember("join_time"))
     {
-        if(!validJsonOfField(4, "join_time", pJson["join_time"], err, true))
+        if(!validJsonOfField(3, "join_time", pJson["join_time"], err, true))
             return false;
     }
     return true;
@@ -768,7 +657,7 @@ bool GroupMembers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                       const std::vector<std::string> &pMasqueradingVector,
                                                       std::string &err)
 {
-    if(pMasqueradingVector.size() != 5)
+    if(pMasqueradingVector.size() != 4)
     {
         err = "Bad masquerading vector";
         return false;
@@ -781,6 +670,11 @@ bool GroupMembers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
                   return false;
           }
+        else
+        {
+            err="The " + pMasqueradingVector[0] + " column cannot be null";
+            return false;
+        }
       }
       if(!pMasqueradingVector[1].empty())
       {
@@ -802,25 +696,12 @@ bool GroupMembers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, true))
                   return false;
           }
-        else
-        {
-            err="The " + pMasqueradingVector[2] + " column cannot be null";
-            return false;
-        }
       }
       if(!pMasqueradingVector[3].empty())
       {
           if(pJson.isMember(pMasqueradingVector[3]))
           {
               if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, true))
-                  return false;
-          }
-      }
-      if(!pMasqueradingVector[4].empty())
-      {
-          if(pJson.isMember(pMasqueradingVector[4]))
-          {
-              if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, true))
                   return false;
           }
       }
@@ -834,9 +715,9 @@ bool GroupMembers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 }
 bool GroupMembers::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("thread_id"))
     {
-        if(!validJsonOfField(0, "id", pJson["id"], err, false))
+        if(!validJsonOfField(0, "thread_id", pJson["thread_id"], err, false))
             return false;
     }
     else
@@ -844,24 +725,24 @@ bool GroupMembers::validateJsonForUpdate(const Json::Value &pJson, std::string &
         err = "The value of primary key must be set in the json object for update";
         return false;
     }
-    if(pJson.isMember("group_id"))
+    if(pJson.isMember("user_uid"))
     {
-        if(!validJsonOfField(1, "group_id", pJson["group_id"], err, false))
+        if(!validJsonOfField(1, "user_uid", pJson["user_uid"], err, false))
             return false;
     }
-    if(pJson.isMember("member_uid"))
+    else
     {
-        if(!validJsonOfField(2, "member_uid", pJson["member_uid"], err, false))
-            return false;
+        err = "The value of primary key must be set in the json object for update";
+        return false;
     }
     if(pJson.isMember("role"))
     {
-        if(!validJsonOfField(3, "role", pJson["role"], err, false))
+        if(!validJsonOfField(2, "role", pJson["role"], err, false))
             return false;
     }
     if(pJson.isMember("join_time"))
     {
-        if(!validJsonOfField(4, "join_time", pJson["join_time"], err, false))
+        if(!validJsonOfField(3, "join_time", pJson["join_time"], err, false))
             return false;
     }
     return true;
@@ -870,7 +751,7 @@ bool GroupMembers::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                     const std::vector<std::string> &pMasqueradingVector,
                                                     std::string &err)
 {
-    if(pMasqueradingVector.size() != 5)
+    if(pMasqueradingVector.size() != 4)
     {
         err = "Bad masquerading vector";
         return false;
@@ -891,6 +772,11 @@ bool GroupMembers::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
           if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
               return false;
       }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
       if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
       {
           if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, false))
@@ -899,11 +785,6 @@ bool GroupMembers::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
       {
           if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, false))
-              return false;
-      }
-      if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
-      {
-          if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, false))
               return false;
       }
     }
@@ -923,14 +804,10 @@ bool GroupMembers::validJsonOfField(size_t index,
     switch(index)
     {
         case 0:
-            if(isForCreation)
-            {
-                err="The automatic primary key cannot be set";
-                return false;
-            }
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {
@@ -956,25 +833,13 @@ bool GroupMembers::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isString())
+            if(!pJson.isInt64())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
             }
             break;
         case 3:
-            if(pJson.isNull())
-            {
-                err="The " + fieldName + " column cannot be null";
-                return false;
-            }
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-            break;
-        case 4:
             if(pJson.isNull())
             {
                 return true;

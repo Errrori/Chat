@@ -90,7 +90,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DTOs\ChatRecordDTO.cpp" />
+    <ClCompile Include="ChatRecordsManager.cpp" />
     <ClCompile Include="controllers\Authentication.cpp" />
     <ClCompile Include="controllers\FileController.cpp" />
     <ClCompile Include="DTOs\NotificationDTO.cpp" />
@@ -104,10 +104,14 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="controllers\PublicChatController.cpp" />
     <ClCompile Include="models\ChatRecords.cc" />
+    <ClCompile Include="models\GroupChats.cc" />
     <ClCompile Include="models\GroupMembers.cc" />
     <ClCompile Include="models\Groups.cc" />
+    <ClCompile Include="models\Messages.cc" />
     <ClCompile Include="models\Notifications.cc" />
+    <ClCompile Include="models\PrivateChats.cc" />
     <ClCompile Include="models\Relationships.cc" />
+    <ClCompile Include="models\Threads.cc" />
     <ClCompile Include="models\Users.cc" />
     <ClCompile Include="manager\NotificationManager.cpp" />
     <ClCompile Include="pch.cpp">
@@ -123,7 +127,7 @@
     <ClCompile Include="controllers\EchoController.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DTOs\ChatRecordDTO.h" />
+    <ClInclude Include="ChatRecordsManager.h" />
     <ClInclude Include="const.h" />
     <ClInclude Include="controllers\Authentication.h" />
     <ClInclude Include="controllers\FileController.h" />
@@ -137,10 +141,14 @@
     <ClInclude Include="controllers\DebugRoute.h" />
     <ClInclude Include="controllers\PublicChatController.h" />
     <ClInclude Include="models\ChatRecords.h" />
+    <ClInclude Include="models\GroupChats.h" />
     <ClInclude Include="models\GroupMembers.h" />
     <ClInclude Include="models\Groups.h" />
+    <ClInclude Include="models\Messages.h" />
     <ClInclude Include="models\Notifications.h" />
+    <ClInclude Include="models\PrivateChats.h" />
     <ClInclude Include="models\Relationships.h" />
+    <ClInclude Include="models\Threads.h" />
     <ClInclude Include="models\Users.h" />
     <ClInclude Include="manager\NotificationManager.h" />
     <ClInclude Include="pch.h" />
@@ -151,6 +159,9 @@
     <ClInclude Include="RelationshipService.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="controllers\EchoController.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="models\model.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

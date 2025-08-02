@@ -24,7 +24,6 @@ add_executable(${PROJECT_NAME}
     controllers/Authentication.cpp
     manager/DatabaseManager.cpp
     controllers/DebugRoute.cpp
-    User.cpp
     utils.cpp
     middleware/CorsMiddleware.cpp
     models/ChatRecords.cc
@@ -32,6 +31,8 @@ add_executable(${PROJECT_NAME}
     models/Notifications.cc
     models/Groups.cc
     models/GroupMembers.cc
+    models/Messages.cc    
+    models/Threads.cc  
     models/Relationships.cc
     DTOs/NotificationDTO.cpp
     DTOs/MessageDTO.cpp

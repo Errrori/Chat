@@ -24,7 +24,6 @@ void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
     if (response["code"].asUInt()!=200)
     {
         response["message"] = "get database error";
-        
     }
     callback(resp);
 }
@@ -342,11 +341,11 @@ void DbInfoController::GetAllRecords(const drogon::HttpRequestPtr& req,
 
     if (num.has_value())
     {
-        records = DatabaseManager::GetAllRecords(num.value());
+        records = DatabaseManager::GetAllMessage(num.value());
     }
     else
     {
-        records = DatabaseManager::GetAllRecords();
+        records = DatabaseManager::GetAllMessage();
     }
 
     if (records == Json::nullValue)

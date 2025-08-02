@@ -6,6 +6,7 @@
  */
 
 #pragma once
+#include "pch.h"
 #include <drogon/orm/Result.h>
 #include <drogon/orm/Row.h>
 #include <drogon/orm/Field.h>
@@ -44,9 +45,8 @@ class GroupMembers
   public:
     struct Cols
     {
-        static const std::string _id;
-        static const std::string _group_id;
-        static const std::string _member_uid;
+        static const std::string _thread_id;
+        static const std::string _user_uid;
         static const std::string _role;
         static const std::string _join_time;
     };
@@ -54,9 +54,9 @@ class GroupMembers
     static const int primaryKeyNumber;
     static const std::string tableName;
     static const bool hasPrimaryKey;
-    static const std::string primaryKeyName;
-    using PrimaryKeyType = int64_t;
-    const PrimaryKeyType &getPrimaryKey() const;
+    static const std::vector<std::string> primaryKeyName;
+    using PrimaryKeyType = std::tuple<int64_t,std::string>;//thread_id,user_uid
+    PrimaryKeyType getPrimaryKey() const;
 
     /**
      * @brief constructor
@@ -100,41 +100,30 @@ class GroupMembers
                           std::string &err,
                           bool isForCreation);
 
-    /**  For column id  */
-    ///Get the value of the column id, returns the default value if the column is null
-    const int64_t &getValueOfId() const noexcept;
+    /**  For column thread_id  */
+    ///Get the value of the column thread_id, returns the default value if the column is null
+    const int64_t &getValueOfThreadId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getId() const noexcept;
-    ///Set the value of the column id
-    void setId(const int64_t &pId) noexcept;
-    void setIdToNull() noexcept;
+    const std::shared_ptr<int64_t> &getThreadId() const noexcept;
+    ///Set the value of the column thread_id
+    void setThreadId(const int64_t &pThreadId) noexcept;
 
-    /**  For column group_id  */
-    ///Get the value of the column group_id, returns the default value if the column is null
-    const std::string &getValueOfGroupId() const noexcept;
+    /**  For column user_uid  */
+    ///Get the value of the column user_uid, returns the default value if the column is null
+    const std::string &getValueOfUserUid() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getGroupId() const noexcept;
-    ///Set the value of the column group_id
-    void setGroupId(const std::string &pGroupId) noexcept;
-    void setGroupId(std::string &&pGroupId) noexcept;
-
-    /**  For column member_uid  */
-    ///Get the value of the column member_uid, returns the default value if the column is null
-    const std::string &getValueOfMemberUid() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getMemberUid() const noexcept;
-    ///Set the value of the column member_uid
-    void setMemberUid(const std::string &pMemberUid) noexcept;
-    void setMemberUid(std::string &&pMemberUid) noexcept;
+    const std::shared_ptr<std::string> &getUserUid() const noexcept;
+    ///Set the value of the column user_uid
+    void setUserUid(const std::string &pUserUid) noexcept;
+    void setUserUid(std::string &&pUserUid) noexcept;
 
     /**  For column role  */
     ///Get the value of the column role, returns the default value if the column is null
-    const std::string &getValueOfRole() const noexcept;
+    const int64_t &getValueOfRole() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getRole() const noexcept;
+    const std::shared_ptr<int64_t> &getRole() const noexcept;
     ///Set the value of the column role
-    void setRole(const std::string &pRole) noexcept;
-    void setRole(std::string &&pRole) noexcept;
+    void setRole(const int64_t &pRole) noexcept;
 
     /**  For column join_time  */
     ///Get the value of the column join_time, returns the default value if the column is null
@@ -147,7 +136,7 @@ class GroupMembers
     void setJoinTimeToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 5;  }
+    static size_t getColumnNumber() noexcept {  return 4;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -168,10 +157,9 @@ class GroupMembers
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
-    std::shared_ptr<int64_t> id_;
-    std::shared_ptr<std::string> groupId_;
-    std::shared_ptr<std::string> memberUid_;
-    std::shared_ptr<std::string> role_;
+    std::shared_ptr<int64_t> threadId_;
+    std::shared_ptr<std::string> userUid_;
+    std::shared_ptr<int64_t> role_;
     std::shared_ptr<std::string> joinTime_;
     struct MetaData
     {
@@ -184,17 +172,17 @@ class GroupMembers
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[5]={ false };
+    bool dirtyFlag_[4]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where id = ?";
+        static const std::string sql="select * from " + tableName + " where thread_id = ? and user_uid = ?";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where id = ?";
+        static const std::string sql="delete from " + tableName + " where thread_id = ? and user_uid = ?";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -202,31 +190,31 @@ class GroupMembers
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+        if(dirtyFlag_[0])
+        {
+            sql += "thread_id,";
+            ++parametersCount;
+        }
         if(dirtyFlag_[1])
         {
-            sql += "group_id,";
+            sql += "user_uid,";
             ++parametersCount;
         }
         if(dirtyFlag_[2])
         {
-            sql += "member_uid,";
-            ++parametersCount;
-        }
-        if(dirtyFlag_[3])
-        {
             sql += "role,";
             ++parametersCount;
         }
-        if(!dirtyFlag_[3])
+        if(!dirtyFlag_[2])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[4])
+        if(dirtyFlag_[3])
         {
             sql += "join_time,";
             ++parametersCount;
         }
-        if(!dirtyFlag_[4])
+        if(!dirtyFlag_[3])
         {
             needSelection=true;
         }
@@ -238,6 +226,11 @@ class GroupMembers
         else
             sql += ") values (";
 
+        if(dirtyFlag_[0])
+        {
+            sql.append("?,");
+
+        }
         if(dirtyFlag_[1])
         {
             sql.append("?,");
@@ -249,11 +242,6 @@ class GroupMembers
 
         }
         if(dirtyFlag_[3])
-        {
-            sql.append("?,");
-
-        }
-        if(dirtyFlag_[4])
         {
             sql.append("?,");
 

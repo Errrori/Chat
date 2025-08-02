@@ -22,7 +22,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
     const auto& message_dto = MessageDTO::BuildFromClientMsg(json_msg,error);
     if (message_dto.has_value())
     {
-        const auto& conn_info = conn->getContext<Connection::UserConnectionInfo>();
+        const auto& conn_info = conn->getContext<Utils::UserInfo>();
     	auto dto_data = message_dto.value();
 		
         SendManager::GetInstance().PushMessage(message_dto.value());
@@ -78,7 +78,7 @@ void ChatController::handleConnectionClosed(const drogon::WebSocketConnectionPtr
 
 bool ChatController::WriteSenderInfo(const drogon::WebSocketConnectionPtr& conn, Json::Value& json_msg)
 {
-    const auto& conn_info = conn->getContext<Connection::UserConnectionInfo>();
+    const auto& conn_info = conn->getContext<Utils::UserInfo>();
     if (!conn_info)
     {
         LOG_ERROR << "can not get connection info";

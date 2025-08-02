@@ -5,7 +5,6 @@
  *
  */
 #include "pch.h"
-
 #include "Users.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
@@ -21,6 +20,13 @@ const std::string Users::Cols::_password = "password";
 const std::string Users::Cols::_uid = "uid";
 const std::string Users::Cols::_avatar = "avatar";
 const std::string Users::Cols::_create_time = "create_time";
+const std::string Users::Cols::_signature = "signature";
+const std::string Users::Cols::_last_login_time = "last_login_time";
+const std::string Users::Cols::_posts = "posts";
+const std::string Users::Cols::_level = "level";
+const std::string Users::Cols::_status = "status";
+const std::string Users::Cols::_followers = "followers";
+const std::string Users::Cols::_following = "following";
 const std::string Users::primaryKeyName = "id";
 const bool Users::hasPrimaryKey = true;
 const std::string Users::tableName = "users";
@@ -32,7 +38,14 @@ const std::vector<typename Users::MetaData> Users::metaData_={
 {"password","std::string","text",0,0,0,1},
 {"uid","std::string","text",0,0,0,1},
 {"avatar","std::string","text",0,0,0,0},
-{"create_time","std::string","timestamp",0,0,0,0}
+{"create_time","std::string","timestamp",0,0,0,0},
+{"signature","std::string","text",0,0,0,0},
+{"last_login_time","std::string","timestamp",0,0,0,0},
+{"posts","int64_t","integer",8,0,0,0},
+{"level","int64_t","integer",8,0,0,0},
+{"status","int64_t","integer",8,0,0,0},
+{"followers","int64_t","integer",8,0,0,0},
+{"following","int64_t","integer",8,0,0,0}
 };
 const std::string &Users::getColumnName(size_t index) noexcept(false)
 {
@@ -89,11 +102,57 @@ Users::Users(const Row &r, const ssize_t indexOffset) noexcept
                 createTime_=std::make_shared<std::string>(timeStr);
             }
         }
+        if(!r["signature"].isNull())
+        {
+            signature_=std::make_shared<std::string>(r["signature"].as<std::string>());
+        }
+        if(!r["last_login_time"].isNull())
+        {
+            auto timeStr = r["last_login_time"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastLoginTime_=std::make_shared<std::string>(timeStr);
+            }
+        }
+        if(!r["posts"].isNull())
+        {
+            posts_=std::make_shared<int64_t>(r["posts"].as<int64_t>());
+        }
+        if(!r["level"].isNull())
+        {
+            level_=std::make_shared<int64_t>(r["level"].as<int64_t>());
+        }
+        if(!r["status"].isNull())
+        {
+            status_=std::make_shared<int64_t>(r["status"].as<int64_t>());
+        }
+        if(!r["followers"].isNull())
+        {
+            followers_=std::make_shared<int64_t>(r["followers"].as<int64_t>());
+        }
+        if(!r["following"].isNull())
+        {
+            following_=std::make_shared<int64_t>(r["following"].as<int64_t>());
+        }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 7 > r.size())
+        if(offset + 14 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -152,13 +211,66 @@ Users::Users(const Row &r, const ssize_t indexOffset) noexcept
                 createTime_=std::make_shared<std::string>(timeStr);
             }
         }
+        index = offset + 7;
+        if(!r[index].isNull())
+        {
+            signature_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 8;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastLoginTime_=std::make_shared<std::string>(timeStr);
+            }
+        }
+        index = offset + 9;
+        if(!r[index].isNull())
+        {
+            posts_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 10;
+        if(!r[index].isNull())
+        {
+            level_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 11;
+        if(!r[index].isNull())
+        {
+            status_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 12;
+        if(!r[index].isNull())
+        {
+            followers_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 13;
+        if(!r[index].isNull())
+        {
+            following_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
     }
 
 }
 
 Users::Users(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 7)
+    if(pMasqueradingVector.size() != 14)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -217,6 +329,62 @@ Users::Users(const Json::Value &pJson, const std::vector<std::string> &pMasquera
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
             createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+        }
+    }
+    if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+    {
+        dirtyFlag_[7] = true;
+        if(!pJson[pMasqueradingVector[7]].isNull())
+        {
+            signature_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
+        }
+    }
+    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson[pMasqueradingVector[8]].isNull())
+        {
+            lastLoginTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+        }
+    }
+    if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
+    {
+        dirtyFlag_[9] = true;
+        if(!pJson[pMasqueradingVector[9]].isNull())
+        {
+            posts_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[9]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson[pMasqueradingVector[10]].isNull())
+        {
+            level_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson[pMasqueradingVector[11]].isNull())
+        {
+            status_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson[pMasqueradingVector[12]].isNull())
+        {
+            followers_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[12]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson[pMasqueradingVector[13]].isNull())
+        {
+            following_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
         }
     }
 }
@@ -279,12 +447,68 @@ Users::Users(const Json::Value &pJson) noexcept(false)
             createTime_=std::make_shared<std::string>(pJson["create_time"].asString());
         }
     }
+    if(pJson.isMember("signature"))
+    {
+        dirtyFlag_[7]=true;
+        if(!pJson["signature"].isNull())
+        {
+            signature_=std::make_shared<std::string>(pJson["signature"].asString());
+        }
+    }
+    if(pJson.isMember("last_login_time"))
+    {
+        dirtyFlag_[8]=true;
+        if(!pJson["last_login_time"].isNull())
+        {
+            lastLoginTime_=std::make_shared<std::string>(pJson["last_login_time"].asString());
+        }
+    }
+    if(pJson.isMember("posts"))
+    {
+        dirtyFlag_[9]=true;
+        if(!pJson["posts"].isNull())
+        {
+            posts_=std::make_shared<int64_t>((int64_t)pJson["posts"].asInt64());
+        }
+    }
+    if(pJson.isMember("level"))
+    {
+        dirtyFlag_[10]=true;
+        if(!pJson["level"].isNull())
+        {
+            level_=std::make_shared<int64_t>((int64_t)pJson["level"].asInt64());
+        }
+    }
+    if(pJson.isMember("status"))
+    {
+        dirtyFlag_[11]=true;
+        if(!pJson["status"].isNull())
+        {
+            status_=std::make_shared<int64_t>((int64_t)pJson["status"].asInt64());
+        }
+    }
+    if(pJson.isMember("followers"))
+    {
+        dirtyFlag_[12]=true;
+        if(!pJson["followers"].isNull())
+        {
+            followers_=std::make_shared<int64_t>((int64_t)pJson["followers"].asInt64());
+        }
+    }
+    if(pJson.isMember("following"))
+    {
+        dirtyFlag_[13]=true;
+        if(!pJson["following"].isNull())
+        {
+            following_=std::make_shared<int64_t>((int64_t)pJson["following"].asInt64());
+        }
+    }
 }
 
 void Users::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 7)
+    if(pMasqueradingVector.size() != 14)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -344,6 +568,62 @@ void Users::updateByMasqueradedJson(const Json::Value &pJson,
             createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
         }
     }
+    if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+    {
+        dirtyFlag_[7] = true;
+        if(!pJson[pMasqueradingVector[7]].isNull())
+        {
+            signature_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
+        }
+    }
+    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson[pMasqueradingVector[8]].isNull())
+        {
+            lastLoginTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+        }
+    }
+    if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
+    {
+        dirtyFlag_[9] = true;
+        if(!pJson[pMasqueradingVector[9]].isNull())
+        {
+            posts_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[9]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson[pMasqueradingVector[10]].isNull())
+        {
+            level_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson[pMasqueradingVector[11]].isNull())
+        {
+            status_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson[pMasqueradingVector[12]].isNull())
+        {
+            followers_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[12]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson[pMasqueradingVector[13]].isNull())
+        {
+            following_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+        }
+    }
 }
 
 void Users::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -401,6 +681,62 @@ void Users::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["create_time"].isNull())
         {
             createTime_=std::make_shared<std::string>(pJson["create_time"].asString());
+        }
+    }
+    if(pJson.isMember("signature"))
+    {
+        dirtyFlag_[7] = true;
+        if(!pJson["signature"].isNull())
+        {
+            signature_=std::make_shared<std::string>(pJson["signature"].asString());
+        }
+    }
+    if(pJson.isMember("last_login_time"))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson["last_login_time"].isNull())
+        {
+            lastLoginTime_=std::make_shared<std::string>(pJson["last_login_time"].asString());
+        }
+    }
+    if(pJson.isMember("posts"))
+    {
+        dirtyFlag_[9] = true;
+        if(!pJson["posts"].isNull())
+        {
+            posts_=std::make_shared<int64_t>((int64_t)pJson["posts"].asInt64());
+        }
+    }
+    if(pJson.isMember("level"))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson["level"].isNull())
+        {
+            level_=std::make_shared<int64_t>((int64_t)pJson["level"].asInt64());
+        }
+    }
+    if(pJson.isMember("status"))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson["status"].isNull())
+        {
+            status_=std::make_shared<int64_t>((int64_t)pJson["status"].asInt64());
+        }
+    }
+    if(pJson.isMember("followers"))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson["followers"].isNull())
+        {
+            followers_=std::make_shared<int64_t>((int64_t)pJson["followers"].asInt64());
+        }
+    }
+    if(pJson.isMember("following"))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson["following"].isNull())
+        {
+            following_=std::make_shared<int64_t>((int64_t)pJson["following"].asInt64());
         }
     }
 }
@@ -574,6 +910,170 @@ void Users::setCreateTimeToNull() noexcept
     dirtyFlag_[6] = true;
 }
 
+const std::string &Users::getValueOfSignature() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(signature_)
+        return *signature_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Users::getSignature() const noexcept
+{
+    return signature_;
+}
+void Users::setSignature(const std::string &pSignature) noexcept
+{
+    signature_ = std::make_shared<std::string>(pSignature);
+    dirtyFlag_[7] = true;
+}
+void Users::setSignature(std::string &&pSignature) noexcept
+{
+    signature_ = std::make_shared<std::string>(std::move(pSignature));
+    dirtyFlag_[7] = true;
+}
+void Users::setSignatureToNull() noexcept
+{
+    signature_.reset();
+    dirtyFlag_[7] = true;
+}
+
+const std::string &Users::getValueOfLastLoginTime() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(lastLoginTime_)
+        return *lastLoginTime_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Users::getLastLoginTime() const noexcept
+{
+    return lastLoginTime_;
+}
+void Users::setLastLoginTime(const std::string &pLastLoginTime) noexcept
+{
+    lastLoginTime_ = std::make_shared<std::string>(pLastLoginTime);
+    dirtyFlag_[8] = true;
+}
+void Users::setLastLoginTime(std::string &&pLastLoginTime) noexcept
+{
+    lastLoginTime_ = std::make_shared<std::string>(std::move(pLastLoginTime));
+    dirtyFlag_[8] = true;
+}
+void Users::setLastLoginTimeToNull() noexcept
+{
+    lastLoginTime_.reset();
+    dirtyFlag_[8] = true;
+}
+
+const int64_t &Users::getValueOfPosts() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(posts_)
+        return *posts_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Users::getPosts() const noexcept
+{
+    return posts_;
+}
+void Users::setPosts(const int64_t &pPosts) noexcept
+{
+    posts_ = std::make_shared<int64_t>(pPosts);
+    dirtyFlag_[9] = true;
+}
+void Users::setPostsToNull() noexcept
+{
+    posts_.reset();
+    dirtyFlag_[9] = true;
+}
+
+const int64_t &Users::getValueOfLevel() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(level_)
+        return *level_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Users::getLevel() const noexcept
+{
+    return level_;
+}
+void Users::setLevel(const int64_t &pLevel) noexcept
+{
+    level_ = std::make_shared<int64_t>(pLevel);
+    dirtyFlag_[10] = true;
+}
+void Users::setLevelToNull() noexcept
+{
+    level_.reset();
+    dirtyFlag_[10] = true;
+}
+
+const int64_t &Users::getValueOfStatus() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(status_)
+        return *status_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Users::getStatus() const noexcept
+{
+    return status_;
+}
+void Users::setStatus(const int64_t &pStatus) noexcept
+{
+    status_ = std::make_shared<int64_t>(pStatus);
+    dirtyFlag_[11] = true;
+}
+void Users::setStatusToNull() noexcept
+{
+    status_.reset();
+    dirtyFlag_[11] = true;
+}
+
+const int64_t &Users::getValueOfFollowers() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(followers_)
+        return *followers_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Users::getFollowers() const noexcept
+{
+    return followers_;
+}
+void Users::setFollowers(const int64_t &pFollowers) noexcept
+{
+    followers_ = std::make_shared<int64_t>(pFollowers);
+    dirtyFlag_[12] = true;
+}
+void Users::setFollowersToNull() noexcept
+{
+    followers_.reset();
+    dirtyFlag_[12] = true;
+}
+
+const int64_t &Users::getValueOfFollowing() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(following_)
+        return *following_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Users::getFollowing() const noexcept
+{
+    return following_;
+}
+void Users::setFollowing(const int64_t &pFollowing) noexcept
+{
+    following_ = std::make_shared<int64_t>(pFollowing);
+    dirtyFlag_[13] = true;
+}
+void Users::setFollowingToNull() noexcept
+{
+    following_.reset();
+    dirtyFlag_[13] = true;
+}
+
 void Users::updateId(const uint64_t id)
 {
     id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
@@ -587,7 +1087,14 @@ const std::vector<std::string> &Users::insertColumns() noexcept
         "password",
         "uid",
         "avatar",
-        "create_time"
+        "create_time",
+        "signature",
+        "last_login_time",
+        "posts",
+        "level",
+        "status",
+        "followers",
+        "following"
     };
     return inCols;
 }
@@ -660,6 +1167,83 @@ void Users::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
+    if(dirtyFlag_[7])
+    {
+        if(getSignature())
+        {
+            binder << getValueOfSignature();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[8])
+    {
+        if(getLastLoginTime())
+        {
+            binder << getValueOfLastLoginTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[9])
+    {
+        if(getPosts())
+        {
+            binder << getValueOfPosts();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[10])
+    {
+        if(getLevel())
+        {
+            binder << getValueOfLevel();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[11])
+    {
+        if(getStatus())
+        {
+            binder << getValueOfStatus();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[12])
+    {
+        if(getFollowers())
+        {
+            binder << getValueOfFollowers();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[13])
+    {
+        if(getFollowing())
+        {
+            binder << getValueOfFollowing();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 
 const std::vector<std::string> Users::updateColumns() const
@@ -688,6 +1272,34 @@ const std::vector<std::string> Users::updateColumns() const
     if(dirtyFlag_[6])
     {
         ret.push_back(getColumnName(6));
+    }
+    if(dirtyFlag_[7])
+    {
+        ret.push_back(getColumnName(7));
+    }
+    if(dirtyFlag_[8])
+    {
+        ret.push_back(getColumnName(8));
+    }
+    if(dirtyFlag_[9])
+    {
+        ret.push_back(getColumnName(9));
+    }
+    if(dirtyFlag_[10])
+    {
+        ret.push_back(getColumnName(10));
+    }
+    if(dirtyFlag_[11])
+    {
+        ret.push_back(getColumnName(11));
+    }
+    if(dirtyFlag_[12])
+    {
+        ret.push_back(getColumnName(12));
+    }
+    if(dirtyFlag_[13])
+    {
+        ret.push_back(getColumnName(13));
     }
     return ret;
 }
@@ -760,6 +1372,83 @@ void Users::updateArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
+    if(dirtyFlag_[7])
+    {
+        if(getSignature())
+        {
+            binder << getValueOfSignature();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[8])
+    {
+        if(getLastLoginTime())
+        {
+            binder << getValueOfLastLoginTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[9])
+    {
+        if(getPosts())
+        {
+            binder << getValueOfPosts();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[10])
+    {
+        if(getLevel())
+        {
+            binder << getValueOfLevel();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[11])
+    {
+        if(getStatus())
+        {
+            binder << getValueOfStatus();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[12])
+    {
+        if(getFollowers())
+        {
+            binder << getValueOfFollowers();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[13])
+    {
+        if(getFollowing())
+        {
+            binder << getValueOfFollowing();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 Json::Value Users::toJson() const
 {
@@ -820,6 +1509,62 @@ Json::Value Users::toJson() const
     {
         ret["create_time"]=Json::Value();
     }
+    if(getSignature())
+    {
+        ret["signature"]=getValueOfSignature();
+    }
+    else
+    {
+        ret["signature"]=Json::Value();
+    }
+    if(getLastLoginTime())
+    {
+        ret["last_login_time"]=getValueOfLastLoginTime();
+    }
+    else
+    {
+        ret["last_login_time"]=Json::Value();
+    }
+    if(getPosts())
+    {
+        ret["posts"]=(Json::Int64)getValueOfPosts();
+    }
+    else
+    {
+        ret["posts"]=Json::Value();
+    }
+    if(getLevel())
+    {
+        ret["level"]=(Json::Int64)getValueOfLevel();
+    }
+    else
+    {
+        ret["level"]=Json::Value();
+    }
+    if(getStatus())
+    {
+        ret["status"]=(Json::Int64)getValueOfStatus();
+    }
+    else
+    {
+        ret["status"]=Json::Value();
+    }
+    if(getFollowers())
+    {
+        ret["followers"]=(Json::Int64)getValueOfFollowers();
+    }
+    else
+    {
+        ret["followers"]=Json::Value();
+    }
+    if(getFollowing())
+    {
+        ret["following"]=(Json::Int64)getValueOfFollowing();
+    }
+    else
+    {
+        ret["following"]=Json::Value();
+    }
     return ret;
 }
 
@@ -827,7 +1572,7 @@ Json::Value Users::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 7)
+    if(pMasqueradingVector.size() == 14)
     {
         if(!pMasqueradingVector[0].empty())
         {
@@ -906,6 +1651,83 @@ Json::Value Users::toMasqueradedJson(
                 ret[pMasqueradingVector[6]]=Json::Value();
             }
         }
+        if(!pMasqueradingVector[7].empty())
+        {
+            if(getSignature())
+            {
+                ret[pMasqueradingVector[7]]=getValueOfSignature();
+            }
+            else
+            {
+                ret[pMasqueradingVector[7]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[8].empty())
+        {
+            if(getLastLoginTime())
+            {
+                ret[pMasqueradingVector[8]]=getValueOfLastLoginTime();
+            }
+            else
+            {
+                ret[pMasqueradingVector[8]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[9].empty())
+        {
+            if(getPosts())
+            {
+                ret[pMasqueradingVector[9]]=(Json::Int64)getValueOfPosts();
+            }
+            else
+            {
+                ret[pMasqueradingVector[9]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[10].empty())
+        {
+            if(getLevel())
+            {
+                ret[pMasqueradingVector[10]]=(Json::Int64)getValueOfLevel();
+            }
+            else
+            {
+                ret[pMasqueradingVector[10]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[11].empty())
+        {
+            if(getStatus())
+            {
+                ret[pMasqueradingVector[11]]=(Json::Int64)getValueOfStatus();
+            }
+            else
+            {
+                ret[pMasqueradingVector[11]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[12].empty())
+        {
+            if(getFollowers())
+            {
+                ret[pMasqueradingVector[12]]=(Json::Int64)getValueOfFollowers();
+            }
+            else
+            {
+                ret[pMasqueradingVector[12]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[13].empty())
+        {
+            if(getFollowing())
+            {
+                ret[pMasqueradingVector[13]]=(Json::Int64)getValueOfFollowing();
+            }
+            else
+            {
+                ret[pMasqueradingVector[13]]=Json::Value();
+            }
+        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -964,6 +1786,62 @@ Json::Value Users::toMasqueradedJson(
     else
     {
         ret["create_time"]=Json::Value();
+    }
+    if(getSignature())
+    {
+        ret["signature"]=getValueOfSignature();
+    }
+    else
+    {
+        ret["signature"]=Json::Value();
+    }
+    if(getLastLoginTime())
+    {
+        ret["last_login_time"]=getValueOfLastLoginTime();
+    }
+    else
+    {
+        ret["last_login_time"]=Json::Value();
+    }
+    if(getPosts())
+    {
+        ret["posts"]=(Json::Int64)getValueOfPosts();
+    }
+    else
+    {
+        ret["posts"]=Json::Value();
+    }
+    if(getLevel())
+    {
+        ret["level"]=(Json::Int64)getValueOfLevel();
+    }
+    else
+    {
+        ret["level"]=Json::Value();
+    }
+    if(getStatus())
+    {
+        ret["status"]=(Json::Int64)getValueOfStatus();
+    }
+    else
+    {
+        ret["status"]=Json::Value();
+    }
+    if(getFollowers())
+    {
+        ret["followers"]=(Json::Int64)getValueOfFollowers();
+    }
+    else
+    {
+        ret["followers"]=Json::Value();
+    }
+    if(getFollowing())
+    {
+        ret["following"]=(Json::Int64)getValueOfFollowing();
+    }
+    else
+    {
+        ret["following"]=Json::Value();
     }
     return ret;
 }
@@ -1025,13 +1903,48 @@ bool Users::validateJsonForCreation(const Json::Value &pJson, std::string &err)
         if(!validJsonOfField(6, "create_time", pJson["create_time"], err, true))
             return false;
     }
+    if(pJson.isMember("signature"))
+    {
+        if(!validJsonOfField(7, "signature", pJson["signature"], err, true))
+            return false;
+    }
+    if(pJson.isMember("last_login_time"))
+    {
+        if(!validJsonOfField(8, "last_login_time", pJson["last_login_time"], err, true))
+            return false;
+    }
+    if(pJson.isMember("posts"))
+    {
+        if(!validJsonOfField(9, "posts", pJson["posts"], err, true))
+            return false;
+    }
+    if(pJson.isMember("level"))
+    {
+        if(!validJsonOfField(10, "level", pJson["level"], err, true))
+            return false;
+    }
+    if(pJson.isMember("status"))
+    {
+        if(!validJsonOfField(11, "status", pJson["status"], err, true))
+            return false;
+    }
+    if(pJson.isMember("followers"))
+    {
+        if(!validJsonOfField(12, "followers", pJson["followers"], err, true))
+            return false;
+    }
+    if(pJson.isMember("following"))
+    {
+        if(!validJsonOfField(13, "following", pJson["following"], err, true))
+            return false;
+    }
     return true;
 }
 bool Users::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                const std::vector<std::string> &pMasqueradingVector,
                                                std::string &err)
 {
-    if(pMasqueradingVector.size() != 7)
+    if(pMasqueradingVector.size() != 14)
     {
         err = "Bad masquerading vector";
         return false;
@@ -1113,6 +2026,62 @@ bool Users::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
       }
+      if(!pMasqueradingVector[7].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[7]))
+          {
+              if(!validJsonOfField(7, pMasqueradingVector[7], pJson[pMasqueradingVector[7]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[8].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[8]))
+          {
+              if(!validJsonOfField(8, pMasqueradingVector[8], pJson[pMasqueradingVector[8]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[9].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[9]))
+          {
+              if(!validJsonOfField(9, pMasqueradingVector[9], pJson[pMasqueradingVector[9]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[10].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[10]))
+          {
+              if(!validJsonOfField(10, pMasqueradingVector[10], pJson[pMasqueradingVector[10]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[11].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[11]))
+          {
+              if(!validJsonOfField(11, pMasqueradingVector[11], pJson[pMasqueradingVector[11]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[12].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[12]))
+          {
+              if(!validJsonOfField(12, pMasqueradingVector[12], pJson[pMasqueradingVector[12]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[13].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[13]))
+          {
+              if(!validJsonOfField(13, pMasqueradingVector[13], pJson[pMasqueradingVector[13]], err, true))
+                  return false;
+          }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -1163,13 +2132,48 @@ bool Users::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
         if(!validJsonOfField(6, "create_time", pJson["create_time"], err, false))
             return false;
     }
+    if(pJson.isMember("signature"))
+    {
+        if(!validJsonOfField(7, "signature", pJson["signature"], err, false))
+            return false;
+    }
+    if(pJson.isMember("last_login_time"))
+    {
+        if(!validJsonOfField(8, "last_login_time", pJson["last_login_time"], err, false))
+            return false;
+    }
+    if(pJson.isMember("posts"))
+    {
+        if(!validJsonOfField(9, "posts", pJson["posts"], err, false))
+            return false;
+    }
+    if(pJson.isMember("level"))
+    {
+        if(!validJsonOfField(10, "level", pJson["level"], err, false))
+            return false;
+    }
+    if(pJson.isMember("status"))
+    {
+        if(!validJsonOfField(11, "status", pJson["status"], err, false))
+            return false;
+    }
+    if(pJson.isMember("followers"))
+    {
+        if(!validJsonOfField(12, "followers", pJson["followers"], err, false))
+            return false;
+    }
+    if(pJson.isMember("following"))
+    {
+        if(!validJsonOfField(13, "following", pJson["following"], err, false))
+            return false;
+    }
     return true;
 }
 bool Users::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                              const std::vector<std::string> &pMasqueradingVector,
                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 7)
+    if(pMasqueradingVector.size() != 14)
     {
         err = "Bad masquerading vector";
         return false;
@@ -1213,6 +2217,41 @@ bool Users::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
       {
           if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+      {
+          if(!validJsonOfField(7, pMasqueradingVector[7], pJson[pMasqueradingVector[7]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+      {
+          if(!validJsonOfField(8, pMasqueradingVector[8], pJson[pMasqueradingVector[8]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
+      {
+          if(!validJsonOfField(9, pMasqueradingVector[9], pJson[pMasqueradingVector[9]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+      {
+          if(!validJsonOfField(10, pMasqueradingVector[10], pJson[pMasqueradingVector[10]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+      {
+          if(!validJsonOfField(11, pMasqueradingVector[11], pJson[pMasqueradingVector[11]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+      {
+          if(!validJsonOfField(12, pMasqueradingVector[12], pJson[pMasqueradingVector[12]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+      {
+          if(!validJsonOfField(13, pMasqueradingVector[13], pJson[pMasqueradingVector[13]], err, false))
               return false;
       }
     }
@@ -1312,6 +2351,83 @@ bool Users::validJsonOfField(size_t index,
                 return true;
             }
             if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 7:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 8:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 9:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 10:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 11:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 12:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 13:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

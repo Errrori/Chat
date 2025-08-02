@@ -57,6 +57,8 @@ void EchoController::handleConnectionClosed(const WebSocketConnectionPtr& conn)
 {
 	LOG_INFO << "connection closed";
     auto info = conn->getContext<Utils::UserInfo>();
-    ConnectionManager::GetInstance().RemoveConnection(info->uid);
+    if (info) {
+        ConnectionManager::GetInstance().RemoveConnection(info->uid);
+    }
 	conn->send("Connection closed");
 }

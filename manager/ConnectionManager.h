@@ -5,14 +5,6 @@
 #include <drogon/WebSocketConnection.h>
 #include "Utils.h"
 
-namespace Connection
-{
-	struct UserConnectionInfo {
-		std::string username;
-		std::string avatar;
-		std::string uid;
-	};
-}
 
 class ConnectionManager
 {
