@@ -13,11 +13,37 @@ namespace Utils
 		std::string uid;
         std::string account;
         std::string avatar;
+        std::string email;
+        std::string posts;
+		std::string followers;
+		std::string following;
+		std::string create_time;
+        std::string update_time;
+		std::string last_login_time;
+		std::string signature;
+		int status = 0; // 0: normal, 1: banned
 
         std::string ToString() const
         {
-            return "name: " + username + ", uid: " + uid + ", account: " + account + ", avatar: " + avatar;
+            return "name: " + username + ", uid: " + uid + ", account: " + account + ", avatar: " + avatar+", email: " + email +
+                   ", signature: " + signature + ", status: " + std::to_string(status) + ", posts: " + posts +
+                   ", followers: " + followers + ", following: " + following + ", create_time: " + create_time +
+				", update_time: " + update_time + ", last_login_time: " + last_login_time;
         }
+
+        static UserInfo FromJson(const Json::Value& json)
+        {
+            UserInfo info{};
+            if (json.isMember("username"))
+				info.username = json["username"].asString();
+        	if (json.isMember("avatar"))
+        		info.avatar = json["avatar"].asString();
+            if (json.isMember("email"))
+        		info.email = json["email"].asString();
+            if (json.isMember("signature"))
+        		info.signature = json["signature"].asString();
+            return info;
+		}
 	};
 
     namespace Type

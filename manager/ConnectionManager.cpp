@@ -102,7 +102,22 @@ void ConnectionManager::BroadcastMsg(const std::string& uid, const Json::Value& 
 	{
 		return;
 	}
-	DatabaseManager::PushMessage(TransMsg::BuildFromJson(msg));
+	const auto& msg_data = MessageManager::MsgData::BuildFromJson(msg);
+
+	if(!msg_data.has_value())
+	{
+		LOG_ERROR << "can not build message data from json";
+		return;
+	}
+
+	if (!MessageManager::ValidateMsg(msg_data.value()))
+	{
+		LOG_ERROR << "message is not valid";
+		return;
+	}
+
+	DatabaseManager::PushMessage(msg_data.value());
+
 	LOG_INFO << "push new message into database:"+msg.toStyledString();
 	for (const auto& it : _conn_map)
 	{
@@ -175,7 +190,17 @@ std::optional<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnection(c
 	return it->second;
 }
 
-std::vector<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnection(const std::vector<std::string>& uids)
+std::vector<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnections(
+	const std::vector<std::string>& uids)
 {
-	return {};
+	std::vector<drogon::WebSocketConnectionPtr> connections{};
+	for (const auto& uid:uids)
+	{
+		auto it = _conn_map.find(uid);
+		if (it!= _conn_map.end())
+		{
+			connections.emplace_back(it->second);
+		}
+	}
+	return connections;
 }

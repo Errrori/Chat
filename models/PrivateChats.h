@@ -179,6 +179,11 @@ class PrivateChats
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+        if(dirtyFlag_[0])
+        {
+            sql += "thread_id,";
+            ++parametersCount;
+        }
         if(dirtyFlag_[1])
         {
             sql += "uid1,";
@@ -197,6 +202,11 @@ class PrivateChats
         else
             sql += ") values (";
 
+        if(dirtyFlag_[0])
+        {
+            sql.append("?,");
+
+        }
         if(dirtyFlag_[1])
         {
             sql.append("?,");

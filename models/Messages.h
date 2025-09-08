@@ -51,6 +51,7 @@ class Messages
         static const std::string _sender_avatar;
         static const std::string _content;
         static const std::string _attachment;
+        static const std::string _status;
         static const std::string _create_time;
         static const std::string _update_time;
     };
@@ -168,6 +169,14 @@ class Messages
     void setAttachment(std::string &&pAttachment) noexcept;
     void setAttachmentToNull() noexcept;
 
+    /**  For column status  */
+    ///Get the value of the column status, returns the default value if the column is null
+    const int64_t &getValueOfStatus() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getStatus() const noexcept;
+    ///Set the value of the column status
+    void setStatus(const int64_t &pStatus) noexcept;
+
     /**  For column create_time  */
     ///Get the value of the column create_time, returns the default value if the column is null
     const std::string &getValueOfCreateTime() const noexcept;
@@ -189,7 +198,7 @@ class Messages
     void setUpdateTimeToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 9;  }
+    static size_t getColumnNumber() noexcept {  return 10;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -217,6 +226,7 @@ class Messages
     std::shared_ptr<std::string> senderAvatar_;
     std::shared_ptr<std::string> content_;
     std::shared_ptr<std::string> attachment_;
+    std::shared_ptr<int64_t> status_;
     std::shared_ptr<std::string> createTime_;
     std::shared_ptr<std::string> updateTime_;
     struct MetaData
@@ -230,7 +240,7 @@ class Messages
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[9]={ false };
+    bool dirtyFlag_[10]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -285,7 +295,7 @@ class Messages
         }
         if(dirtyFlag_[7])
         {
-            sql += "create_time,";
+            sql += "status,";
             ++parametersCount;
         }
         if(!dirtyFlag_[7])
@@ -294,10 +304,19 @@ class Messages
         }
         if(dirtyFlag_[8])
         {
-            sql += "update_time,";
+            sql += "create_time,";
             ++parametersCount;
         }
         if(!dirtyFlag_[8])
+        {
+            needSelection=true;
+        }
+        if(dirtyFlag_[9])
+        {
+            sql += "update_time,";
+            ++parametersCount;
+        }
+        if(!dirtyFlag_[9])
         {
             needSelection=true;
         }
@@ -350,6 +369,11 @@ class Messages
 
         }
         if(dirtyFlag_[8])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[9])
         {
             sql.append("?,");
 

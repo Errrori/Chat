@@ -275,6 +275,7 @@ void PrivateChats::updateId(const uint64_t id)
 const std::vector<std::string> &PrivateChats::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
+        "thread_id",
         "uid1",
         "uid2"
     };
@@ -283,6 +284,17 @@ const std::vector<std::string> &PrivateChats::insertColumns() noexcept
 
 void PrivateChats::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[0])
+    {
+        if(getThreadId())
+        {
+            binder << getValueOfThreadId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
     if(dirtyFlag_[1])
     {
         if(getUid1())

@@ -111,6 +111,18 @@
     <ClCompile Include="models\Threads.cc">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="manager\MessageManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="controllers\ThreadController.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="manager\ThreadManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MsgDispatcher.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
@@ -209,8 +221,28 @@
     <ClInclude Include="models\Threads.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="manager\MessageManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="controllers\ThreadController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="manager\ThreadManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MsgDispatcher.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="models\model.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ChatServer.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

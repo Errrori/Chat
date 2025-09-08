@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "PublicChatController.h"
-#include "../manager/ConnectionManager.h"      
+#include "../manager/ConnectionManager.h"
+#include "MsgDispatcher.h"
 
 //Message types:
 //Image,Text,ErrorMessage,Relationship
@@ -8,13 +9,10 @@
 void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn, std::string&& msg,
                                             const drogon::WebSocketMessageType& type)
 {
-    LOG_INFO << "new message coming!\n";
     if (msg.empty())
     {
-        LOG_ERROR << "can not send empty message";
 	    return;
     }
-    
     Json::Value msg_data;
     Json::Reader reader;
     //现在暂时只会检查消息是否是json格式
@@ -23,34 +21,41 @@ void PublicChatController::handleNewMessage(const drogon::WebSocketConnectionPtr
         LOG_ERROR << "fail to parse message:"<<msg;
         Json::Value data;
         data["message_type"] = "ErrorMsg";
-        data["content_type"] = "fail to parse the message";
+        data["content"] = "fail to parse the message";
         conn->sendJson(data);
         return;
     }
 
     Json::Value json_msg;
     json_msg["create_time"] = json_msg["update_time"] = trantor::Date::now().toDbString();
-    json_msg["attachment"] = msg_data["attachment"].asString();
+    if(msg_data.isMember("attachment"))
+    {
+		json_msg["attachment"] = Json::Value(msg_data["attachment"]);
+    }
+    else{
+        json_msg["attachment"] = Json::nullValue;
+    }
+
     json_msg["content"] = msg_data["content"].asString();
-    json_msg["thread_id"] = PUBLIC_CHAT_ID;
-    json_msg["message_id"] = Json::Value::Int64(Utils::Message::GenerateMsgId());
+    json_msg["thread_id"] = msg_data["thread_id"].asInt();
+    json_msg["message_id"] = std::to_string(Utils::Message::GenerateMsgId());
 
     auto info = conn->getContext<Utils::UserInfo>();
     if (!info)
     {
         LOG_ERROR << "can not get user info";
         return;
-    }else
-    {
-        LOG_INFO << "get user info: " << info->ToString();
     }
+
+    LOG_INFO << "get user info: " << info->ToString();
+    
 
     json_msg["sender_uid"] = info->uid;
     json_msg["sender_name"] = info->username;
     json_msg["sender_avatar"] = info->avatar;
 
-    ConnectionManager::GetInstance().BroadcastMsg(info->uid, json_msg);
-    conn->sendJson(json_msg);
+	MsgDispatcher::DeliverMessage(info->uid, msg_data["thread_id"].asInt(), json_msg);
+    
 
     //if program reach here,it indicates that this message do not need to forward,
     //server can check if "forwarded" is true here, but we ignore this

@@ -1,9 +1,72 @@
 #include "pch.h"
 #include "DebugRoute.h"
 #include "../manager/ConnectionManager.h"
+#include "manager/ThreadManager.h"
+
+void DbInfoController::GetPrivateChatInfo(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    const auto& data = ThreadManager::GetPrivateChatInfo();
+    callback(drogon::HttpResponse::newHttpJsonResponse(data));
+}
+
+void DbInfoController::GetThreadsInfo(const drogon::HttpRequestPtr& req,
+                                      std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+	const auto& data = ThreadManager::GetThreadInfo();
+	callback(drogon::HttpResponse::newHttpJsonResponse(data));
+}
+
+void DbInfoController::ModifyUserInfo(const drogon::HttpRequestPtr& req,
+                                      std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    Json::Value response;
+
+    auto json_body = req->getJsonObject();
+    if (!json_body) {
+        response["code"] = 400;
+        response["message"] = "request format error";
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+        callback(resp);
+        return;
+    }
+
+	//判断是否包含必须字段
+    if (!json_body->isMember("account")&&!json_body->isMember("uid"))
+    {
+        response["code"] = 400;
+        response["message"] = "Invalid request data";
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+        resp->setStatusCode(drogon::k400BadRequest);
+        callback(resp);
+        return;
+    }
+
+
+    auto json_data = Utils::UserInfo::FromJson(*json_body);
+    LOG_INFO << json_data.ToString();
+	bool result = DatabaseManager::ModifyUserInfo(json_data);
+
+
+    if (!result)
+    {
+        response["code"] = 400;
+		response["message"] = "fail to modify user's info ";
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+        callback(resp);
+        return;
+    }
+
+	response["code"] = 200;
+    response["message"] = "success to modify user's info ";
+    response["data"] = *json_body;
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+	callback(resp);
+	
+}
 
 void DbInfoController::GetDbInfo(const drogon::HttpRequestPtr& req,
-    std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+                                 std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
     LOG_TRACE << "access info route\n";
     Json::Value response;
@@ -165,7 +228,7 @@ void DbInfoController::DeleteUser(const drogon::HttpRequestPtr& req,
 }
 
 
-void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
+void DbInfoController::GetUser(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
     LOG_TRACE << "Accessing get user by id route\n";
@@ -175,18 +238,36 @@ void DbInfoController::GetUserById(const drogon::HttpRequestPtr& req,
     
     // Get user id from query parameter
     auto uid = req->getParameter("uid");
-    
-    if (uid.empty()) {
-        auto resp = Utils::CreateErrorResponse(400, 400, "User ID cannot be empty");
+	auto account = req->getParameter("account");
+
+
+    if (uid.empty() && account.empty()) {
+        auto resp = Utils::CreateErrorResponse(400, 400, "User ID or account can not be empty");
+        callback(resp);
+        return;
+	}
+
+    if (!uid.empty()&&!account.empty())
+    {
+        auto resp = Utils::CreateErrorResponse(400, 400, "can not query user in two parameters");
         callback(resp);
         return;
     }
-    
+
     Json::Value userInfo;
-    bool success = DatabaseManager::GetUserInfoByUid(uid, userInfo);
+	bool success = false;
     
+	if (!uid.empty())
+	{
+        success = DatabaseManager::GetUserInfoByUid(uid, userInfo);
+	}
+    else
+    {
+		success = DatabaseManager::GetUserQueryInfoByAccount(account, userInfo);
+    }
+
     if (!success) {
-        auto resp = Utils::CreateErrorResponse(404, 404, "User not found");
+        auto resp = Utils::CreateErrorResponse(404, 404, "User is not found");
         callback(resp);
         return;
     }
@@ -304,12 +385,13 @@ void DbInfoController::GetChatRecords(const drogon::HttpRequestPtr& req,
     LOG_INFO << "Get chat records accessed";
     Json::Value json_resp;
     Json::Value records;
-    auto num = req->getOptionalParameter<unsigned int>("message_number");
+    auto num = req->getOptionalParameter<unsigned int>("num");
     auto existing_id = req->getOptionalParameter<int64_t>("existing_id");
+	auto thread_id = req->getOptionalParameter<unsigned int>("thread_id");
 
-    if (existing_id.has_value())
+    if (existing_id.has_value()&&thread_id.has_value())
     {
-        records = DatabaseManager::GetChatRecords(existing_id.value(),num.value_or(DataBase::DEFAULT_RECORDS_QUERY_LEN));
+        records = DatabaseManager::GetMessages(thread_id.value(),existing_id.value(),num.value_or(DataBase::DEFAULT_RECORDS_QUERY_LEN));
     }else
     {
         auto resp = Utils::CreateErrorResponse(400, 400, "Missing required field: existing_id");
@@ -337,15 +419,16 @@ void DbInfoController::GetAllRecords(const drogon::HttpRequestPtr& req,
     LOG_INFO << "Get all records accessed";
     Json::Value json_resp;
     Json::Value records;
-    auto num = req->getOptionalParameter<unsigned int>("message_number");
+    auto num = req->getOptionalParameter<unsigned int>("num");
+    auto thread_id = req->getOptionalParameter<unsigned int>("thread_id");
 
     if (num.has_value())
     {
-        records = DatabaseManager::GetAllMessage(num.value());
+        records = DatabaseManager::GetAllMessage(thread_id.value(), num.value());
     }
     else
     {
-        records = DatabaseManager::GetAllMessage();
+        records = DatabaseManager::GetAllMessage(thread_id.value());
     }
 
     if (records == Json::nullValue)

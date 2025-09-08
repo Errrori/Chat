@@ -1,4 +1,5 @@
 #pragma once
+#include "models/Notifications.h"
 
 using NotificationSource = Utils::Notification::NotificationSource;
 

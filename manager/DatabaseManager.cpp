@@ -1,8 +1,8 @@
 #include "pch.h"
+#include "DatabaseManager.h"
 #include "../models/ChatRecords.h"
 #include "../models/Users.h"
 #include "../models/Relationships.h"
-#include "DatabaseManager.h"
 #include <drogon/orm/Mapper.h>
 
 #include "DTOs/NotificationDTO.h"
@@ -38,6 +38,7 @@ void DatabaseManager::InitDatabase()
 	drogon::app().getDbClient()->execSqlSync(GROUP_MEMBER_TABLE);
 	drogon::app().getDbClient()->execSqlSync(MESSAGE_TABLE);
 	CreatePublicThread();
+	CreateDefaultUser();
 
 	//drogon::app().getDbClient()->execSqlSync(RELATIONSHIPS_TABLE);
 	//drogon::app().getDbClient()->execSqlSync(CHAT_RECORDS_TABLE);
@@ -99,15 +100,6 @@ Json::Value DatabaseManager::GetAllUsersInfo()
 
 void DatabaseManager::PushChatRecords(const drogon_model::sqlite3::ChatRecords& chat_record)
 {
-	//如果想要保持数据库中插入json数据的一致，要手动创建
-	//auto sender_name = message["sender_name"].asString();
-	//auto sender_uid = message["sender_uid"].asString();
-	//auto msg = message["content"].asString();
-	//auto msg_id = message["msg_id"].asInt64();
-	//chat_record->setSenderName(sender_name);
-	//chat_record->setSenderUid(sender_uid);
-	//chat_record->setContent(msg);
-	//chat_record->setMessageId(msg_id);
 
 	Mapper<ChatRecords> mapper(GetDbClient());
 
@@ -177,31 +169,6 @@ bool DatabaseManager::WriteRelationship(const RelationshipDTO& dto, std::string&
 	error_msg = "unsupported action type";
 	return false;
 }
-
-//bool DatabaseManager::WriteRelationship(const RelationshipDTO& dto, std::string& error_msg)
-//{
-//	Mapper<Relationships> mapper(GetDbClient());
-//	using Type = Utils::UserAction::RelationAction::RelationshipActionType;
-//	switch (dto.GetActionType())
-//	{
-//	case Type::Unknown:
-//		LOG_ERROR << "Unsupported type";
-//		return false;
-//	//这部分是删除操作
-//	case Type::UnblockUser:
-//		return DeleteRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Blocking");
-//	case Type::RequestReject:
-//		return DeleteRelationship(dto.GetReactorUid(), dto.GetActorUid(), "Pending");
-//	case Type::Unfriend:
-//		return DeleteRelationship(dto.GetActorUid(), dto.GetReactorUid(), "Friend");
-//	//这部分是更新和插入操作
-//	case Type::BlockUser:
-//	case Type::FriendRequest:
-//	case Type::RequestAccept:
-//		return UpsertRelationship(dto);
-//	}
-//	return false;
-//}
 
 bool DatabaseManager::UpsertRelationship
 (const std::string& first_uid, const std::string& second_uid, Utils::Relationship::StatusType status, std::string& error_msg)
@@ -457,6 +424,14 @@ bool DatabaseManager::GetUserInfoByUid(const std::string& uid, Json::Value& data
 		data["create_time"] = info[0].getValueOfCreateTime();
 		data["avatar"] = info[0].getValueOfAvatar();
 		data["account"] = info[0].getValueOfAccount();
+		data["status"] = Json::Value::Int64(info[0].getValueOfStatus());
+		data["level"] = Json::Value::Int64(info[0].getValueOfLevel());
+		data["posts"] = Json::Value::Int64(info[0].getValueOfPosts());
+		data["followers"] = Json::Value::Int64(info[0].getValueOfFollowers());
+		data["following"] = Json::Value::Int64(info[0].getValueOfFollowing());
+		data["last_login_time"] = info[0].getValueOfLastLoginTime();
+		data["signature"] = info[0].getValueOfSignature();
+		data["email"] = info[0].getValueOfEmail();
 		return true;
 	}
 	LOG_ERROR << "can not find user info";
@@ -476,6 +451,32 @@ bool DatabaseManager::GetUserInfoByAccount(const std::string& account, Json::Val
 		data["password"] = info[0].getValueOfPassword();
 		return true;
 	}
+	return false;
+}
+
+bool DatabaseManager::GetUserQueryInfoByAccount(const std::string& account, Json::Value& data)
+{
+	Mapper<Users> mapper(GetDbClient());
+	Criteria criteria(Users::Cols::_account, CompareOperator::EQ, account);
+	auto info = mapper.limit(1).findBy(criteria);
+	if (!info.empty())
+	{
+		data["username"] = info[0].getValueOfUsername();
+		data["uid"] = info[0].getValueOfUid();
+		data["create_time"] = info[0].getValueOfCreateTime();
+		data["avatar"] = info[0].getValueOfAvatar();
+		data["account"] = info[0].getValueOfAccount();
+		data["status"] = Json::Value::Int64(info[0].getValueOfStatus());
+		data["level"] = Json::Value::Int64(info[0].getValueOfLevel());
+		data["posts"] = Json::Value::Int64(info[0].getValueOfPosts());
+		data["followers"] = Json::Value::Int64(info[0].getValueOfFollowers());
+		data["following"] = Json::Value::Int64(info[0].getValueOfFollowing());
+		data["last_login_time"] = info[0].getValueOfLastLoginTime();
+		data["signature"] = info[0].getValueOfSignature();
+		data["email"] = info[0].getValueOfEmail();
+		return true;
+	}
+	LOG_ERROR << "can not find user info";
 	return false;
 }
 
@@ -520,6 +521,23 @@ bool DatabaseManager::ModifyPassword(const std::string& uid, const std::string& 
 	return result == 1;
 }
 
+bool DatabaseManager::ModifyUserInfo(const Utils::UserInfo& info)
+{
+	Mapper<Users> mapper(GetDbClient());
+	Criteria criteria;
+	if (!info.uid.empty())
+	{
+		criteria = Criteria(Users::Cols::_uid, CompareOperator::EQ, info.uid);
+	}
+	else if (!info.account.empty())
+	{
+		criteria = Criteria(Users::Cols::_account, CompareOperator::EQ, info.account);
+	}
+	size_t result = mapper.updateBy({ Users::Cols::_avatar,Users::Cols::_username,Users::Cols::_email,Users::Cols::_signature }, criteria,
+		info.avatar,info.username,info.email,info.signature);
+	return result>0;
+}
+
 bool DatabaseManager::DeleteUser(const std::string& uid)
 {
 	Mapper<Users> mapper(GetDbClient());
@@ -546,6 +564,14 @@ bool DatabaseManager::ValidateUid(const std::string& uid)
 {
 	Mapper<Users> mapper(GetDbClient());
 	Criteria criteria(Users::Cols::_uid, CompareOperator::EQ, uid);
+	auto result = mapper.limit(1).findBy(criteria);
+	return (!result.empty());
+}
+
+bool DatabaseManager::ValidateThreadId(unsigned thread_id)
+{
+	Mapper<Threads> mapper(GetDbClient());
+	Criteria criteria(Threads::Cols::_id, CompareOperator::EQ, thread_id);
 	auto result = mapper.limit(1).findBy(criteria);
 	return (!result.empty());
 }
@@ -585,7 +611,7 @@ bool DatabaseManager::ValidateRelationship(const std::string& actor_uid, const s
 	}
 }
 
-bool DatabaseManager::PushMessage(const TransMsg& msg)
+bool DatabaseManager::PushMessage(const MessageManager::MsgData& msg)
 {
 	Messages message;
 	message.setMessageId(msg.message_id);
@@ -596,7 +622,7 @@ bool DatabaseManager::PushMessage(const TransMsg& msg)
 	message.setUpdateTime(msg.update_time);
 	message.setSenderAvatar(msg.sender_avatar);
 	message.setContent(msg.content.value_or(""));
-	message.setAttachment(msg.attachment.value_or(""));
+	message.setAttachment(msg.attachment.value_or("").toStyledString());
 
 	Mapper<Messages> mapper(GetDbClient());
 	mapper.insert(message,
@@ -611,20 +637,23 @@ bool DatabaseManager::PushMessage(const TransMsg& msg)
 	return true;
 }
 
-Json::Value DatabaseManager::GetMessages(int64_t existing_id, unsigned num)
+Json::Value DatabaseManager::GetMessages(unsigned thread_id, int64_t existing_id, unsigned num)
 {
 	Mapper<Messages> mapper(GetDbClient());
 
 	// 如果现有id不存在，直接返回
 	auto exist_record =
-		mapper.limit(1).findBy(Criteria(Messages::Cols::_message_id, CompareOperator::EQ, existing_id));
+		mapper.limit(1).findBy
+	(Criteria(Criteria(Messages::Cols::_message_id, CompareOperator::EQ, existing_id)
+		&& Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id)));
 	if (exist_record.empty())
 	{
 		LOG_ERROR << "can not find existing message id:" << existing_id;
 		return Json::nullValue;
 	}
 
-	Criteria criteria(Messages::Cols::_message_id, CompareOperator::GT, existing_id);
+	Criteria criteria(Criteria(Messages::Cols::_message_id, CompareOperator::GT, existing_id)
+		&& Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id));
 	auto index_record = mapper.orderBy(Messages::Cols::_message_id, SortOrder::ASC)
 		.offset(num).limit(1).findBy(criteria);
 	auto latest_record = mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(1).findAll();
@@ -642,7 +671,9 @@ Json::Value DatabaseManager::GetMessages(int64_t existing_id, unsigned num)
 		}
 		return json_records;
 	}
-	auto records = mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
+
+	auto records = mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(num)
+		.findBy(Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id));
 	Json::Value json_records(Json::arrayValue);
 	for (auto it = records.rbegin(); it != records.rend(); ++it)
 	{
@@ -651,12 +682,13 @@ Json::Value DatabaseManager::GetMessages(int64_t existing_id, unsigned num)
 	return json_records;
 }
 
-Json::Value DatabaseManager::GetAllMessage(unsigned num)
+Json::Value DatabaseManager::GetAllMessage(unsigned thread_id, unsigned num)
 {
 	Mapper<Messages> mapper(GetDbClient());
+	Criteria criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id);
 	Json::Value data(Json::arrayValue);
 	auto records =
-		mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
+		mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(num).findBy(criteria);
 
 	for (auto it = records.rbegin(); it != records.rend(); ++it)
 	{
@@ -669,16 +701,39 @@ Json::Value DatabaseManager::GetAllMessage(unsigned num)
 void DatabaseManager::CreatePublicThread()
 {
 	Mapper<Threads> mapper(drogon::app().getDbClient());
-	Threads thread;
-	thread.setId(PUBLIC_CHAT_ID);
-	thread.setType(0);
-	thread.setCreateTime(trantor::Date::now().toDbString());
-	mapper.insert(thread,
-		[](const Threads& t) {
-			LOG_INFO << "Public thread created successfully";
-		},
-		[](const DrogonDbException& e) {
-			LOG_ERROR << "Failed to create public thread: " << e.base().what();
-		});
+
+	for (int i = 1;i<6;i++)
+	{
+		Threads thread;
+		thread.setId(i);
+		thread.setType(0);
+
+		mapper.insert(thread,
+			[](const Threads& t) {},
+			[](const DrogonDbException& e) {
+				LOG_ERROR << "Failed to create public thread: " << e.base().what();
+			});
+	}
+}
+
+void DatabaseManager::CreateDefaultUser()
+{
+	Mapper<Users> mapper(drogon::app().getDbClient());
+	
+	for (int i = 1;i<6;i++)
+	{
+		Users user;
+		auto serial = std::to_string(i);
+		user.setUsername("user"+serial);
+		user.setUid(serial);
+		user.setAccount(serial);
+		user.setPassword(Utils::Authentication::PasswordHashed(serial));
+		user.setEmail("");
+		mapper.insert(user,
+			[](const Users& user) {},
+			[](const DrogonDbException& e) {
+				LOG_ERROR << "Failed to create default user: " << e.base().what();
+			});
+	}
 }
 

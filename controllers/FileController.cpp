@@ -25,8 +25,16 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 		return;
 	}
 	auto file_extension = std::string(file.getFileExtension());
-	if (file_extension != "png" && file_extension != "jpg"
-		&& file_extension != "jpeg" && file_extension != "gif"&&file_extension!="WebP")
+	bool is_supported = false;
+	for (const auto& type : UploadsFile::UploadImageType)
+	{
+		if (file_extension == type)
+		{
+			is_supported = true;
+			break;
+		}
+	}
+	if (!is_supported)
 	{
 		LOG_ERROR << "upload file is not supported : "<<file_extension;
 		auto resp = Utils::CreateErrorResponse(400, 400, "Unsupported file type");

@@ -6,7 +6,6 @@ using ChatRecords = drogon_model::sqlite3::ChatRecords;
 namespace Content = Utils::Message::Content;
 namespace Chat = Utils::Message::Chat;
 
-//比较浅层的检查，只检查格式是否合法
 std::optional<MessageDTO> MessageDTO::BuildFromClientMsg(const Json::Value& data, std::string& error_msg)
 {
 	if (!data.isMember("content")||!data.isMember("sender_uid")
@@ -156,6 +155,7 @@ Json::Value MessageDTO::TransToJsonMsg() const
 	if (conversation_id.has_value()) data["conversation_id"] = conversation_id.value();
 	data["sender_avatar"] = sender_avatar;
 	data["sender_name"] = sender_name;
+	data["message_id"] = Json::Value::Int64(message_id);
 	return data;
 }
 

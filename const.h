@@ -5,7 +5,7 @@ namespace DataBase
 	// 优化的聊天系统表定义
 	const static std::string THREAD_TABLE = "CREATE TABLE IF NOT EXISTS threads("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
-		"type INTEGER NOT NULL," // 0=private, 1=group
+		"type INTEGER NOT NULL," // 0=group, 1=private
 		"create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
 		");";
 
@@ -51,6 +51,7 @@ namespace DataBase
 		"sender_avatar TEXT NOT NULL,"
 		"content TEXT,"
 		"attachment TEXT," // JSON格式存储附件信息
+		"status INTEGER NOT NULL DEFAULT 1,"
 		"create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
 		"update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
 		"FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,"
@@ -70,6 +71,7 @@ namespace DataBase
 		"posts INTEGER DEFAULT 0,"
 		"level INTEGER DEFAULT 0,"
 		"status INTEGER DEFAULT 0,"
+		"email TEXT,"
 		"followers INTEGER DEFAULT 0,"
 		"following INTEGER DEFAULT 0 "
 		");";
@@ -160,10 +162,7 @@ namespace DataBase
 
 namespace DeFaultFilePath
 {
-	const std::string DEFAULT_UPLOAD_PATH = "upload_files";
-	const std::string UPLOAD_IMAGE_DIR = "image";
-	const std::string UPLOAD_MEDIA_DIR = "media";
-	const std::string UPLOAD_DOCUMENT_DIR = "document";
+	
 }
 
 static constexpr int PUBLIC_CHAT_ID = 1;
@@ -171,32 +170,33 @@ static constexpr int PUBLIC_CHAT_ID = 1;
 static constexpr unsigned short MAX_MESSAGE_SEND_ONCE = 10;
 static constexpr std::chrono::milliseconds MESSAGE_SEND_WAIT_TIME = std::chrono::milliseconds(1);
 
-struct TransMsg
+namespace UploadsFile
 {
-	int64_t message_id;
-	int thread_id;
-	std::string sender_uid;
-	std::string sender_name;
-	std::string sender_avatar;
-	std::optional<std::string> content;
-	std::optional<std::string> attachment;
-	std::string create_time;
-	std::string update_time;
+	static const std::vector<std::string>
+		UploadImageType = {"png","jpg","jpeg","gif","WebP"};
 
-	static TransMsg BuildFromJson(const Json::Value& json){
-		TransMsg msg;
-		msg.message_id = json["message_id"].asInt64();
-		msg.thread_id = json["thread_id"].asInt();
-		msg.sender_uid = json["sender_uid"].asString();
-		msg.sender_name = json["sender_name"].asString();
-		msg.sender_avatar = json["sender_avatar"].asString();
-		msg.content = json["content"].asString();
-		msg.attachment = json["attachment"].asString();
-		msg.create_time = json["create_time"].asString();
-		msg.update_time = json["update_time"].asString();
-		return msg;
-	}
-};
+	static constexpr size_t MAX_PATH_LENGTH = 255;
+
+	const std::string DEFAULT_UPLOAD_PATH = "uploads";
+	const std::string UPLOAD_IMAGE_DIR = "image";
+	const std::string UPLOAD_MEDIA_DIR = "media";
+	const std::string UPLOAD_DOCUMENT_DIR = "document";
+	constexpr int FILE_LEN_CHECK_LIMIT = 255;
+}
+
+
+//attachment
+//{
+//	"type":"image",
+//	"file_path":"upload/image/file",
+//	"metadata" (可选) :
+//	{
+//		"width": 图片 / 视频宽度,
+//		"height" : 图片 / 视频高度,
+//		"size": 文件大小
+//	},
+//	"format":"jpg",
+//}
 
 #endif
 

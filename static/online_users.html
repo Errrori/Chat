@@ -94,6 +94,19 @@
             font-size: 12px;
             color: #95a5a6;
         }
+        .detail-btn {
+            padding: 6px 12px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+        .detail-btn:hover {
+            background-color: #229954;
+        }
         .refresh-btn {
             display: block;
             margin: 20px auto 0;
@@ -133,6 +146,90 @@
             color: #95a5a6;
             margin-top: 20px;
         }
+        
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #95a5a6;
+        }
+        .close-btn:hover {
+            color: #333;
+        }
+        .user-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .detail-item {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            color: #333;
+            word-break: break-all;
+        }
+        .detail-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        .detail-avatar-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -161,6 +258,19 @@
         <div id="last-update" class="last-update"></div>
     </div>
 
+    <!-- 用户详情模态框 -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">用户详情</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="user-detail-content">
+                <!-- 用户详情内容将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // 获取DOM元素
         const errorElement = document.getElementById('error');
@@ -170,6 +280,8 @@
         const noUsersElement = document.getElementById('no-users');
         const refreshButton = document.getElementById('refresh-btn');
         const lastUpdateElement = document.getElementById('last-update');
+        const modal = document.getElementById('user-modal');
+        const userDetailContent = document.getElementById('user-detail-content');
         
         // 获取用户数据的函数
         async function fetchUserData() {
@@ -179,14 +291,12 @@
                 noUsersElement.style.display = 'none';
                 errorElement.style.display = 'none';
                 
-                // 修改API路径，使用完整的URL路径
                 const response = await fetch('/debug/online_users', {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json'
                     },
-                    // 添加凭证，确保跨域请求时携带cookie
                     credentials: 'same-origin'
                 });
                 
@@ -195,7 +305,7 @@
                 }
                 
                 const data = await response.json();
-                console.log("获取到的数据:", data); // 添加调试信息
+                console.log("获取到的数据:", data);
                 
                 if (data.code !== 200) {
                     throw new Error(data.message || '获取数据失败');
@@ -203,11 +313,10 @@
                 
                 displayUserData(data);
                 
-                // 更新最后更新时间
                 const now = new Date();
                 lastUpdateElement.textContent = `最后更新: ${now.toLocaleString()}`;
             } catch (error) {
-                console.error("获取数据错误:", error); // 添加详细错误日志
+                console.error("获取数据错误:", error);
                 errorElement.textContent = `错误: ${error.message}`;
                 errorElement.style.display = 'block';
                 loadingElement.style.display = 'none';
@@ -218,19 +327,14 @@
         function displayUserData(data) {
             loadingElement.style.display = 'none';
             
-            // 更新用户总数 - 修改这里，使用正确的路径获取用户数量
             totalUsersElement.textContent = data.data.size || 0;
             
-            // 清空用户列表
             userListElement.innerHTML = '';
             
-            // 检查是否有用户数据 - 修改这里，使用正确的路径检查用户数组
             if (data.data && data.data.data && data.data.data.length > 0) {
-                // 显示用户列表
                 userListElement.style.display = 'block';
                 noUsersElement.style.display = 'none';
                 
-                // 为每个用户创建列表项 - 修改这里，使用正确的路径遍历用户数组
                 data.data.data.forEach(user => {
                     const listItem = document.createElement('li');
                     listItem.className = 'user-item';
@@ -242,7 +346,6 @@
                         avatar.src = user.avatar;
                         avatar.alt = user.username || '未知用户';
                         avatar.onerror = function() {
-                            // 如果头像加载失败，显示用户名首字母
                             this.style.display = 'none';
                             const placeholder = document.createElement('div');
                             placeholder.className = 'user-avatar-placeholder';
@@ -251,7 +354,6 @@
                         };
                         listItem.appendChild(avatar);
                     } else {
-                        // 如果没有头像，显示用户名首字母
                         const placeholder = document.createElement('div');
                         placeholder.className = 'user-avatar-placeholder';
                         placeholder.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
@@ -262,30 +364,132 @@
                     const userInfo = document.createElement('div');
                     userInfo.className = 'user-info';
                     
-                    // 创建用户名元素
                     const userName = document.createElement('div');
                     userName.className = 'user-name';
                     userName.textContent = user.username || '未知用户';
                     
-                    // 创建用户ID元素
                     const userId = document.createElement('div');
                     userId.className = 'user-id';
                     userId.textContent = `UID: ${user.uid || '未知'}`;
                     
-                    // 组装用户信息
                     userInfo.appendChild(userName);
                     userInfo.appendChild(userId);
-                    
-                    // 组装列表项
                     listItem.appendChild(userInfo);
                     
-                    // 添加到用户列表
+                    // 添加详情按钮
+                    const detailBtn = document.createElement('button');
+                    detailBtn.className = 'detail-btn';
+                    detailBtn.textContent = '详情';
+                    detailBtn.onclick = () => showUserDetail(user);
+                    listItem.appendChild(detailBtn);
+                    
                     userListElement.appendChild(listItem);
                 });
             } else {
-                // 显示无用户提示
                 userListElement.style.display = 'none';
                 noUsersElement.style.display = 'block';
+            }
+        }
+        
+        // 显示用户详情
+        function showUserDetail(user) {
+            let detailHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+            `;
+            
+            // 显示头像
+            if (user.avatar) {
+                detailHTML += `<img src="${user.avatar}" alt="${user.username || '用户'}" class="detail-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
+                detailHTML += `<div class="detail-avatar-placeholder" style="display: none;">${user.username ? user.username.charAt(0).toUpperCase() : '?'}</div>`;
+            } else {
+                detailHTML += `<div class="detail-avatar-placeholder">${user.username ? user.username.charAt(0).toUpperCase() : '?'}</div>`;
+            }
+            
+            detailHTML += `</div>
+                <div class="user-detail">
+            `;
+            
+            // 遍历用户对象的所有字段
+            for (const [key, value] of Object.entries(user)) {
+                const label = getFieldLabel(key);
+                const displayValue = formatFieldValue(key, value);
+                
+                detailHTML += `
+                    <div class="detail-item">
+                        <div class="detail-label">${label}</div>
+                        <div class="detail-value">${displayValue}</div>
+                    </div>
+                `;
+            }
+            
+            detailHTML += '</div>';
+            
+            userDetailContent.innerHTML = detailHTML;
+            modal.style.display = 'block';
+        }
+        
+        // 获取字段显示标签
+        function getFieldLabel(key) {
+            const labels = {
+                'uid': '用户ID',
+                'username': '用户名',
+                'account': '账号',
+                'avatar': '头像URL',
+                'create_time': '创建时间',
+                'update_time': '更新时间',
+                'email': '邮箱',
+                'phone': '电话',
+                'status': '状态',
+                'last_login': '最后登录时间',
+                'ip_address': 'IP地址',
+                'user_agent': '用户代理',
+                'session_id': '会话ID',
+                'connection_id': '连接ID',
+                'online_status': '在线状态',
+                'message_count': '消息数量',
+                'login_count': '登录次数'
+            };
+            return labels[key] || key;
+        }
+        
+        // 格式化字段值
+        function formatFieldValue(key, value) {
+            if (value === null || value === undefined) {
+                return '<span style="color: #95a5a6; font-style: italic;">未设置</span>';
+            }
+            
+            if (key === 'create_time' || key === 'update_time' || key === 'last_login') {
+                return new Date(value).toLocaleString('zh-CN');
+            }
+            
+            if (key === 'status' || key === 'online_status') {
+                const statusMap = {
+                    'online': '在线',
+                    'offline': '离线',
+                    'away': '离开',
+                    'busy': '忙碌',
+                    'active': '活跃',
+                    'inactive': '非活跃'
+                };
+                return statusMap[value] || value;
+            }
+            
+            if (typeof value === 'boolean') {
+                return value ? '是' : '否';
+            }
+            
+            return value.toString();
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                closeModal();
             }
         }
         

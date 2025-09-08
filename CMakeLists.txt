@@ -23,27 +23,33 @@ add_executable(${PROJECT_NAME}
     main.cpp
     controllers/Authentication.cpp
     manager/DatabaseManager.cpp
+    manager/MessageManager.cpp
     controllers/DebugRoute.cpp
+    controllers/ThreadController.cpp
     utils.cpp
     middleware/CorsMiddleware.cpp
     models/ChatRecords.cc
     models/Users.cc
     models/Notifications.cc
     models/Groups.cc
+    models/GroupChats.cc
     models/GroupMembers.cc
     models/Messages.cc    
     models/Threads.cc  
+    models/PrivateChats.cc
     models/Relationships.cc
     DTOs/NotificationDTO.cpp
     DTOs/MessageDTO.cpp
     DTOs/RelationshipDTO.cpp
     RelationshipService.cpp
     manager/ConnectionManager.cpp
+    manager/ThreadManager.cpp
     controllers/EchoController.cpp
     controllers/PublicChatController.cpp
     controllers/ChatController.cpp
     controllers/FileController.cpp
     controllers/RelationshipController.cpp
+    MsgDispatcher.cpp
     manager/FileManager.cpp
     manager/NotificationManager.cpp
     manager/SendManager.cpp

@@ -53,7 +53,7 @@ void SendManager::ProcessMessage()
 
 					continue;
 				}
-				DeliverMessage(dto);
+				dmsg(dto);
 				message_send++;
 			}
 			drogon::app().getIOLoop(drogon::app().getCurrentThreadIndex())
@@ -96,7 +96,8 @@ bool SendManager::ValidateMsg(const MessageDTO& dto, std::string& error)
 	return true;
 }
 
-void SendManager::DeliverMessage(const MessageDTO& message_dto)
+
+void SendManager::dmsg(const MessageDTO& message_dto)
 {
 	auto conn = ConnectionManager::GetInstance().GetConnection(message_dto.GetReceiverUid().value());
 	auto chat_record = message_dto.TransToChatRecords();
@@ -113,6 +114,6 @@ void SendManager::DeliverMessage(const MessageDTO& message_dto)
 		return;
 	}
 	conn.value()->sendJson(message_dto.TransToJsonMsg());
-	//发送确认
+	//锟斤拷锟斤拷确锟斤拷
 	
 }

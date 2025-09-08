@@ -56,6 +56,7 @@ class Users
         static const std::string _posts;
         static const std::string _level;
         static const std::string _status;
+        static const std::string _email;
         static const std::string _followers;
         static const std::string _following;
     };
@@ -221,6 +222,16 @@ class Users
     void setStatus(const int64_t &pStatus) noexcept;
     void setStatusToNull() noexcept;
 
+    /**  For column email  */
+    ///Get the value of the column email, returns the default value if the column is null
+    const std::string &getValueOfEmail() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getEmail() const noexcept;
+    ///Set the value of the column email
+    void setEmail(const std::string &pEmail) noexcept;
+    void setEmail(std::string &&pEmail) noexcept;
+    void setEmailToNull() noexcept;
+
     /**  For column followers  */
     ///Get the value of the column followers, returns the default value if the column is null
     const int64_t &getValueOfFollowers() const noexcept;
@@ -240,7 +251,7 @@ class Users
     void setFollowingToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 14;  }
+    static size_t getColumnNumber() noexcept {  return 15;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -273,6 +284,7 @@ class Users
     std::shared_ptr<int64_t> posts_;
     std::shared_ptr<int64_t> level_;
     std::shared_ptr<int64_t> status_;
+    std::shared_ptr<std::string> email_;
     std::shared_ptr<int64_t> followers_;
     std::shared_ptr<int64_t> following_;
     struct MetaData
@@ -286,7 +298,7 @@ class Users
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[14]={ false };
+    bool dirtyFlag_[15]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -385,19 +397,24 @@ class Users
         }
         if(dirtyFlag_[12])
         {
+            sql += "email,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[13])
+        {
             sql += "followers,";
             ++parametersCount;
         }
-        if(!dirtyFlag_[12])
+        if(!dirtyFlag_[13])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[13])
+        if(dirtyFlag_[14])
         {
             sql += "following,";
             ++parametersCount;
         }
-        if(!dirtyFlag_[13])
+        if(!dirtyFlag_[14])
         {
             needSelection=true;
         }
@@ -470,6 +487,11 @@ class Users
 
         }
         if(dirtyFlag_[13])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[14])
         {
             sql.append("?,");
 

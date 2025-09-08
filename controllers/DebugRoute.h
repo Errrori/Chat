@@ -11,17 +11,26 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
             ADD_METHOD_TO(DbInfoController::GetDbInfo, "/debug/db_info", drogon::Get,"CorsMiddleware");
 			ADD_METHOD_TO(DbInfoController::GetOnlineUsers, "/debug/online_users", drogon::Get, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::GetAllNotifications, "/debug/get_notifications", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetThreadsInfo, "/debug/thread_info", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetPrivateChatInfo, "/debug/private_thread_info", drogon::Get, "CorsMiddleware");
 
-            ADD_METHOD_TO(DbInfoController::GetUserById, "/user/get_user", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetUser, "/user/get_user", drogon::Get, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::ModifyName, "/user/modify/username", drogon::Post, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::ModifyPassword, "/user/modify/password", drogon::Post, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::ModifyUserInfo, "user/modify/info", drogon::Post, "CorsMiddleware", "TokenVerifyFilter");
             ADD_METHOD_TO(DbInfoController::ModifyUserAvatar, "/user/modify/avatar", drogon::Post, "CorsMiddleware");
             ADD_METHOD_TO(DbInfoController::DeleteUser, "/user/cancel", drogon::Post, "CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::GetAllRecords, "/user/get_all_records", drogon::Get,"CorsMiddleware");
-            ADD_METHOD_TO(DbInfoController::GetChatRecords, "/user/get_records", drogon::Get, "CorsMiddleware");
+            ADD_METHOD_TO(DbInfoController::GetAllRecords, "/user/get_all_records", drogon::Get,"CorsMiddleware", "TokenVerifyFilter");
+            ADD_METHOD_TO(DbInfoController::GetChatRecords, "/user/get_records", drogon::Get, "CorsMiddleware", "TokenVerifyFilter");
 
-        METHOD_LIST_END
+            METHOD_LIST_END
 
+		void GetPrivateChatInfo(const drogon::HttpRequestPtr& req,
+			std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+		void GetThreadsInfo(const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+		void ModifyUserInfo(const drogon::HttpRequestPtr& req,
+            std::function<void(const drogon::HttpResponsePtr&)>&& callback);
         void GetDbInfo(const drogon::HttpRequestPtr& req,
                 std::function<void(const drogon::HttpResponsePtr&)>&& callback);
         void HandleDbInfoOptions(const drogon::HttpRequestPtr& req,
@@ -32,10 +41,9 @@ class DbInfoController : public drogon::HttpController<DbInfoController>
                 std::function<void(const drogon::HttpResponsePtr&)>&& callback);
         void DeleteUser(const drogon::HttpRequestPtr& req,
                 std::function<void(const drogon::HttpResponsePtr&)>&& callback);
-        void GetUserById(const drogon::HttpRequestPtr& req,
+        void GetUser(const drogon::HttpRequestPtr& req,
                 std::function<void(const drogon::HttpResponsePtr&)>&& callback);
-        //void ImportUsers(const drogon::HttpRequestPtr& req,
-        //        std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+
 		void GetOnlineUsers(const drogon::HttpRequestPtr& req,
                 std::function<void(const drogon::HttpResponsePtr&)>&& callback);
 		void GetChatRecords(const drogon::HttpRequestPtr& req,

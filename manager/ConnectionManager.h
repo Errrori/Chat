@@ -25,7 +25,7 @@ public:
 
 	std::string GetName(const std::string& uid);
 	std::optional<drogon::WebSocketConnectionPtr> GetConnection(const std::string& uid);
-	std::vector<drogon::WebSocketConnectionPtr> GetConnection(const std::vector<std::string>& uids);
+	std::vector<drogon::WebSocketConnectionPtr> GetConnections(const std::vector<std::string>& uids);
 
 private:
 	ConnectionManager() = default;

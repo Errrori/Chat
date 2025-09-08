@@ -2,7 +2,6 @@
 #include <drogon/drogon.h>
 #include <csignal>
 #include "Utils.h"
-#include "manager/NotificationManager.h"
 
 using namespace Utils;
 
@@ -32,13 +31,13 @@ void AddOptionHandle()
 		&HandleOptions,
 		{ drogon::Options });
 
-	drogon::app().registerHandler("/debug/get_all_records",
+	drogon::app().registerHandler("/user/get_all_records",
 		&HandleOptions,
 		{ drogon::Options });
 	drogon::app().registerHandler("/debug/db_info",
 		&HandleOptions,
 		{ drogon::Options });
-	drogon::app().registerHandler("/debug/get_user",
+	drogon::app().registerHandler("/user/get_user",
 		&HandleOptions,
 		{ drogon::Options });
 	drogon::app().registerHandler("/debug/import",
@@ -54,6 +53,9 @@ void AddOptionHandle()
 	drogon::app().registerHandler("/user/modify/avatar",
 		&HandleOptions,
 		{ drogon::Options });
+	drogon::app().registerHandler("/user/modify/info",
+		&HandleOptions,
+		{ drogon::Options });
 	drogon::app().registerHandler("/user/cancel",
 		&HandleOptions,
 		{ drogon::Options });
@@ -65,6 +67,33 @@ void AddOptionHandle()
 		&HandleOptions,
 		{ drogon::Options });
 	drogon::app().registerHandler("/file/upload/image",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/create/private",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/create/group",
+		&HandleOptions,
+		{ drogon::Options });
+
+
+	drogon::app().registerHandler("/thread/group/join",
+		&HandleOptions,
+		{ drogon::Options });
+
+	drogon::app().registerHandler("/thread/group/invite",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/group/info",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/user/get_id",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/debug/thread_info",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/debug/private_thread_info",
 		&HandleOptions,
 		{ drogon::Options });
 }
