@@ -123,6 +123,15 @@
     <ClCompile Include="MsgDispatcher.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="controllers\AIController.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AIService.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="models\AiChats.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
@@ -234,6 +243,15 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="MsgDispatcher.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="controllers\AIController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="AIService.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="models\AiChats.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

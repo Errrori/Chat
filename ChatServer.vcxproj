@@ -90,90 +90,64 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ChatRecordsManager.cpp" />
+    <ClCompile Include="controllers\AIController.cpp" />
+    <ClCompile Include="AIService.cpp" />
     <ClCompile Include="controllers\Authentication.cpp" />
     <ClCompile Include="controllers\FileController.cpp" />
-    <ClCompile Include="DTOs\NotificationDTO.cpp" />
-    <ClCompile Include="DTOs\RelationshipDTO.cpp" />
     <ClCompile Include="manager\DatabaseManager.cpp" />
     <ClCompile Include="manager\FileManager.cpp" />
-    <ClCompile Include="DTOs\MessageDTO.cpp" />
     <ClCompile Include="manager\MessageManager.cpp" />
     <ClCompile Include="manager\ThreadManager.cpp" />
     <ClCompile Include="middleware\CorsMiddleware.cpp" />
     <ClCompile Include="manager\ConnectionManager.cpp" />
     <ClCompile Include="controllers\DebugRoute.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="controllers\PublicChatController.cpp" />
-    <ClCompile Include="models\ChatRecords.cc" />
+    <ClCompile Include="controllers\ChatController.cpp" />
+    <ClCompile Include="models\AiChats.cc" />
     <ClCompile Include="models\GroupChats.cc" />
     <ClCompile Include="models\GroupMembers.cc" />
-    <ClCompile Include="models\Groups.cc" />
     <ClCompile Include="models\Messages.cc" />
-    <ClCompile Include="models\Notifications.cc" />
     <ClCompile Include="models\PrivateChats.cc" />
-    <ClCompile Include="models\Relationships.cc" />
     <ClCompile Include="models\Threads.cc" />
     <ClCompile Include="models\Users.cc" />
-    <ClCompile Include="manager\NotificationManager.cpp" />
     <ClCompile Include="MsgDispatcher.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="controllers\ChatController.cpp" />
-    <ClCompile Include="manager\SendManager.cpp" />
-    <ClCompile Include="controllers\RelationshipController.cpp" />
     <ClCompile Include="filter\TokenVerifyFilter.cpp" />
-    <ClCompile Include="RelationshipService.cpp" />
     <ClCompile Include="controllers\ThreadController.cpp" />
     <ClCompile Include="Utils.cpp" />
-    <ClCompile Include="controllers\EchoController.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ChatRecordsManager.h" />
+    <ClInclude Include="controllers\AIController.h" />
+    <ClInclude Include="AIService.h" />
     <ClInclude Include="const.h" />
     <ClInclude Include="controllers\Authentication.h" />
     <ClInclude Include="controllers\FileController.h" />
-    <ClInclude Include="DTOs\NotificationDTO.h" />
-    <ClInclude Include="DTOs\RelationshipDTO.h" />
     <ClInclude Include="manager\DatabaseManager.h" />
     <ClInclude Include="manager\FileManager.h" />
-    <ClInclude Include="DTOs\MessageDTO.h" />
     <ClInclude Include="manager\MessageManager.h" />
     <ClInclude Include="manager\ThreadManager.h" />
     <ClInclude Include="middleware\CorsMiddleware.h" />
     <ClInclude Include="manager\ConnectionManager.h" />
     <ClInclude Include="controllers\DebugRoute.h" />
-    <ClInclude Include="controllers\PublicChatController.h" />
-    <ClInclude Include="models\ChatRecords.h" />
+    <ClInclude Include="controllers\ChatController.h" />
+    <ClInclude Include="models\AiChats.h" />
     <ClInclude Include="models\GroupChats.h" />
     <ClInclude Include="models\GroupMembers.h" />
-    <ClInclude Include="models\Groups.h" />
     <ClInclude Include="models\Messages.h" />
-    <ClInclude Include="models\Notifications.h" />
     <ClInclude Include="models\PrivateChats.h" />
-    <ClInclude Include="models\Relationships.h" />
     <ClInclude Include="models\Threads.h" />
     <ClInclude Include="models\Users.h" />
-    <ClInclude Include="manager\NotificationManager.h" />
     <ClInclude Include="MsgDispatcher.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="controllers\ChatController.h" />
-    <ClInclude Include="manager\SendManager.h" />
-    <ClInclude Include="controllers\RelationshipController.h" />
     <ClInclude Include="filter\TokenVerifyFilter.h" />
-    <ClInclude Include="RelationshipService.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="controllers\ThreadController.h" />
     <ClInclude Include="Utils.h" />
-    <ClInclude Include="controllers\EchoController.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="models\model.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="ChatServer.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

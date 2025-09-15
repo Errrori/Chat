@@ -19,4 +19,3 @@ namespace Authentication
 			std::function<void(const drogon::HttpResponsePtr&)>&& callback);
 	};
 }
-

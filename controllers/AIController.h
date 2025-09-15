@@ -1,7 +1,5 @@
 #pragma once
-#include <drogon/WebSocketController.h>
-
-class EchoController :public drogon::WebSocketController<EchoController>
+class AIController: public drogon::WebSocketController<AIController>
 {
 public:
     void handleNewMessage(const drogon::WebSocketConnectionPtr& conn,
@@ -12,8 +10,8 @@ public:
     void handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn) override;
 
     WS_PATH_LIST_BEGIN
-        WS_PATH_ADD("/ws/echo");
-	WS_PATH_LIST_END
+        WS_PATH_ADD("/ws/ai/chat");
+    WS_PATH_LIST_END
 
 };
 

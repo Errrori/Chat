@@ -112,7 +112,7 @@ class Users
 
     /**  For column id  */
     ///Get the value of the column id, returns the default value if the column is null
-    const int64_t &getValueOfId() const noexcept;
+    const int64_t &getValueOfThreadId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
     const std::shared_ptr<int64_t> &getId() const noexcept;
     ///Set the value of the column id

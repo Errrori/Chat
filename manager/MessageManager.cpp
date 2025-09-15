@@ -2,46 +2,13 @@
 #include "MessageManager.h"
 #include "models/Messages.h"
 #include "FileManager.h"
+#include "ThreadManager.h"
 
 using Criteria = drogon::orm::Criteria;
 using Messages = drogon_model::sqlite3::Messages;
 using CompareOperator = drogon::orm::CompareOperator;
 using SortOrder = drogon::orm::SortOrder;
 using drogon::orm::Mapper;
-
-bool MessageManager::ValidateMsg(const MsgData& msg)
-{
-	if (!DatabaseManager::ValidateThreadId(msg.thread_id))
-	{
-		LOG_ERROR << "Thread id is not valid: " << msg.thread_id;
-		return false;
-	}
-
-	LOG_INFO << "attachment: " << (msg.attachment.has_value() ? msg.attachment.value().toStyledString() : "none");
-
-	if(msg.attachment.has_value())
-	{
-		const auto& attachment_json = msg.attachment.value();
-		if(!attachment_json.isMember("type") || !attachment_json.isMember("file_path"))
-		{
-			LOG_ERROR<<"Attachment json is not valid: " << msg.attachment.value().toStyledString();
-			return false;
-		}
-		const auto& type = attachment_json["type"].asString();
-		const auto& file_path = attachment_json["file_path"].asString();
-		if(type=="image")
-		{
-			return FileManager::CheckFileExists(file_path);
-		}
-
-		return false;
-	}
-
-	//file dont have attachment,check if content is valid
-	//...
-	return true;
-
-}
 
 bool MessageManager::PushMessage(const MsgData& msg)
 {
@@ -67,6 +34,36 @@ bool MessageManager::PushMessage(const MsgData& msg)
 			LOG_ERROR << "Exception to insert message: " << e.base().what();
 		});
 	return true;
+}
+
+std::optional<drogon_model::sqlite3::Messages> MessageManager::BuildMessage(const Json::Value& json)
+{
+	try
+	{
+		LOG_INFO << "uid: " << json["sender_uid"].asString();
+		Messages message;
+		message.setAttachment(json["attachment"].asString());
+		message.setContent(json["content"].asString());
+		message.setCreateTime(json["create_time"].asString());
+		message.setUpdateTime(json["update_time"].asString());
+		message.setSenderAvatar(json["sender_avatar"].asString());
+		message.setSenderName(json["sender_name"].asString());
+		message.setSenderUid(json["sender_uid"].asString());
+		message.setThreadId(json["thread_id"].asInt());
+
+		LOG_INFO << "message built: " << message.toJson().toStyledString();
+		return message;
+	}
+	catch (const drogon::orm::DrogonDbException& e)
+	{
+		LOG_ERROR << "Exception to build message from json: " << e.base().what();
+		return std::nullopt;
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "can not build message from json: " << e.what();
+		return std::nullopt;
+	}
 }
 
 Json::Value MessageManager::GetMessages(unsigned thread_id, int64_t existing_id, unsigned num)

@@ -7,7 +7,9 @@ void Authentication::AuthController::HandleRegister(const drogon::HttpRequestPtr
 	LOG_TRACE << "access the Register route data is : "<<req->bodyData();
 
 	auto data = req->getJsonObject();
+
 	if (data) {
+
 		auto account = (*data)["account"].asString();
 		auto username = (*data)["username"].asString();
 		auto password = (*data)["password"].asString();

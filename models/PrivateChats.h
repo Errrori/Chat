@@ -53,8 +53,8 @@ class PrivateChats
     static const std::string tableName;
     static const bool hasPrimaryKey;
     static const std::string primaryKeyName;
-    using PrimaryKeyType = int64_t;
-    const PrimaryKeyType &getPrimaryKey() const;
+    using PrimaryKeyType = void;
+    int getPrimaryKey() const { assert(false); return 0; }
 
     /**
      * @brief constructor
@@ -105,7 +105,6 @@ class PrivateChats
     const std::shared_ptr<int64_t> &getThreadId() const noexcept;
     ///Set the value of the column thread_id
     void setThreadId(const int64_t &pThreadId) noexcept;
-    void setThreadIdToNull() noexcept;
 
     /**  For column uid1  */
     ///Get the value of the column uid1, returns the default value if the column is null
@@ -165,13 +164,13 @@ class PrivateChats
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where thread_id = ?";
+        static const std::string sql="";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where thread_id = ?";
+        static const std::string sql="";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const

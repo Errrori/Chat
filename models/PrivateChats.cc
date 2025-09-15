@@ -5,6 +5,7 @@
  *
  */
 #include "pch.h"
+
 #include "PrivateChats.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
@@ -16,12 +17,12 @@ using namespace drogon_model::sqlite3;
 const std::string PrivateChats::Cols::_thread_id = "thread_id";
 const std::string PrivateChats::Cols::_uid1 = "uid1";
 const std::string PrivateChats::Cols::_uid2 = "uid2";
-const std::string PrivateChats::primaryKeyName = "thread_id";
-const bool PrivateChats::hasPrimaryKey = true;
+const std::string PrivateChats::primaryKeyName = "";
+const bool PrivateChats::hasPrimaryKey = false;
 const std::string PrivateChats::tableName = "private_chats";
 
 const std::vector<typename PrivateChats::MetaData> PrivateChats::metaData_={
-{"thread_id","int64_t","integer",8,1,1,0},
+{"thread_id","int64_t","integer",8,0,0,1},
 {"uid1","std::string","text",0,0,0,1},
 {"uid2","std::string","text",0,0,0,1}
 };
@@ -146,6 +147,7 @@ void PrivateChats::updateByMasqueradedJson(const Json::Value &pJson,
     }
     if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
     {
+        dirtyFlag_[0] = true;
         if(!pJson[pMasqueradingVector[0]].isNull())
         {
             threadId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
@@ -173,6 +175,7 @@ void PrivateChats::updateByJson(const Json::Value &pJson) noexcept(false)
 {
     if(pJson.isMember("thread_id"))
     {
+        dirtyFlag_[0] = true;
         if(!pJson["thread_id"].isNull())
         {
             threadId_=std::make_shared<int64_t>((int64_t)pJson["thread_id"].asInt64());
@@ -211,16 +214,6 @@ void PrivateChats::setThreadId(const int64_t &pThreadId) noexcept
 {
     threadId_ = std::make_shared<int64_t>(pThreadId);
     dirtyFlag_[0] = true;
-}
-void PrivateChats::setThreadIdToNull() noexcept
-{
-    threadId_.reset();
-    dirtyFlag_[0] = true;
-}
-const typename PrivateChats::PrimaryKeyType & PrivateChats::getPrimaryKey() const
-{
-    assert(threadId_);
-    return *threadId_;
 }
 
 const std::string &PrivateChats::getValueOfUid1() const noexcept
@@ -269,7 +262,6 @@ void PrivateChats::setUid2(std::string &&pUid2) noexcept
 
 void PrivateChats::updateId(const uint64_t id)
 {
-    threadId_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &PrivateChats::insertColumns() noexcept
@@ -322,6 +314,10 @@ void PrivateChats::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 const std::vector<std::string> PrivateChats::updateColumns() const
 {
     std::vector<std::string> ret;
+    if(dirtyFlag_[0])
+    {
+        ret.push_back(getColumnName(0));
+    }
     if(dirtyFlag_[1])
     {
         ret.push_back(getColumnName(1));
@@ -335,6 +331,17 @@ const std::vector<std::string> PrivateChats::updateColumns() const
 
 void PrivateChats::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[0])
+    {
+        if(getThreadId())
+        {
+            binder << getValueOfThreadId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
     if(dirtyFlag_[1])
     {
         if(getUid1())
@@ -464,6 +471,11 @@ bool PrivateChats::validateJsonForCreation(const Json::Value &pJson, std::string
         if(!validJsonOfField(0, "thread_id", pJson["thread_id"], err, true))
             return false;
     }
+    else
+    {
+        err="The thread_id column cannot be null";
+        return false;
+    }
     if(pJson.isMember("uid1"))
     {
         if(!validJsonOfField(1, "uid1", pJson["uid1"], err, true))
@@ -503,6 +515,11 @@ bool PrivateChats::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
                   return false;
           }
+        else
+        {
+            err="The " + pMasqueradingVector[0] + " column cannot be null";
+            return false;
+        }
       }
       if(!pMasqueradingVector[1].empty())
       {
@@ -545,11 +562,6 @@ bool PrivateChats::validateJsonForUpdate(const Json::Value &pJson, std::string &
         if(!validJsonOfField(0, "thread_id", pJson["thread_id"], err, false))
             return false;
     }
-    else
-    {
-        err = "The value of primary key must be set in the json object for update";
-        return false;
-    }
     if(pJson.isMember("uid1"))
     {
         if(!validJsonOfField(1, "uid1", pJson["uid1"], err, false))
@@ -577,11 +589,6 @@ bool PrivateChats::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
           if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, false))
               return false;
       }
-    else
-    {
-        err = "The value of primary key must be set in the json object for update";
-        return false;
-    }
       if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
       {
           if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
@@ -609,14 +616,10 @@ bool PrivateChats::validJsonOfField(size_t index,
     switch(index)
     {
         case 0:
-            if(isForCreation)
-            {
-                err="The automatic primary key cannot be set";
-                return false;
-            }
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

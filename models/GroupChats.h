@@ -54,8 +54,8 @@ class GroupChats
     static const std::string tableName;
     static const bool hasPrimaryKey;
     static const std::string primaryKeyName;
-    using PrimaryKeyType = int64_t;
-    const PrimaryKeyType &getPrimaryKey() const;
+    using PrimaryKeyType = void;
+    int getPrimaryKey() const { assert(false); return 0; }
 
     /**
      * @brief constructor
@@ -106,7 +106,6 @@ class GroupChats
     const std::shared_ptr<int64_t> &getThreadId() const noexcept;
     ///Set the value of the column thread_id
     void setThreadId(const int64_t &pThreadId) noexcept;
-    void setThreadIdToNull() noexcept;
 
     /**  For column name  */
     ///Get the value of the column name, returns the default value if the column is null
@@ -178,13 +177,13 @@ class GroupChats
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where thread_id = ?";
+        static const std::string sql="";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where thread_id = ?";
+        static const std::string sql="";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -192,6 +191,11 @@ class GroupChats
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+        if(dirtyFlag_[0])
+        {
+            sql += "thread_id,";
+            ++parametersCount;
+        }
         if(dirtyFlag_[1])
         {
             sql += "name,";
@@ -201,10 +205,6 @@ class GroupChats
         {
             sql += "avatar,";
             ++parametersCount;
-        }
-        if(!dirtyFlag_[2])
-        {
-            needSelection=true;
         }
         if(dirtyFlag_[3])
         {
@@ -219,6 +219,11 @@ class GroupChats
         else
             sql += ") values (";
 
+        if(dirtyFlag_[0])
+        {
+            sql.append("?,");
+
+        }
         if(dirtyFlag_[1])
         {
             sql.append("?,");

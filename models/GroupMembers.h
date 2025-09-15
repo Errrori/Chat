@@ -6,7 +6,6 @@
  */
 
 #pragma once
-#include "pch.h"
 #include <drogon/orm/Result.h>
 #include <drogon/orm/Row.h>
 #include <drogon/orm/Field.h>

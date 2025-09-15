@@ -44,7 +44,7 @@ class Threads
   public:
     struct Cols
     {
-        static const std::string _id;
+        static const std::string _thread_id;
         static const std::string _type;
         static const std::string _create_time;
     };
@@ -98,14 +98,14 @@ class Threads
                           std::string &err,
                           bool isForCreation);
 
-    /**  For column id  */
-    ///Get the value of the column id, returns the default value if the column is null
-    const int64_t &getValueOfId() const noexcept;
+    /**  For column thread_id  */
+    ///Get the value of the column thread_id, returns the default value if the column is null
+    const int64_t &getValueOfThreadId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getId() const noexcept;
-    ///Set the value of the column id
-    void setId(const int64_t &pId) noexcept;
-    void setIdToNull() noexcept;
+    const std::shared_ptr<int64_t> &getThreadId() const noexcept;
+    ///Set the value of the column thread_id
+    void setThreadId(const int64_t &pThreadId) noexcept;
+    void setThreadIdToNull() noexcept;
 
     /**  For column type  */
     ///Get the value of the column type, returns the default value if the column is null
@@ -147,7 +147,7 @@ class Threads
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
-    std::shared_ptr<int64_t> id_;
+    std::shared_ptr<int64_t> threadId_;
     std::shared_ptr<int64_t> type_;
     std::shared_ptr<std::string> createTime_;
     struct MetaData
@@ -165,13 +165,13 @@ class Threads
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where id = ?";
+        static const std::string sql="select * from " + tableName + " where thread_id = ?";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where id = ?";
+        static const std::string sql="delete from " + tableName + " where thread_id = ?";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const

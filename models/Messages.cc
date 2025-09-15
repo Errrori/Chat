@@ -5,6 +5,7 @@
  *
  */
 #include "pch.h"
+
 #include "Messages.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
@@ -28,7 +29,7 @@ const bool Messages::hasPrimaryKey = true;
 const std::string Messages::tableName = "messages";
 
 const std::vector<typename Messages::MetaData> Messages::metaData_={
-{"message_id","int64_t","bigint",8,0,1,0},
+{"message_id","int64_t","integer",8,1,1,0},
 {"thread_id","int64_t","integer",8,0,0,1},
 {"sender_uid","std::string","text",0,0,0,1},
 {"sender_name","std::string","text",0,0,0,1},
@@ -806,12 +807,12 @@ void Messages::setUpdateTimeToNull() noexcept
 
 void Messages::updateId(const uint64_t id)
 {
+    messageId_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &Messages::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
-        "message_id",
         "thread_id",
         "sender_uid",
         "sender_name",
@@ -827,17 +828,6 @@ const std::vector<std::string> &Messages::insertColumns() noexcept
 
 void Messages::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
-    if(dirtyFlag_[0])
-    {
-        if(getMessageId())
-        {
-            binder << getValueOfMessageId();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
     if(dirtyFlag_[1])
     {
         if(getThreadId())
@@ -942,10 +932,6 @@ void Messages::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 const std::vector<std::string> Messages::updateColumns() const
 {
     std::vector<std::string> ret;
-    if(dirtyFlag_[0])
-    {
-        ret.push_back(getColumnName(0));
-    }
     if(dirtyFlag_[1])
     {
         ret.push_back(getColumnName(1));
@@ -987,17 +973,6 @@ const std::vector<std::string> Messages::updateColumns() const
 
 void Messages::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
-    if(dirtyFlag_[0])
-    {
-        if(getMessageId())
-        {
-            binder << getValueOfMessageId();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
     if(dirtyFlag_[1])
     {
         if(getThreadId())
@@ -1103,7 +1078,7 @@ Json::Value Messages::toJson() const
     Json::Value ret;
     if(getMessageId())
     {
-        ret["message_id"]=std::to_string(getValueOfMessageId());
+        ret["message_id"]=(Json::Int64)getValueOfMessageId();
     }
     else
     {
@@ -1194,7 +1169,7 @@ Json::Value Messages::toMasqueradedJson(
         {
             if(getMessageId())
             {
-                ret[pMasqueradingVector[0]]=std::to_string(getValueOfMessageId());
+                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfMessageId();
             }
             else
             {
@@ -1719,6 +1694,11 @@ bool Messages::validJsonOfField(size_t index,
     switch(index)
     {
         case 0:
+            if(isForCreation)
+            {
+                err="The automatic primary key cannot be set";
+                return false;
+            }
             if(pJson.isNull())
             {
                 return true;

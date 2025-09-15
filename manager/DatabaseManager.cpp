@@ -1,13 +1,8 @@
 #include "pch.h"
 #include "DatabaseManager.h"
-#include "../models/ChatRecords.h"
 #include "../models/Users.h"
-#include "../models/Relationships.h"
 #include <drogon/orm/Mapper.h>
 
-#include "DTOs/NotificationDTO.h"
-#include "models/Notifications.h"
-#include "DTOs/RelationshipDTO.h"
 #include "models/GroupChats.h"
 #include "models/PrivateChats.h"
 #include "models/Threads.h"
@@ -16,10 +11,7 @@
 
 
 using namespace DataBase;
-using ChatRecords = drogon_model::sqlite3::ChatRecords;
 using Users = drogon_model::sqlite3::Users;
-using Relationships = drogon_model::sqlite3::Relationships;
-using Notifications = drogon_model::sqlite3::Notifications;
 using Messages = drogon_model::sqlite3::Messages;
 using Threads = drogon_model::sqlite3::Threads;
 using GroupChats = drogon_model::sqlite3::GroupChats;
@@ -35,22 +27,9 @@ void DatabaseManager::InitDatabase()
 	drogon::app().getDbClient()->execSqlSync(THREAD_TABLE);
 	drogon::app().getDbClient()->execSqlSync(PRIVATE_TABLE);
 	drogon::app().getDbClient()->execSqlSync(GROUP_TABLE);
+	drogon::app().getDbClient()->execSqlSync(AI_TABLE);
 	drogon::app().getDbClient()->execSqlSync(GROUP_MEMBER_TABLE);
 	drogon::app().getDbClient()->execSqlSync(MESSAGE_TABLE);
-	CreatePublicThread();
-	CreateDefaultUser();
-
-	//drogon::app().getDbClient()->execSqlSync(RELATIONSHIPS_TABLE);
-	//drogon::app().getDbClient()->execSqlSync(CHAT_RECORDS_TABLE);
-   // drogon::app().getDbClient()->execSqlSync(GROUP_MEMBERS_TABLE);
-	//drogon::app().getDbClient()->execSqlSync(NOTIFICATION_TABLE);
-	//drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_1);
-	//drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_2);
-	//drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_3);
-	//drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_4);
-	//drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_5);
-	//drogon::app().getDbClient()->execSqlSync(CREATE_INDEX_6);
-	//drogon::app().getDbClient()->execSqlSync(CREATE_TRIGGER);
 
 }
 
@@ -98,319 +77,6 @@ Json::Value DatabaseManager::GetAllUsersInfo()
 	return users_data;
 }
 
-void DatabaseManager::PushChatRecords(const drogon_model::sqlite3::ChatRecords& chat_record)
-{
-
-	Mapper<ChatRecords> mapper(GetDbClient());
-
-	mapper.insert(chat_record,
-		[](const ChatRecords& chat) {
-			LOG_INFO << "Insert success,message id:" << chat.getValueOfMessageId();
-		},
-		[](const DrogonDbException& e) {
-			LOG_ERROR << "Exception to insert message," << e.base().what();
-		}
-	);
-}
-
-void DatabaseManager::PushNotification(const Json::Value& data)
-{
-	Json::Value json_notification;
-	json_notification["notification_id"] = Utils::Authentication::GenerateUid();
-	json_notification["actor_uid"] = data["actor_uid"].asString();
-	json_notification["reactor_uid"] = data["reactor_uid"].asString();
-	json_notification["action_type"] = data["action_type"].asString();
-	json_notification["content"] = data["content"].asString();
-	json_notification["create_time"] = data["create_time"].asString();
-	Notifications notification(json_notification);
-	Mapper<Notifications> mapper(GetDbClient());
-	mapper.insert(notification,
-		[](const Notifications& notification) {
-			LOG_INFO << "insert notification: " << notification.getValueOfNotificationId();
-		},
-		[](const DrogonDbException& e) {
-			LOG_ERROR << "Exception to insert notification," << e.base().what();
-		});
-}
-
-bool DatabaseManager::WriteRelationship(const RelationshipDTO& dto, std::string& error_msg)
-{
-	using Type = Utils::UserAction::RelationAction::RelationshipActionType;
-	using Status = Utils::Relationship::StatusType;
-	const static std::unordered_map<Type,
-		std::function<bool(const RelationshipDTO&, std::string&)>>
-		action_map = {
-		{ Type::UnblockUser, [](const RelationshipDTO& dto, std::string& error_msg) {
-			return DeleteRelationship(dto.GetActorUid(), dto.GetReactorUid(), Status::Blocking, error_msg);
-		} },
-		{ Type::RequestReject, [](const RelationshipDTO& dto, std::string& error_msg) {
-			return DeleteRelationship(dto.GetReactorUid(), dto.GetActorUid(), Status::Pending, error_msg);
-		} },
-		{ Type::Unfriend, [](const RelationshipDTO& dto, std::string& error_msg) {
-			return DeleteRelationship(dto.GetActorUid(), dto.GetReactorUid(), Status::Friend, error_msg);
-		} },
-		{ Type::BlockUser, [](const RelationshipDTO& dto, std::string& error_msg) {
-			return UpsertRelationship(dto.GetActorUid(), dto.GetReactorUid(),Status::Blocking,error_msg);
-		} },
-		{ Type::FriendRequest, [](const RelationshipDTO& dto, std::string& error_msg) {
-			return UpsertRelationship(dto.GetActorUid(), dto.GetReactorUid(),Status::Pending,error_msg);
-		} },
-		{ Type::RequestAccept, [](const RelationshipDTO& dto, std::string& error_msg) {
-			return UpsertRelationship(dto.GetReactorUid(), dto.GetActorUid(),Status::Friend,error_msg);
-		} }
-	};
-
-	const auto action_type = dto.GetActionType();
-	auto it = action_map.find(action_type);
-	if (it != action_map.end())
-	{
-		return it->second(dto, error_msg);
-	}
-	error_msg = "unsupported action type";
-	return false;
-}
-
-bool DatabaseManager::UpsertRelationship
-(const std::string& first_uid, const std::string& second_uid, Utils::Relationship::StatusType status, std::string& error_msg)
-{
-	if (first_uid == second_uid)
-	{
-		error_msg = "two uid are the same";
-		return false;
-	}
-
-	Mapper<Relationships> mapper(GetDbClient());
-	using Type = Utils::Relationship::StatusType;
-
-	std::promise<bool> promise;
-	std::future<bool> result = promise.get_future();
-
-	switch (status)
-	{
-	case Type::Unknown:
-		error_msg = "can not upsert unknown type";
-		return false;
-	case Type::Pending:
-	case Type::Blocking:
-	{
-		Relationships relationship;
-		relationship.setFirstUid(first_uid);
-		relationship.setSecondUid(second_uid);
-		relationship.setStatus(Utils::Relationship::TypeToString(status));
-		try
-		{
-			const auto& future = mapper.insertFuture(relationship).get();
-			promise.set_value(true);
-		}
-		catch (const std::exception& e)
-		{
-			promise.set_value(false);
-			LOG_ERROR << "exception insert relationship: " << e.what();
-		}
-
-		//mapper.insert(relationship,
-		//	[&promise](const Relationships& relationship)
-		//	{
-		//		promise.set_value(true);
-		//		LOG_INFO << "success insert a relationship: " << relationship.getValueOfStatus();
-		//	},
-		//	[&error_msg](const DrogonDbException& e)
-		//	{
-		//		LOG_ERROR<<"exception: "<<e.base().what();
-		//		error_msg = "Exception insert";
-		//		error_msg.append(e.base().what());
-		//	});
-		break;
-	}
-	case Type::Friend:
-	{
-		std::string normalized_first_uid = first_uid;
-		std::string	normalized_second_uid = second_uid;
-		//因为uid的长度是一致的，所以采用字典序比较
-		if (normalized_first_uid > normalized_second_uid)
-		{
-			std::swap(normalized_first_uid, normalized_second_uid);
-		}
-		Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, first_uid)
-			&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, second_uid));
-		using Cols = Relationships::Cols;
-		bool is_success = mapper.limit(1).findBy(criteria).empty();
-
-		if (is_success)
-		{
-			LOG_ERROR << "can not find record";
-			return false;
-		}
-
-		mapper.limit(1).updateBy({ Cols::_first_uid,Cols::_second_uid,Cols::_status },
-			[&promise](const size_t)
-			{
-				promise.set_value(true);
-			},
-			[&error_msg](const DrogonDbException& e)
-			{
-				error_msg = "exception to update";
-				error_msg.append(e.base().what());
-				LOG_ERROR << "exception to update: " << e.base().what();
-			},
-			criteria, normalized_first_uid, normalized_second_uid, Utils::Relationship::TypeToString(status));
-		break;
-	}
-	}
-	return result.get();
-}
-
-bool DatabaseManager::WriteNotification(const NotificationDTO& dto)
-{
-	const auto& notification = dto.ToNotifications();
-	if (!notification.has_value())
-	{
-		return false;
-	}
-	Mapper<Notifications> mapper(GetDbClient());
-	bool is_success = false;
-	mapper.insert(notification.value(),
-		[&is_success](const Notifications& data)
-		{
-			is_success = true;
-			LOG_INFO << "Insert a notification: " + data.getValueOfNotificationId();
-		},
-		[](const DrogonDbException& e)
-		{
-			LOG_ERROR << "Exception to insert notification: " << e.base().what();
-		});
-	return is_success;
-}
-
-bool DatabaseManager::DeleteRelationship
-(const std::string& first_uid, const std::string& second_uid, Utils::Relationship::StatusType status, std::string& error_msg)
-{
-	if (status == Utils::Relationship::StatusType::Unknown) return false;
-	Mapper<Relationships> mapper(GetDbClient());
-	using Type = Utils::Relationship::StatusType;
-	Criteria criteria;
-	switch (status) {
-	case Type::Friend:
-	{
-		std::string normalized_first_uid = first_uid;
-		std::string normalized_second_uid = second_uid;
-		//因为uid的长度是一致的，所以采用字典序比较
-		if (normalized_first_uid > normalized_second_uid)
-		{
-			std::swap(normalized_first_uid, normalized_second_uid);
-		}
-		criteria = Criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, normalized_first_uid)
-			&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, normalized_second_uid)
-			&& Criteria(Relationships::Cols::_status, CompareOperator::EQ, status));
-		break;
-	}
-	case Type::Blocking:
-	case Type::Pending:
-		criteria = Criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, first_uid)
-			&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, second_uid)
-			&& Criteria(Relationships::Cols::_status, CompareOperator::EQ, status));
-		break;
-	default:
-		LOG_ERROR << "can not delete unknown record";
-		error_msg = "can not delete Unknown type record";
-		return false;
-	}
-	bool is_success = false;
-	mapper.limit(1).deleteBy(criteria,
-		[&is_success](const size_t size) {
-			is_success = true;
-			LOG_INFO << "delete relationship number: " << size;
-		},
-		[&error_msg](const DrogonDbException& e) {
-			LOG_ERROR << "Exception to delete relationship , " << e.base().what();
-			error_msg = "exception to delete: ";
-			error_msg.append(e.base().what());
-		});
-	return is_success;
-}
-
-Json::Value DatabaseManager::GetChatRecords(int64_t existing_id, unsigned num)
-{
-	Mapper<ChatRecords> mapper(GetDbClient());
-
-	//如果现有id不存在，直接返回
-	auto exist_record =
-		mapper.limit(1).findBy(Criteria(ChatRecords::Cols::_message_id, CompareOperator::EQ, existing_id));
-	if (exist_record.empty())
-	{
-		LOG_ERROR << "can not find existing id:" << existing_id;
-		return Json::nullValue;
-	}
-
-	Criteria criteria(ChatRecords::Cols::_message_id, CompareOperator::GT, existing_id);
-	auto index_record = mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::ASC)
-		.offset(num).limit(1).findBy(criteria);
-	auto latest_record = mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::DESC).limit(1).findAll();
-	auto latest_id = latest_record[0].getValueOfMessageId();
-	Json::Value data(Json::arrayValue);
-	//找不到，就从这个已有的位置开始向后返回到最新的
-	if (index_record.empty())
-	{
-		const auto& records = mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::DESC).findBy(criteria);
-		Json::Value json_records(Json::arrayValue);
-		for (auto it = records.rbegin(); it != records.rend(); ++it)
-		{
-			json_records.append(it->toJson());
-		}
-		return json_records;
-	}
-	auto records = mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
-	Json::Value json_records(Json::arrayValue);
-	for (auto it = records.rbegin(); it != records.rend(); ++it)
-	{
-		json_records.append(it->toJson());
-	}
-	return json_records;
-
-}
-
-Json::Value DatabaseManager::GetAllRecords(unsigned num)
-{
-	Mapper<ChatRecords> mapper(GetDbClient());
-	Json::Value data(Json::arrayValue);
-	auto records =
-		mapper.orderBy(ChatRecords::Cols::_message_id, SortOrder::DESC).limit(num).findAll();
-
-	for (auto it = records.rbegin(); it != records.rend(); ++it)
-	{
-		data.append(it->toJson());
-	}
-	LOG_INFO << "Get all records:\n" << data.toStyledString() << "\n";
-	return data;
-}
-
-Json::Value DatabaseManager::GetRelationships()
-{
-	Mapper<Relationships> mapper(GetDbClient());
-	Json::Value data(Json::arrayValue);
-	const auto& relationships = mapper.findAll();
-
-	for (const auto& relationship : relationships)
-	{
-		data.append(relationship.toJson());
-	}
-
-	return data;
-}
-
-Json::Value DatabaseManager::GetNotifications()
-{
-	Mapper<Notifications> mapper(GetDbClient());
-	Json::Value data(Json::arrayValue);
-	const auto& notices = mapper.findAll();
-
-	for (const auto& notice : notices)
-	{
-		data.append(notice.toJson());
-	}
-
-	return data;
-}
 
 bool DatabaseManager::GetUserInfoByUid(const std::string& uid, Json::Value& data)
 {
@@ -478,20 +144,6 @@ bool DatabaseManager::GetUserQueryInfoByAccount(const std::string& account, Json
 	}
 	LOG_ERROR << "can not find user info";
 	return false;
-}
-
-bool DatabaseManager::GetUserNotification(const std::string& uid, Json::Value& data)
-{
-	Mapper<Notifications> mapper(GetDbClient());
-	Criteria criteria(Notifications::Cols::_receiver_uid, uid);
-	const auto& results = mapper.findBy(criteria);
-	Json::Value notification_data(Json::arrayValue);
-	for (const auto& result : results)
-	{
-		notification_data.append(result.toJson());
-	}
-	data = notification_data;
-	return true;
 }
 
 bool DatabaseManager::ModifyAvatar(const std::string& uid, const std::string& avatar)
@@ -571,45 +223,11 @@ bool DatabaseManager::ValidateUid(const std::string& uid)
 bool DatabaseManager::ValidateThreadId(unsigned thread_id)
 {
 	Mapper<Threads> mapper(GetDbClient());
-	Criteria criteria(Threads::Cols::_id, CompareOperator::EQ, thread_id);
+	Criteria criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id);
 	auto result = mapper.limit(1).findBy(criteria);
 	return (!result.empty());
 }
 
-bool DatabaseManager::ValidateRelationship(const std::string& actor_uid, const std::string& reactor_uid,
-	Utils::Relationship::StatusType status)
-{
-	using Type = Utils::Relationship::StatusType;
-	Mapper<Relationships> mapper(GetDbClient());
-	switch (status)
-	{
-	case Type::Pending:
-	case Type::Blocking:
-	{
-		Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, actor_uid)
-			&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, reactor_uid)
-			&& Criteria(Relationships::Cols::_status, CompareOperator::EQ, status));
-		return !mapper.findBy(criteria).empty();
-	}
-	case Type::Friend:
-	{
-		std::string normalized_first_uid = actor_uid;
-		std::string	normalized_second_uid = reactor_uid;
-		//因为uid的长度是一致的，所以采用字典序比较
-		if (normalized_first_uid > normalized_second_uid)
-		{
-			std::swap(normalized_first_uid, normalized_second_uid);
-		}
-		Criteria criteria(Criteria(Relationships::Cols::_first_uid, CompareOperator::EQ, normalized_first_uid)
-			&& Criteria(Relationships::Cols::_second_uid, CompareOperator::EQ, normalized_second_uid)
-			&& Criteria(Relationships::Cols::_status, CompareOperator::EQ, status));
-		return !mapper.findBy(criteria).empty();
-	}
-	default:
-		LOG_ERROR << "try to validate unknown type";
-		return false;
-	}
-}
 
 bool DatabaseManager::PushMessage(const MessageManager::MsgData& msg)
 {
@@ -642,7 +260,7 @@ Json::Value DatabaseManager::GetMessages(unsigned thread_id, int64_t existing_id
 	Mapper<Messages> mapper(GetDbClient());
 
 	// 如果现有id不存在，直接返回
-	auto exist_record =
+	const auto& exist_record =
 		mapper.limit(1).findBy
 	(Criteria(Criteria(Messages::Cols::_message_id, CompareOperator::EQ, existing_id)
 		&& Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id)));
@@ -654,9 +272,9 @@ Json::Value DatabaseManager::GetMessages(unsigned thread_id, int64_t existing_id
 
 	Criteria criteria(Criteria(Messages::Cols::_message_id, CompareOperator::GT, existing_id)
 		&& Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id));
-	auto index_record = mapper.orderBy(Messages::Cols::_message_id, SortOrder::ASC)
+	const auto& index_record = mapper.orderBy(Messages::Cols::_message_id, SortOrder::ASC)
 		.offset(num).limit(1).findBy(criteria);
-	auto latest_record = mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(1).findAll();
+	const auto& latest_record = mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(1).findAll();
 	auto latest_id = latest_record[0].getValueOfMessageId();
 	Json::Value data(Json::arrayValue);
 
@@ -672,7 +290,7 @@ Json::Value DatabaseManager::GetMessages(unsigned thread_id, int64_t existing_id
 		return json_records;
 	}
 
-	auto records = mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(num)
+	const auto& records = mapper.orderBy(Messages::Cols::_message_id, SortOrder::DESC).limit(num)
 		.findBy(Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id));
 	Json::Value json_records(Json::arrayValue);
 	for (auto it = records.rbegin(); it != records.rend(); ++it)
@@ -705,7 +323,6 @@ void DatabaseManager::CreatePublicThread()
 	for (int i = 1;i<6;i++)
 	{
 		Threads thread;
-		thread.setId(i);
 		thread.setType(0);
 
 		mapper.insert(thread,

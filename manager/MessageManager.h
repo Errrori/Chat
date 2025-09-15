@@ -19,18 +19,16 @@ public:
 		std::string update_time = "";
 		int status = 1; // 0=deleted, 1=normal
 
+
 		static std::optional<MsgData> BuildFromJson(const Json::Value& json);
 
 		std::optional<drogon_model::sqlite3::Messages> TransToMessages();
 	};
 
-	static bool ValidateMsg(const MsgData& msg);
-
 	static bool PushMessage(const MsgData& msg);
+	static std::optional<drogon_model::sqlite3::Messages> BuildMessage(const Json::Value& json);
 
 	static Json::Value GetMessages(unsigned thread_id, int64_t existing_id, unsigned num = DataBase::DEFAULT_RECORDS_QUERY_LEN);
 	static Json::Value GetAllMessage(unsigned thread_id, unsigned num = DataBase::DEFAULT_RECORDS_QUERY_LEN);
-
-	
 };
 

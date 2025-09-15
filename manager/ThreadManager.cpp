@@ -2,16 +2,22 @@
 #include "ThreadManager.h"
 #include "models/PrivateChats.h"
 #include "models/Threads.h"
-#include "models/Groups.h"
-
+#include "models/GroupChats.h"
+#include "models/GroupMembers.h"
+#include "models/AiChats.h"
+#include <unordered_map>
+#include <unordered_set>
 
 using namespace drogon::orm;
 using Threads = drogon_model::sqlite3::Threads;
-using Groups = drogon_model::sqlite3::Groups;
 using GroupMembers = drogon_model::sqlite3::GroupMembers;
 using PrivateChats = drogon_model::sqlite3::PrivateChats;
 using GroupChats = drogon_model::sqlite3::GroupChats;
+using AIChats = drogon_model::sqlite3::AiChats;
+using Messages = drogon_model::sqlite3::Messages;
 
+constexpr int CONTEXT_LEN = 20;
+constexpr int OVERVIEW_LIMIT = 10000;
 
 std::optional<drogon_model::sqlite3::GroupMembers> GroupMemberData::TransToGroupMembers() const
 {
@@ -74,7 +80,7 @@ std::optional<std::vector<std::string>> ThreadManager::GetThreadMembersUid(int t
 {
 	//1.get thread type
 	Mapper<Threads> type_mapper{ DatabaseManager::GetDbClient() };
-	Criteria type_criteria(Criteria(Threads::Cols::_id, CompareOperator::EQ, thread_id));
+	Criteria type_criteria(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id));
 	const auto& threads = type_mapper.limit(1).findBy(type_criteria);
 
 	if (threads.size() != 1)
@@ -129,7 +135,7 @@ bool ThreadManager::AddNewGroupMember(int thread_id, const std::string& user_id,
 	try
 	{
 		Mapper<Threads> threads_mapper{DatabaseManager::GetDbClient()};
-		Criteria threads_criteria(Criteria(Threads::Cols::_id,CompareOperator::EQ,thread_id)
+		Criteria threads_criteria(Criteria(Threads::Cols::_thread_id,CompareOperator::EQ,thread_id)
 			&&Criteria(Threads::Cols::_type,CompareOperator::EQ,GROUP_TYPE));
 		//check if thread is a group thread
 		auto num = threads_mapper.findBy(threads_criteria).size();
@@ -166,7 +172,7 @@ bool ThreadManager::AddNewGroupMember(int thread_id, const std::string& user_id,
 std::optional<Json::Value> ThreadManager::GetGroupInfo(int thread_id)
 {
     Mapper<Threads> threads_mapper{DatabaseManager::GetDbClient()};
-	Criteria threads_criteria(Criteria(Threads::Cols::_id,CompareOperator::EQ,thread_id)
+	Criteria threads_criteria(Criteria(Threads::Cols::_thread_id,CompareOperator::EQ,thread_id)
 		&&Criteria(Threads::Cols::_type,CompareOperator::EQ,GROUP_TYPE));
 	//check if thread is a group thread
 	auto num = threads_mapper.findBy(threads_criteria).size();
@@ -179,7 +185,7 @@ std::optional<Json::Value> ThreadManager::GetGroupInfo(int thread_id)
 	Criteria group_criteria(Criteria(GroupChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
 	const auto& group_info = group_mapper.limit(1).findBy(group_criteria);
 
-	// 检查是否找到群聊信息
+	// Check if group chat info is found
 	if (group_info.empty())
 	{
 		LOG_ERROR << "can not find group chat info with thread id: " << thread_id;
@@ -259,7 +265,7 @@ std::optional<int> ThreadManager::CreatePrivateThread(const std::string& uid1, c
 	const auto& thread_ret = threads_mapper.insertFuture(thread).get();
 	LOG_INFO << "create new thread: " << thread_ret.toJson().toStyledString();
 
-	const auto& thread_id = thread_ret.getValueOfId();
+	const auto& thread_id = thread_ret.getValueOfThreadId();
 	LOG_INFO<<"thread id: "<<thread_id;
 	PrivateChats private_chat;
 	private_chat.setThreadId(thread_id);
@@ -283,11 +289,11 @@ std::optional<int> ThreadManager::CreateGroupChat(const GroupChatData& data)
 		Threads thread;
 		thread.setType(GROUP_TYPE);
 		const auto& result = threads_mapper.insertFuture(thread).get();
-		const auto& thread_id = result.getValueOfId();
+		const auto& thread_id = static_cast<int>(result.getValueOfThreadId());
 
 		LOG_INFO << "Created thread with id: " << thread_id;
 
-		// 直接使用SQL插入，避免ORM的自动主键限制
+		// Use SQL insert directly to avoid ORM auto-increment key limitations
 		auto db_client = DatabaseManager::GetDbClient();
 		std::string sql = "INSERT INTO group_chats (thread_id, name, description";
 		std::string values = " VALUES (?, ?, ?";
@@ -317,10 +323,65 @@ std::optional<int> ThreadManager::CreateGroupChat(const GroupChatData& data)
 	}
 }
 
+std::optional<int> ThreadManager::CreateAIThread(const std::string& name, const std::string& init_settings, const std::string& creator_uid)
+{
+	try
+	{
+		Mapper<Threads> threads_mapper{ DatabaseManager::GetDbClient() };
+		Threads thread;
+		thread.setType(AI_TYPE);
+		const auto& thread_ret = threads_mapper.insertFuture(thread).get();
+		const auto& thread_id = static_cast<int>(thread_ret.getValueOfThreadId());
+
+		Mapper<AIChats> ai_mapper{ DatabaseManager::GetDbClient() };
+		AIChats ai_chat;
+		ai_chat.setThreadId(thread_id);
+		ai_chat.setName(name);
+		ai_chat.setInitSettings(init_settings);
+		ai_chat.setCreatorUid(creator_uid);
+		const auto& result = ai_mapper.insertFuture(ai_chat).get();
+		//here need to check result
+		LOG_INFO << "create new ai :" << result.toJson().toStyledString();
+		return thread_id;
+
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "CreateAIThread error: " << e.what();
+		return std::nullopt;
+	}
+}
+
+void ThreadManager::PushChatRecords(const drogon_model::sqlite3::Messages& messages)
+{
+	try
+	{
+		Mapper<Messages> mapper{ DatabaseManager::GetDbClient() };
+		mapper.insert(messages,[](const Messages& message)
+		{
+			LOG_INFO << "Insert new message successful, message: " << message.toJson().toStyledString();
+		},
+		[](const DrogonDbException& e)
+		{
+			LOG_ERROR << "Exception to insert message: " << e.base().what();
+		}
+		);
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "PushChatRecords error: " << e.what();
+	}
+}
+
+std::optional<drogon_model::sqlite3::Messages> ThreadManager::BuildMessage(const Json::Value& msg)
+{
+	return std::nullopt;
+}
+
 bool ThreadManager::ValidateMember(const std::string& uid, int thread_id)
 {
 	Mapper<Threads> threads_mapper{ DatabaseManager::GetDbClient() };
-	Criteria threads_criteria(Criteria(Threads::Cols::_id, CompareOperator::EQ, thread_id));
+	Criteria threads_criteria(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id));
 	const auto& threads = threads_mapper.findBy(threads_criteria);
 
 	if(threads.empty())
@@ -338,7 +399,6 @@ bool ThreadManager::ValidateMember(const std::string& uid, int thread_id)
 		const auto& group_members = group_mapper.findBy(group_criteria);
 		if (group_members.empty())
 		{
-			LOG_ERROR << "can not find :"<<"uid: "<<uid<<" group members with thread id: " << thread_id;
 			return false;
 		}
 		return true;
@@ -356,6 +416,19 @@ bool ThreadManager::ValidateMember(const std::string& uid, int thread_id)
 		}
 		return true;
 	}
+	else if (type==AI_TYPE)
+	{
+		Mapper<AIChats> ai_mapper{ DatabaseManager::GetDbClient() };
+		Criteria ai_criteria(Criteria(AIChats::Cols::_thread_id, CompareOperator::EQ, thread_id)
+			&& Criteria(AIChats::Cols::_creator_uid, CompareOperator::EQ, uid));
+		const auto& ai_chats = ai_mapper.findBy(ai_criteria);
+		if (ai_chats.empty())
+		{
+			LOG_ERROR << "can not find ai chat with thread id: " << thread_id;
+			return false;
+		}
+		return true;
+	}
 	else
 	{
 		LOG_ERROR << "invalid thread type: " << type;
@@ -367,7 +440,7 @@ Json::Value ThreadManager::GetUserChatList(const std::string& uid)
 {
 	Json::Value chat_list(Json::arrayValue);
 
-	// 1. 获取用户参与的私聊
+	// 1. Get private chats the user participates in
 	Mapper<PrivateChats> private_mapper(DatabaseManager::GetDbClient());
 	Criteria private_criteria(
 		Criteria(PrivateChats::Cols::_uid1, CompareOperator::EQ, uid) ||
@@ -381,7 +454,7 @@ Json::Value ThreadManager::GetUserChatList(const std::string& uid)
 		chat_info["thread_id"] = static_cast<Json::Int64>(private_chat.getValueOfThreadId());
 		chat_info["type"] = "private";
 
-		// 获取对方用户信息
+		// Get other user info
 		std::string other_uid = (private_chat.getValueOfUid1() == uid) ?
 			private_chat.getValueOfUid2() : private_chat.getValueOfUid1();
 
@@ -402,16 +475,16 @@ Json::Value ThreadManager::GetUserChatList(const std::string& uid)
 		chat_list.append(chat_info);
 	}
 
-	// 2. 获取用户参与的群聊
+	// 2. Get group chats the user participates in
 	Mapper<GroupMembers> group_mapper(DatabaseManager::GetDbClient());
 	Criteria group_criteria(Criteria(GroupMembers::Cols::_user_uid, CompareOperator::EQ, uid));
 	const auto& group_members = group_mapper.findBy(group_criteria);
 
 	for (const auto& group_member : group_members)
 	{
-		int thread_id = group_member.getValueOfThreadId();
+		int thread_id = static_cast<int>(group_member.getValueOfThreadId());
 
-		// 获取群聊信息
+		// Get group chat info
 		Mapper<GroupChats> group_chat_mapper(DatabaseManager::GetDbClient());
 		Criteria group_chat_criteria(Criteria(GroupChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
 		const auto& group_chats = group_chat_mapper.limit(1).findBy(group_chat_criteria);
@@ -437,7 +510,7 @@ Json::Value ThreadManager::GetUserThreadIds(const std::string& uid)
 {
 	Json::Value thread_ids(Json::arrayValue);
 
-	// 1. 获取用户参与的私聊thread_id
+	// 1. Get private chat thread_ids the user participates in
 	Mapper<PrivateChats> private_mapper(DatabaseManager::GetDbClient());
 	Criteria private_criteria(
 		Criteria(PrivateChats::Cols::_uid1, CompareOperator::EQ, uid) ||
@@ -450,7 +523,7 @@ Json::Value ThreadManager::GetUserThreadIds(const std::string& uid)
 		thread_ids.append(static_cast<Json::Int64>(private_chat.getValueOfThreadId()));
 	}
 
-	// 2. 获取用户参与的群聊thread_id
+	// 2. Get group chat thread_ids the user participates in
 	Mapper<GroupMembers> group_mapper(DatabaseManager::GetDbClient());
 	Criteria group_criteria(Criteria(GroupMembers::Cols::_user_uid, CompareOperator::EQ, uid));
 	const auto& group_members = group_mapper.findBy(group_criteria);
@@ -461,4 +534,210 @@ Json::Value ThreadManager::GetUserThreadIds(const std::string& uid)
 	}
 
 	return thread_ids;
+}
+
+//before call this function, need to validate the thread id
+Json::Value ThreadManager::GetAIChatContext(int thread_id)
+{
+	Mapper<Messages> message_mapper{ DatabaseManager::GetDbClient() };
+	Criteria message_criteria(Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id));
+	const auto& records = message_mapper.limit(CONTEXT_LEN).findBy(message_criteria);
+
+	Json::Value context(Json::arrayValue);
+	for (const auto& record:records)
+	{
+		context.append(record.toJson());
+	}
+
+	LOG_INFO << "get ai chat context: " << context.toStyledString();
+
+	return context;
+}
+
+std::optional<Json::Value> ThreadManager::GetOverviewRecord(long long existing_id, const std::string& uid)
+{
+	try {
+
+		if (existing_id < 0 || uid.empty()) {
+			LOG_ERROR << "Invalid parameters";
+			return std::nullopt;
+		}
+		// 1. 获取用户参与的所有会话ID
+		std::vector<long long> all_thread_ids;
+		std::unordered_map<long long, std::string> thread_types; // 记录会话类型
+
+		// 获取私聊会话
+		Mapper<PrivateChats> private_mapper(DatabaseManager::GetDbClient());
+		Criteria private_criteria(
+			Criteria(PrivateChats::Cols::_uid1, CompareOperator::EQ, uid) ||
+			Criteria(PrivateChats::Cols::_uid2, CompareOperator::EQ, uid)
+		);
+		const auto& private_chats = private_mapper.findBy(private_criteria);
+
+		// 获取群聊会话
+		Mapper<GroupMembers> group_mapper(DatabaseManager::GetDbClient());
+		Criteria group_criteria(Criteria(GroupMembers::Cols::_user_uid, CompareOperator::EQ, uid));
+		const auto& groups = group_mapper.findBy(group_criteria);
+
+		// 预分配容量并收集所有thread_id
+		all_thread_ids.reserve(private_chats.size() + groups.size());
+
+		for (const auto& private_chat : private_chats) {
+			long long thread_id = private_chat.getValueOfThreadId();
+			all_thread_ids.push_back(thread_id);
+			thread_types[thread_id] = "private";
+		}
+
+		for (const auto& group : groups) {
+			long long thread_id = group.getValueOfThreadId();
+			all_thread_ids.push_back(thread_id);
+			thread_types[thread_id] = "group";
+		}
+
+		if (all_thread_ids.empty()) {
+			LOG_INFO << "user do not have any threads";
+			return Json::Value(Json::arrayValue); // 返回空数组
+		}
+
+		// 2. 使用单个SQL查询获取所有相关数据
+		auto db_client = DatabaseManager::GetDbClient();
+
+		// 构建IN条件的实际值
+		std::string thread_ids_str;
+		for (size_t i = 0; i < all_thread_ids.size(); ++i) {
+			if (i > 0) thread_ids_str += ",";
+			thread_ids_str += std::to_string(all_thread_ids[i]);
+		}
+
+		// 优化的SQL：一次查询获取每个thread的统计信息和最新消息
+		std::string sql =
+			"WITH thread_stats AS ("
+			"  SELECT thread_id, "
+			"         COUNT(*) as unread_count,"
+			"         MAX(message_id) as latest_message_id"
+			"  FROM messages "
+			"  WHERE thread_id IN (" + thread_ids_str + ") "
+			"    AND message_id > " + std::to_string(existing_id) + " "
+			"  GROUP BY thread_id"
+			") "
+			"SELECT ts.thread_id, ts.unread_count, "
+			"       m.message_id, m.sender_uid, m.sender_name, m.sender_avatar, "
+			"       m.content, m.attachment, m.create_time, m.update_time "
+			"FROM thread_stats ts "
+			"LEFT JOIN messages m ON ts.latest_message_id = m.message_id "
+			"ORDER BY ts.thread_id";
+
+		// 执行查询 - 使用参数展开方式
+		// 注意：Drogon的execSqlSync不支持vector参数，需要逐个传递
+		// 这里我们需要重新构建查询以避免动态参数数量问题
+		// 暂时使用简化的查询方式
+		const auto& result = db_client->execSqlSync(sql);
+
+		// 3. 一次性获取所有thread的详细信息
+		std::unordered_map<long long, Json::Value> private_infos;
+		std::unordered_map<long long, Json::Value> group_infos;
+
+		// 批量获取私聊信息
+		if (!private_chats.empty()) {
+			for (const auto& chat : private_chats) {
+				Json::Value info;
+				info["thread_id"] = static_cast<Json::Int64>(chat.getValueOfThreadId());
+				info["uid1"] = chat.getValueOfUid1();
+				info["uid2"] = chat.getValueOfUid2();
+				info["type"] = "private";
+				private_infos[chat.getValueOfThreadId()] = info;
+			}
+		}
+
+		// 批量获取群聊信息
+		if (!groups.empty()) {
+			std::vector<long long> group_thread_ids;
+			for (const auto& group : groups) {
+				group_thread_ids.push_back(group.getValueOfThreadId());
+			}
+
+			// 使用IN查询批量获取群聊详情
+			Mapper<GroupChats> group_info_mapper(DatabaseManager::GetDbClient());
+			Criteria group_info_criteria(GroupChats::Cols::_thread_id, CompareOperator::In, group_thread_ids);
+			const auto& group_details = group_info_mapper.findBy(group_info_criteria);
+
+			for (const auto& detail : group_details) {
+				Json::Value info = detail.toJson();
+				info["type"] = "group";
+				group_infos[detail.getValueOfThreadId()] = info;
+			}
+		}
+
+		// 4. 构建返回结果
+		Json::Value overviews(Json::arrayValue);
+
+		for (const auto& row : result) {
+			Json::Value overview;
+			long long thread_id = row["thread_id"].as<long long>();
+
+			// 设置基本信息
+			overview["thread_id"] = thread_id;
+			overview["unread_count"] = row["unread_count"].as<int>();
+
+			// 添加thread详细信息
+			if (thread_types[thread_id] == "private") {
+				overview["thread_info"] = private_infos[thread_id];
+			}
+			else {
+				overview["thread_info"] = group_infos[thread_id];
+			}
+
+			// 构建最新消息对象
+			if (!row["message_id"].isNull()) {
+				Json::Value latest_message;
+				latest_message["message_id"] = row["message_id"].as<long long>();
+				latest_message["sender_uid"] = row["sender_uid"].as<std::string>();
+				latest_message["sender_name"] = row["sender_name"].as<std::string>();
+				latest_message["sender_avatar"] = row["sender_avatar"].as<std::string>();
+				latest_message["content"] = row["content"].as<std::string>();
+				latest_message["attachment"] = row["attachment"].as<std::string>();
+				latest_message["thread_id"] = thread_id;
+				latest_message["create_time"] = row["create_time"].as<std::string>();
+				latest_message["update_time"] = row["update_time"].as<std::string>();
+				overview["latest_message"] = latest_message;
+			}
+			else {
+				overview["latest_message"] = Json::nullValue;
+			}
+
+			overviews.append(overview);
+		}
+
+		//// 5. 处理没有新消息的会话
+		//std::unordered_set<long long> processed_threads;
+		//for (const auto& row : result) {
+		//	processed_threads.insert(row["thread_id"].as<long long>());
+		//}
+
+		//for (long long thread_id : all_thread_ids) {
+		//	if (processed_threads.find(thread_id) == processed_threads.end()) {
+		//		// 这个会话没有新消息
+		//		Json::Value overview;
+		//		overview["thread_id"] = thread_id;
+		//		overview["unread_count"] = 0;
+		//		overview["latest_message"] = Json::nullValue;
+
+		//		if (thread_types[thread_id] == "private") {
+		//			overview["thread_info"] = private_infos[thread_id];
+		//		}
+		//		else {
+		//			overview["thread_info"] = group_infos[thread_id];
+		//		}
+
+		//		overviews.append(overview);
+		//	}
+		//}
+
+		return overviews;
+
+	}
+	catch (const std::exception& e) {
+		LOG_ERROR << "GetOverviewRecord error: " << e.what();
+		return std::nullopt;
+	}
 }

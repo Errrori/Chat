@@ -14,15 +14,15 @@ using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
-const std::string Threads::Cols::_id = "id";
+const std::string Threads::Cols::_thread_id = "thread_id";
 const std::string Threads::Cols::_type = "type";
 const std::string Threads::Cols::_create_time = "create_time";
-const std::string Threads::primaryKeyName = "id";
+const std::string Threads::primaryKeyName = "thread_id";
 const bool Threads::hasPrimaryKey = true;
 const std::string Threads::tableName = "threads";
 
 const std::vector<typename Threads::MetaData> Threads::metaData_={
-{"id","int64_t","integer",8,1,1,0},
+{"thread_id","int64_t","integer",8,1,1,0},
 {"type","int64_t","integer",8,0,0,1},
 {"create_time","std::string","timestamp",0,0,0,0}
 };
@@ -35,9 +35,9 @@ Threads::Threads(const Row &r, const ssize_t indexOffset) noexcept
 {
     if(indexOffset < 0)
     {
-        if(!r["id"].isNull())
+        if(!r["thread_id"].isNull())
         {
-            id_=std::make_shared<int64_t>(r["id"].as<int64_t>());
+            threadId_=std::make_shared<int64_t>(r["thread_id"].as<int64_t>());
         }
         if(!r["type"].isNull())
         {
@@ -62,7 +62,7 @@ Threads::Threads(const Row &r, const ssize_t indexOffset) noexcept
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                createTime_= std::make_shared<std::string>(timeStr);
+                createTime_=std::make_shared<std::string>(timeStr);
             }
         }
     }
@@ -78,7 +78,7 @@ Threads::Threads(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 0;
         if(!r[index].isNull())
         {
-            id_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            threadId_=std::make_shared<int64_t>(r[index].as<int64_t>());
         }
         index = offset + 1;
         if(!r[index].isNull())
@@ -105,7 +105,7 @@ Threads::Threads(const Row &r, const ssize_t indexOffset) noexcept
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                createTime_= std::make_shared<std::string>(timeStr);
+                createTime_=std::make_shared<std::string>(timeStr);
             }
         }
     }
@@ -124,7 +124,7 @@ Threads::Threads(const Json::Value &pJson, const std::vector<std::string> &pMasq
         dirtyFlag_[0] = true;
         if(!pJson[pMasqueradingVector[0]].isNull())
         {
-            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+            threadId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
         }
     }
     if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
@@ -147,12 +147,12 @@ Threads::Threads(const Json::Value &pJson, const std::vector<std::string> &pMasq
 
 Threads::Threads(const Json::Value &pJson) noexcept(false)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("thread_id"))
     {
         dirtyFlag_[0]=true;
-        if(!pJson["id"].isNull())
+        if(!pJson["thread_id"].isNull())
         {
-            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+            threadId_=std::make_shared<int64_t>((int64_t)pJson["thread_id"].asInt64());
         }
     }
     if(pJson.isMember("type"))
@@ -185,7 +185,7 @@ void Threads::updateByMasqueradedJson(const Json::Value &pJson,
     {
         if(!pJson[pMasqueradingVector[0]].isNull())
         {
-            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+            threadId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
         }
     }
     if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
@@ -208,11 +208,11 @@ void Threads::updateByMasqueradedJson(const Json::Value &pJson,
 
 void Threads::updateByJson(const Json::Value &pJson) noexcept(false)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("thread_id"))
     {
-        if(!pJson["id"].isNull())
+        if(!pJson["thread_id"].isNull())
         {
-            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+            threadId_=std::make_shared<int64_t>((int64_t)pJson["thread_id"].asInt64());
         }
     }
     if(pJson.isMember("type"))
@@ -233,31 +233,31 @@ void Threads::updateByJson(const Json::Value &pJson) noexcept(false)
     }
 }
 
-const int64_t &Threads::getValueOfId() const noexcept
+const int64_t &Threads::getValueOfThreadId() const noexcept
 {
     static const int64_t defaultValue = int64_t();
-    if(id_)
-        return *id_;
+    if(threadId_)
+        return *threadId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &Threads::getId() const noexcept
+const std::shared_ptr<int64_t> &Threads::getThreadId() const noexcept
 {
-    return id_;
+    return threadId_;
 }
-void Threads::setId(const int64_t &pId) noexcept
+void Threads::setThreadId(const int64_t &pThreadId) noexcept
 {
-    id_ = std::make_shared<int64_t>(pId);
+    threadId_ = std::make_shared<int64_t>(pThreadId);
     dirtyFlag_[0] = true;
 }
-void Threads::setIdToNull() noexcept
+void Threads::setThreadIdToNull() noexcept
 {
-    id_.reset();
+    threadId_.reset();
     dirtyFlag_[0] = true;
 }
 const typename Threads::PrimaryKeyType & Threads::getPrimaryKey() const
 {
-    assert(id_);
-    return *id_;
+    assert(threadId_);
+    return *threadId_;
 }
 
 const int64_t &Threads::getValueOfType() const noexcept
@@ -306,7 +306,7 @@ void Threads::setCreateTimeToNull() noexcept
 
 void Threads::updateId(const uint64_t id)
 {
-    id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
+    threadId_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &Threads::insertColumns() noexcept
@@ -386,13 +386,13 @@ void Threads::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 Json::Value Threads::toJson() const
 {
     Json::Value ret;
-    if(getId())
+    if(getThreadId())
     {
-        ret["id"]=(Json::Int64)getValueOfId();
+        ret["thread_id"]=(Json::Int64)getValueOfThreadId();
     }
     else
     {
-        ret["id"]=Json::Value();
+        ret["thread_id"]=Json::Value();
     }
     if(getType())
     {
@@ -421,9 +421,9 @@ Json::Value Threads::toMasqueradedJson(
     {
         if(!pMasqueradingVector[0].empty())
         {
-            if(getId())
+            if(getThreadId())
             {
-                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfId();
+                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfThreadId();
             }
             else
             {
@@ -455,13 +455,13 @@ Json::Value Threads::toMasqueradedJson(
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
-    if(getId())
+    if(getThreadId())
     {
-        ret["id"]=(Json::Int64)getValueOfId();
+        ret["thread_id"]=(Json::Int64)getValueOfThreadId();
     }
     else
     {
-        ret["id"]=Json::Value();
+        ret["thread_id"]=Json::Value();
     }
     if(getType())
     {
@@ -484,9 +484,9 @@ Json::Value Threads::toMasqueradedJson(
 
 bool Threads::validateJsonForCreation(const Json::Value &pJson, std::string &err)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("thread_id"))
     {
-        if(!validJsonOfField(0, "id", pJson["id"], err, true))
+        if(!validJsonOfField(0, "thread_id", pJson["thread_id"], err, true))
             return false;
     }
     if(pJson.isMember("type"))
@@ -555,9 +555,9 @@ bool Threads::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 }
 bool Threads::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("thread_id"))
     {
-        if(!validJsonOfField(0, "id", pJson["id"], err, false))
+        if(!validJsonOfField(0, "thread_id", pJson["thread_id"], err, false))
             return false;
     }
     else

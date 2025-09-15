@@ -4,7 +4,7 @@
   "dbname": "",
   "user": "",
   "passwd": "",
-  "tables": ["users"],
+  "tables": ["threads","ai_chats","private_chats","group_chats","group_members","messages"],
   "relationships": {
     "enabled": false,
     "items": []

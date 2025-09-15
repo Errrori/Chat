@@ -28,7 +28,7 @@ namespace Utils {
         }
 
 #ifdef _WIN32
-        // Windows实现
+        // Windows implementation
 #include <rpc.h>
         std::string GenerateUid() {
             UUID uuid;
@@ -44,9 +44,9 @@ namespace Utils {
         }
 
 #else
-        // Linux实现
+        // Linux implementation
 #include <uuid/uuid.h>
-        std::string GenerateUid() {  // 移除了Utils::限定符
+        std::string GenerateUid() {  // Removed Utils:: qualifier
             uuid_t uuid;
             uuid_generate(uuid);
 
@@ -171,13 +171,13 @@ namespace Utils {
                 const auto& data = jwt::decode(token);
 
                 auto verifier = jwt::verify()
-                    .allow_algorithm(jwt::algorithm::hs256{ GetJwtSecret() }); // <--- 修改：使用 GetJwtSecret()
+                    .allow_algorithm(jwt::algorithm::hs256{ GetJwtSecret() }); // Modified: use GetJwtSecret()
                 verifier.verify(data);
 
                 auto exp = data.get_expires_at();
                 if (exp < std::chrono::system_clock::now())
                 {
-                    LOG_ERROR << "token is not effective!"; // <--- 修改：移除多余的 \n
+                    LOG_ERROR << "token is not effective!"; // Modified: remove extra \n
                     return false;
                 }
 
@@ -218,204 +218,6 @@ namespace Utils {
             return token;
         }
     }
-
-    namespace Message
-    {
-        MessageIDGenerator& MessageIDGenerator::GetInstance() {
-            static MessageIDGenerator instance;
-            return instance;
-        }
-
-        MessageIDGenerator::MessageIDGenerator()
-            : workerId_(0), datacenterId_(0), sequence_(0), lastTimestamp_(0) {
-        }
-
-        void MessageIDGenerator::SetMachineId(int workerId, int dataCenterId) {
-            if (workerId > MAX_WORKER_ID || workerId < 0) {
-                LOG_ERROR << "workerId can't be greater than " << MAX_WORKER_ID << " or less than 0";
-                return;
-            }
-            if (dataCenterId > MAX_DATACENTER_ID || dataCenterId < 0) {
-                LOG_ERROR << "datacenter Id can't be greater than " << MAX_DATACENTER_ID << " or less than 0";
-                return;
-            }
-            workerId_ = workerId;
-            datacenterId_ = dataCenterId;
-        }
-
-        int64_t MessageIDGenerator::NextId() {
-            std::lock_guard<std::mutex> lock(mutex_);
-
-            auto timestamp = GetCurrentTimestamp();
-
-            // Clock moved backwards, refuse to generate id
-            if (timestamp < lastTimestamp_) {
-                LOG_ERROR << "Clock moved backwards. Refusing to generate id for " << (lastTimestamp_ - timestamp) << " milliseconds";
-                return -1;
-            }
-
-            // same ms generate
-            if (lastTimestamp_ == timestamp) {
-                sequence_ = (sequence_ + 1) & MAX_SEQUENCE;
-                // overflow ms
-                if (sequence_ == 0) {
-                    timestamp = WaitNextMillis(lastTimestamp_);
-                }
-            }
-            else {
-                sequence_ = 0;
-            }
-
-            lastTimestamp_ = timestamp;
-
-            // build id
-            return ((timestamp - START_TIMESTAMP) << TIMESTAMP_SHIFT)
-                | (datacenterId_ << DATACENTER_ID_SHIFT)
-                | (workerId_ << WORKER_ID_SHIFT)
-                | sequence_;
-        }
-
-        int64_t MessageIDGenerator::GetCurrentTimestamp() {
-            auto currentTimePoint = std::chrono::system_clock::now();
-            auto current = std::chrono::duration_cast<std::chrono::milliseconds>(currentTimePoint.time_since_epoch()).count();
-            return current;
-        }
-
-        int64_t MessageIDGenerator::WaitNextMillis(int64_t lastTimestamp) {
-            auto timestamp = GetCurrentTimestamp();
-            while (timestamp <= lastTimestamp) {
-                timestamp = GetCurrentTimestamp();
-            }
-            return timestamp;
-        }
-
-        int64_t GenerateMsgId()
-        {
-            return MessageIDGenerator::GetInstance().NextId();
-        }
-
-        Json::Value GenerateErrorMsg(const std::string& error_msg)
-        {
-            Json::Value error_json;
-            error_json["content_type"] = "ErrorMsg";
-            error_json["content"] = error_msg;
-            return error_json;
-        }
-    }
-
-    namespace Relationship
-    {
-		std::string TypeToString(StatusType type)
-    {
-    	switch (type)
-    	{
-			#define X(EnumName, StringName) case StatusType::EnumName: return StringName;
-    			RELATIONSHIP_STATUS_MEMBERS
-			#undef X
-    		default: return "Unknown";
-    	}
-    }
-
-    StatusType StringToType(const std::string& type_str)
-    {
-		#define X(EnumName, StringName) if (type_str == StringName) return StatusType::EnumName;
-    		RELATIONSHIP_STATUS_MEMBERS
-		#undef X
-		return StatusType::Unknown;
-	}
-
-    bool IsValid(const std::string& type_str)
-	{
-	  	#define X(EnumName, StringName) if (type_str == StringName) return true;
-          RELATIONSHIP_STATUS_MEMBERS
-	  	#undef X
-    	return false;
-	}    
-    }
-
-    namespace UserAction
-    {
-        namespace RelationAction
-        {
-	         std::string TypeToString(RelationshipActionType type)
-             {
-                 switch (type)
-                 {
-	         		#define X(EnumName, StringName) case RelationshipActionType::EnumName: return StringName;
-	         			RELATIONSHIP_ACTION_TYPE
-	         		#undef X
-             		default: return "Unknown";
-                 }
-             }
-
-            RelationshipActionType StringToType(const std::string& type_str)
-            {
-                #define X(EnumName, StringName) if (type_str == StringName) return RelationshipActionType::EnumName;
-	        		RELATIONSHIP_ACTION_TYPE
-	        	#undef X
-	        	return RelationshipActionType::Unknown;
-            }
-
-            bool IsValid(const std::string& type_str)
-            {
-                #define X(EnumName, StringName) if (type_str == StringName) return true;
-	        		RELATIONSHIP_ACTION_TYPE
-	          	#undef X
-            	return false;
-            }
-
-            std::optional<Relationship::StatusType> ToStatus(RelationshipActionType action_type)
-            {
-	            switch (action_type)
-	            {
-	            case RelationshipActionType::Unfriend:
-	            case RelationshipActionType::RequestReject:
-	            case RelationshipActionType::UnblockUser:
-                    return std::nullopt;
-	            case RelationshipActionType::BlockUser:
-                    return Relationship::StatusType::Blocking;
-	            case RelationshipActionType::FriendRequest:
-                    return Relationship::StatusType::Pending;
-	            case RelationshipActionType::RequestAccept:
-                    return Relationship::StatusType::Friend;
-	            default:
-                    return Relationship::StatusType::Unknown;
-	            }
-            }
-        }
-    }
-
-    namespace Notification
-    {
-	        std::string TypeToString(NotificationSource type)
-    {
-        switch (type)
-    	{
-			#define X(EnumName, StringName) case NotificationSource::EnumName: return StringName;
-				NOTIFICATION_SOURCE
-			#undef X
-    		default: return "Unknown";
-    	}
-    }
-
-    NotificationSource StringToType(const std::string& type_str)
-    {
-        #define X(EnumName, StringName) if (type_str == StringName) return NotificationSource::EnumName;
-			NOTIFICATION_SOURCE
-		#undef X
-		return NotificationSource::Unknown;
-    }
-
-    bool IsValid(const std::string& type_str)
-    {
-        #define X(EnumName, StringName) if (type_str == StringName) return true;
-			NOTIFICATION_SOURCE
-	  	#undef X
-    	return false;
-    }
-    }
-
-
 
     // 统一错误响应处理函数实现
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message)

@@ -2,7 +2,6 @@
 #include <filesystem>
 #include "FileManager.h"
 
-using namespace DeFaultFilePath;
 
 bool FileManager::UploadFile(const drogon::HttpFile& file, const std::string& file_name, std::string& file_url)
 {

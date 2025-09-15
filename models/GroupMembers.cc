@@ -68,7 +68,7 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                joinTime_= std::make_shared<std::string>(timeStr);
+                joinTime_=std::make_shared<std::string>(timeStr);
             }
         }
     }

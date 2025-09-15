@@ -28,40 +28,33 @@ add_executable(${PROJECT_NAME}
     controllers/ThreadController.cpp
     utils.cpp
     middleware/CorsMiddleware.cpp
-    models/ChatRecords.cc
     models/Users.cc
-    models/Notifications.cc
-    models/Groups.cc
     models/GroupChats.cc
     models/GroupMembers.cc
     models/Messages.cc    
     models/Threads.cc  
     models/PrivateChats.cc
-    models/Relationships.cc
-    DTOs/NotificationDTO.cpp
-    DTOs/MessageDTO.cpp
-    DTOs/RelationshipDTO.cpp
-    RelationshipService.cpp
+    models/AiChats.cc
     manager/ConnectionManager.cpp
     manager/ThreadManager.cpp
-    controllers/EchoController.cpp
-    controllers/PublicChatController.cpp
     controllers/ChatController.cpp
     controllers/FileController.cpp
-    controllers/RelationshipController.cpp
     MsgDispatcher.cpp
     manager/FileManager.cpp
-    manager/NotificationManager.cpp
-    manager/SendManager.cpp
     filter/TokenVerifyFilter.cpp
+    controllers/AIController.cpp
+    AIService.cpp
     pch.cpp
 )
 
 # 查找 Drogon 包
 find_package(Drogon REQUIRED)
 
+# 查找 CURL 包
+find_package(CURL REQUIRED)
+
 # 添加jwt-cpp的包含路径
 include_directories(third_party/jwt-cpp/include)
 
-# 链接 Drogon 库
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon pch)
+# 链接 Drogon 库和 CURL 库
+target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon CURL::libcurl pch)

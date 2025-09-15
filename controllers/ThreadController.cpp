@@ -94,9 +94,7 @@ void ThreadController::JoinThread(const drogon::HttpRequestPtr& req,
     json_resp["code"] = 200;
     json_resp["message"] = "success join thread,uid: "+visitor_info.uid;
 	callback(drogon::HttpResponse::newHttpJsonResponse(json_resp));
-    
 }
-
 
 void ThreadController::GetThreadInfo(const drogon::HttpRequestPtr& req,
     std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -166,6 +164,51 @@ void ThreadController::CreateGroupChats(const drogon::HttpRequestPtr& req,
 
 }
 
+void ThreadController::CreateAIChats(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    const auto& json_body = req->getJsonObject();
+    if (!json_body) {
+        LOG_ERROR << "can not get the data of request";
+        callback(Utils::CreateErrorResponse(400, 400, "error request format"));
+        return;
+    }
+
+    const auto& json_data = *json_body;
+    if (!json_data.isMember("name"))
+    {
+        LOG_ERROR << "ai need a name!";
+		callback(Utils::CreateErrorResponse(400, 400, "lack of essential field"));
+        return;
+    }
+
+    std::optional<int> thread_id;
+    const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+
+    bool is_init = json_data.isMember("init_description");
+    if (is_init)
+    {
+        thread_id = ThreadManager::CreateAIThread(json_data["name"].asString(), json_data["init_description"].asString(),visitor_info.uid );
+    }
+    else
+    {
+		thread_id = ThreadManager::CreateAIThread(json_data["name"].asString(), "", visitor_info.uid);
+    }
+
+    if (!thread_id.has_value())
+    {
+        LOG_ERROR << "can not create ai chat!";
+        callback(Utils::CreateErrorResponse(400, 400, "can not create ai chat"));
+        return;
+    }
+
+	Json::Value json_resp;
+    json_resp["code"] = 200;
+	json_resp["message"] = "success create ai chat";
+	json_resp["thread_id"] = thread_id.value();
+    callback(drogon::HttpResponse::newHttpJsonResponse(json_resp));
+}
+
 
 void ThreadController::CreatePrivateChats(const drogon::HttpRequestPtr& req,
                                           std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -233,4 +276,73 @@ void ThreadController::GetUserThreadIds(const drogon::HttpRequestPtr& req,
     json_resp["data"] = thread_ids;
 
     callback(drogon::HttpResponse::newHttpJsonResponse(json_resp));
+}
+
+void ThreadController::GetChatRecords(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    LOG_INFO << "Get chat records accessed";
+    Json::Value json_resp;
+    Json::Value records;
+    auto num = req->getOptionalParameter<unsigned int>("num");
+    auto existing_id = req->getOptionalParameter<int64_t>("existing_id");
+    auto thread_id = req->getOptionalParameter<unsigned int>("thread_id");
+
+    if (existing_id.has_value() && thread_id.has_value())
+    {
+        records = DatabaseManager::GetMessages(thread_id.value(), existing_id.value(), num.value_or(DataBase::DEFAULT_RECORDS_QUERY_LEN));
+    }
+    else
+    {
+        auto resp = Utils::CreateErrorResponse(400, 400, "Missing required field: existing_id");
+        callback(resp);
+        return;
+    }
+
+    if (records == Json::nullValue)
+    {
+        auto resp = Utils::CreateErrorResponse(404, 404, "No records found in database");
+        callback(resp);
+        return;
+    }
+
+    json_resp["data"] = records;
+    json_resp["size"] = records.empty() ? 0 : records.size();
+    json_resp["code"] = 200;
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
+    callback(resp);
+}
+
+void ThreadController::GetOverviewChat(const drogon::HttpRequestPtr& req,
+                                       std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    try
+    {
+        auto existing_id = req->getOptionalParameter<int64_t>("existing_id");
+
+        if (!existing_id.has_value())
+        {
+            callback(Utils::CreateErrorResponse(400, 400, "Missing field"));
+            return;
+        }
+
+        const auto& info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+
+       const auto& overview = ThreadManager::GetOverviewRecord(existing_id.value(), info.uid);
+
+       if (!overview.has_value())
+       {
+		   callback(Utils::CreateErrorResponse(400, 400, "can not get record"));
+           return;
+       }
+
+	   callback(drogon::HttpResponse::newHttpJsonResponse(overview.value_or(Json::nullValue)));
+
+    }
+	catch (const std::exception& e)
+    {
+		callback(Utils::CreateErrorResponse(500, 500, "Server error"));
+    }
+    
+
 }

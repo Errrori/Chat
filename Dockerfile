@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     sqlite3 \
     libsqlite3-dev \
+    libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装Drogon框架
@@ -71,6 +72,7 @@ RUN apt-get update && apt-get install -y \
     zlib1g \
     sqlite3 \
     libsqlite3-dev \
+    libcurl4 \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建工作目录

@@ -379,39 +379,7 @@ void DbInfoController::GetOnlineUsers(const drogon::HttpRequestPtr& req,
     callback(resp);
 }
 
-void DbInfoController::GetChatRecords(const drogon::HttpRequestPtr& req,
-    std::function<void(const drogon::HttpResponsePtr&)>&& callback)
-{
-    LOG_INFO << "Get chat records accessed";
-    Json::Value json_resp;
-    Json::Value records;
-    auto num = req->getOptionalParameter<unsigned int>("num");
-    auto existing_id = req->getOptionalParameter<int64_t>("existing_id");
-	auto thread_id = req->getOptionalParameter<unsigned int>("thread_id");
 
-    if (existing_id.has_value()&&thread_id.has_value())
-    {
-        records = DatabaseManager::GetMessages(thread_id.value(),existing_id.value(),num.value_or(DataBase::DEFAULT_RECORDS_QUERY_LEN));
-    }else
-    {
-        auto resp = Utils::CreateErrorResponse(400, 400, "Missing required field: existing_id");
-        callback(resp);
-        return;
-    }
-
-	if (records ==Json::nullValue)
-    {
-        auto resp = Utils::CreateErrorResponse(404, 404, "No records found in database");
-        callback(resp);
-        return;
-    }
-
-    json_resp["data"] = records;
-    json_resp["size"] = records.empty() ? 0 : records.size();
-    json_resp["code"] = 200;
-    auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
-    callback(resp);
-}
 
 void DbInfoController::GetAllRecords(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -448,8 +416,17 @@ void DbInfoController::GetAllRecords(const drogon::HttpRequestPtr& req,
 void DbInfoController::GetAllNotifications(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    callback(drogon::HttpResponse::newHttpJsonResponse(DatabaseManager::GetNotifications()));
+    LOG_INFO << "Get all notifications accessed";
+    Json::Value json_resp;
+    json_resp["code"] = 200;
+    json_resp["message"] = "Notifications feature not implemented yet";
+    json_resp["data"] = Json::Value(Json::arrayValue);
+    json_resp["size"] = 0;
+    
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(json_resp);
+    callback(resp);
 }
+
 
 void DbInfoController::ModifyUserAvatar(const drogon::HttpRequestPtr& req,
                                         std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -482,10 +459,4 @@ void DbInfoController::HandleDbInfoOptions(const drogon::HttpRequestPtr& req,
     auto resp = drogon::HttpResponse::newHttpResponse();
     resp->setStatusCode(drogon::k204NoContent);
     callback(resp);
-}
-
-void DbInfoController::HandleGetFriendships(const drogon::HttpRequestPtr& req,
-    std::function<void(const drogon::HttpResponsePtr&)>&& callback)
-{
-    callback(drogon::HttpResponse::newHttpJsonResponse(DatabaseManager::GetRelationships()));
 }

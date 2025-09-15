@@ -94,40 +94,6 @@ bool ConnectionManager::AddUIdToNameRef(const std::string& uid, const std::strin
 	return true;
 }
 
-void ConnectionManager::BroadcastMsg(const std::string& uid, const Json::Value& msg)
-{
-	LOG_INFO << "broadcast message\n";
-	std::lock_guard lock(_conn_mtx);
-	if (msg.empty())
-	{
-		return;
-	}
-	const auto& msg_data = MessageManager::MsgData::BuildFromJson(msg);
-
-	if(!msg_data.has_value())
-	{
-		LOG_ERROR << "can not build message data from json";
-		return;
-	}
-
-	if (!MessageManager::ValidateMsg(msg_data.value()))
-	{
-		LOG_ERROR << "message is not valid";
-		return;
-	}
-
-	DatabaseManager::PushMessage(msg_data.value());
-
-	LOG_INFO << "push new message into database:"+msg.toStyledString();
-	for (const auto& it : _conn_map)
-	{
-		if (it.first!=uid)
-		{
-			it.second->sendJson(msg);
-		}
-	}
-}
-
 void ConnectionManager::BroadcastMsg(const std::string& uid, const std::string& msg)
 {
 	std::lock_guard lock(_conn_mtx);
