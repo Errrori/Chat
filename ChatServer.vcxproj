@@ -94,6 +94,7 @@
     <ClCompile Include="AIService.cpp" />
     <ClCompile Include="controllers\Authentication.cpp" />
     <ClCompile Include="controllers\FileController.cpp" />
+    <ClCompile Include="middleware\FormatChecker.cpp" />
     <ClCompile Include="manager\DatabaseManager.cpp" />
     <ClCompile Include="manager\FileManager.cpp" />
     <ClCompile Include="manager\MessageManager.cpp" />
@@ -125,6 +126,7 @@
     <ClInclude Include="const.h" />
     <ClInclude Include="controllers\Authentication.h" />
     <ClInclude Include="controllers\FileController.h" />
+    <ClInclude Include="middleware\FormatChecker.h" />
     <ClInclude Include="manager\DatabaseManager.h" />
     <ClInclude Include="manager\FileManager.h" />
     <ClInclude Include="manager\MessageManager.h" />

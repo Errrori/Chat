@@ -13,8 +13,8 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 	auto uid = info.uid;
 	{
 		std::lock_guard lock(_conn_mtx);
-		auto it = _conn_map.find(uid);
-		if (it != _conn_map.end())
+		auto it = _conn_to_id_map.find(uid);
+		if (it != _conn_to_id_map.end())
 		{
 			if (it->second == conn)
 			{
@@ -41,7 +41,7 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 
 	std::lock_guard lock(_conn_mtx);
 
-	_conn_map.emplace(uid, conn);
+	_conn_to_id_map.emplace(uid, conn);
 
 	LOG_INFO << "Add Connection: " << uid;
 
@@ -51,14 +51,14 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 bool ConnectionManager::RemoveConnection(const std::string& uid)
 {
 	std::lock_guard lock(_conn_mtx);
-	auto it = _conn_map.find(uid);
-	if (it == _conn_map.end())
+	auto it = _conn_to_id_map.find(uid);
+	if (it == _conn_to_id_map.end())
 	{
 		LOG_ERROR << "Can not find connection,uid :" << uid;
 		return false;
 	}
 
-	_conn_map.erase(uid);
+	_conn_to_id_map.erase(uid);
 
 	LOG_INFO << "Remove Connection: " << uid;
 	return true;
@@ -79,8 +79,8 @@ bool ConnectionManager::RemoveConnection(const drogon::WebSocketConnectionPtr& c
 bool ConnectionManager::AddUIdToNameRef(const std::string& uid, const std::string& name)
 {
 	std::lock_guard lock(_name_mtx);
-	auto it = _name_map.find(uid);
-	if (it != _name_map.end())
+	auto it = _id_to_name_map.find(uid);
+	if (it != _id_to_name_map.end())
 	{
 		if (it->second == name)
 		{
@@ -90,14 +90,14 @@ bool ConnectionManager::AddUIdToNameRef(const std::string& uid, const std::strin
 		LOG_ERROR << "The key already had a value,and the new value is not the same as the existed one";
 		return false;
 	}
-	_name_map[uid] = name;
+	_id_to_name_map[uid] = name;
 	return true;
 }
 
 void ConnectionManager::BroadcastMsg(const std::string& uid, const std::string& msg)
 {
 	std::lock_guard lock(_conn_mtx);
-	for (const auto& it : _conn_map)
+	for (const auto& it : _conn_to_id_map)
 	{
 		if (it.first != uid)
 		{
@@ -111,20 +111,20 @@ Json::Value ConnectionManager::GetOnlineUsers()
 	std::lock_guard c_lock(_conn_mtx);
 	std::lock_guard n_lock(_name_mtx);
 	Json::Value data(Json::arrayValue);
-	for (const auto& it: _conn_map)
+	for (const auto& it: _conn_to_id_map)
 	{
 		auto& uid = it.first;
 		Json::Value userInfo;
 		if (DatabaseManager::GetUserInfoByUid(uid, userInfo)) {
 			Json::Value user;
 			user["uid"] = uid;
-			user["username"] = _name_map.at(uid);
+			user["username"] = _id_to_name_map.at(uid);
 			user["avatar"] = userInfo["avatar"].asString();
 			data.append(user);
 		} else {
 			Json::Value user;
 			user["uid"] = uid;
-			user["username"] = _name_map.at(uid);
+			user["username"] = _id_to_name_map.at(uid);
 			user["avatar"] = "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png";
 			data.append(user);
 		}
@@ -135,8 +135,8 @@ Json::Value ConnectionManager::GetOnlineUsers()
 std::string ConnectionManager::GetName(const std::string& uid)
 {
 	std::lock_guard lock(_name_mtx);
-	auto it = _name_map.find(uid);
-	if (it==_name_map.end())
+	auto it = _id_to_name_map.find(uid);
+	if (it==_id_to_name_map.end())
 	{
 		LOG_INFO << "can not find name, uid:" << uid;
 		return {};
@@ -147,8 +147,8 @@ std::string ConnectionManager::GetName(const std::string& uid)
 std::optional<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnection(const std::string& uid)
 {
 	std::lock_guard lock(_conn_mtx);
-	auto it = _conn_map.find(uid);
-	if (it == _conn_map.end())
+	auto it = _conn_to_id_map.find(uid);
+	if (it == _conn_to_id_map.end())
 	{
 		LOG_INFO << "can not find connection, uid:" << uid;
 		return std::nullopt;
@@ -162,8 +162,8 @@ std::vector<drogon::WebSocketConnectionPtr> ConnectionManager::GetConnections(
 	std::vector<drogon::WebSocketConnectionPtr> connections{};
 	for (const auto& uid:uids)
 	{
-		auto it = _conn_map.find(uid);
-		if (it!= _conn_map.end())
+		auto it = _conn_to_id_map.find(uid);
+		if (it!= _conn_to_id_map.end())
 		{
 			connections.emplace_back(it->second);
 		}

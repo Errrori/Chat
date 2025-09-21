@@ -11,6 +11,42 @@ static constexpr int DEFAULT_ROLE = 0;
 static constexpr int ADMIN_ROLE = 1;
 static constexpr int MASTER_ROLE = 2;
 
+namespace ChatThread
+{
+    enum class ThreadType :std::int8_t
+    {
+        GROUP = 0,
+        PRIVATE = 1,
+        AI = 2,
+        UNKNOWN = -1
+    };
+
+    const std::unordered_map<int, ThreadType> val_to_thread_map = {
+    {GROUP_TYPE,ThreadType::GROUP},{AI_TYPE,ThreadType::AI},{PRIVATE_TYPE,ThreadType::PRIVATE} };
+
+    static int ToInt(ThreadType type)
+    {
+        switch (type)
+        {
+        case ThreadType::GROUP:
+            return GROUP_TYPE;
+        case ThreadType::PRIVATE:
+            return PRIVATE_TYPE;
+        case ThreadType::AI:
+            return AI_TYPE;
+        default:
+            return -1;
+        }
+    }
+
+    static ThreadType ToType(int val)
+    {
+        return val_to_thread_map.at(val);
+    }
+}
+
+
+
 struct GroupMemberData
 {
     int thread_id{-1};
@@ -40,11 +76,12 @@ public:
     static std::optional<std::vector<std::string>> GetThreadMembersUid(int thread_id);
     static std::optional<Json::Value> GetGroupInfo(int thread_id);
     static Json::Value GetThreadInfo();
+    template<typename T> static std::optional<T> GetThreadInfo(int thread_id);
     static Json::Value GetPrivateChatInfo();
     static Json::Value GetUserChatList(const std::string& uid);
     static Json::Value GetUserThreadIds(const std::string& uid);
     static Json::Value GetAIChatContext(int thread_id);
-
+	static std::optional<int> GetThreadType(int thread_id);
 	static std::optional<Json::Value> GetOverviewRecord(long long existing_id, const std::string& uid);
 
     static bool AddNewGroupMember(int thread_id, const std::string& user_id,int role = DEFAULT_ROLE);
@@ -54,13 +91,26 @@ public:
     static std::optional<int> CreateGroupChat(const GroupChatData& data);
     static std::optional<int> CreateAIThread(const std::string& name, const std::string& init_settings, const std::string& creator_uid);
 
-    static void PushChatRecords(const drogon_model::sqlite3::Messages& messages);
-
-    static std::optional<drogon_model::sqlite3::Messages> BuildMessage(const Json::Value& msg);
+    static std::optional<drogon_model::sqlite3::Messages> PushChatRecords(
+	    const drogon_model::sqlite3::Messages& messages);
 
     //信息验证
-	static bool ValidateMember(const std::string& uid,int thread_id);
+	static bool ValidateMember(const std::string& uid, int thread_id);
 };
+
+template<typename T>
+std::optional<T> ThreadManager::GetThreadInfo(int thread_id)
+{
+	drogon::orm::Mapper<T> mapper(DatabaseManager::GetDbClient());
+	drogon::orm::Criteria criteria(drogon::orm::Criteria(T::Cols::_thread_id, drogon::orm::CompareOperator::EQ, thread_id));
+    const auto& result = mapper.limit(1).findBy(criteria);
+    if (result.empty())
+        return std::nullopt;
+    
+	const auto& info = result[0];
+    return info;
+}
+
 
 
 #endif

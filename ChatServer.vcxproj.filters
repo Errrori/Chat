@@ -30,13 +30,7 @@
     <ClCompile Include="controllers\Authentication.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="controllers\EchoController.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="manager\ConnectionManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="controllers\PublicChatController.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
@@ -51,52 +45,16 @@
     <ClCompile Include="models\Users.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="models\ChatRecords.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="manager\DatabaseManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="controllers\ChatController.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="manager\SendManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="models\GroupMembers.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="models\Groups.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\Relationships.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="controllers\RelationshipController.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="filter\TokenVerifyFilter.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="manager\NotificationManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RelationshipService.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DTOs\MessageDTO.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DTOs\NotificationDTO.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DTOs\RelationshipDTO.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\Notifications.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ChatRecordsManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="models\GroupChats.cc">
@@ -132,6 +90,9 @@
     <ClCompile Include="models\AiChats.cc">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="middleware\FormatChecker.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
@@ -146,13 +107,7 @@
     <ClInclude Include="controllers\Authentication.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="controllers\EchoController.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="manager\ConnectionManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="controllers\PublicChatController.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
@@ -170,52 +125,16 @@
     <ClInclude Include="models\Users.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="models\ChatRecords.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="manager\DatabaseManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="controllers\ChatController.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="manager\SendManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="models\GroupMembers.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="models\Groups.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\Relationships.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="controllers\RelationshipController.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="filter\TokenVerifyFilter.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="manager\NotificationManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="RelationshipService.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DTOs\MessageDTO.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DTOs\NotificationDTO.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DTOs\RelationshipDTO.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\Notifications.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="ChatRecordsManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="models\GroupChats.h">
@@ -231,9 +150,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="manager\MessageManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="controllers\ThreadController.h">
@@ -254,13 +170,11 @@
     <ClInclude Include="models\AiChats.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="middleware\FormatChecker.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="models\model.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="ChatServer.rc">
-      <Filter>资源文件</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

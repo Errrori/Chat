@@ -6,7 +6,6 @@
 #include "models/GroupMembers.h"
 #include "models/AiChats.h"
 #include <unordered_map>
-#include <unordered_set>
 
 using namespace drogon::orm;
 using Threads = drogon_model::sqlite3::Threads;
@@ -17,7 +16,8 @@ using AIChats = drogon_model::sqlite3::AiChats;
 using Messages = drogon_model::sqlite3::Messages;
 
 constexpr int CONTEXT_LEN = 20;
-constexpr int OVERVIEW_LIMIT = 10000;
+constexpr int MAX_TOKENS = 2048;
+
 
 std::optional<drogon_model::sqlite3::GroupMembers> GroupMemberData::TransToGroupMembers() const
 {
@@ -204,7 +204,7 @@ std::optional<Json::Value> ThreadManager::GetGroupInfo(int thread_id)
     }
 	group_data["thread_id"] = thread_id;
 	group_data["member"] = json_info;
-	group_data["group_info"] = group_info[0].toJson().toStyledString();
+	group_data["group_info"] = group_info[0].toJson();
 
     return group_data;
 }
@@ -352,30 +352,29 @@ std::optional<int> ThreadManager::CreateAIThread(const std::string& name, const 
 	}
 }
 
-void ThreadManager::PushChatRecords(const drogon_model::sqlite3::Messages& messages)
+std::optional<drogon_model::sqlite3::Messages>  ThreadManager::PushChatRecords(const drogon_model::sqlite3::Messages& messages)
 {
 	try
 	{
 		Mapper<Messages> mapper{ DatabaseManager::GetDbClient() };
-		mapper.insert(messages,[](const Messages& message)
-		{
-			LOG_INFO << "Insert new message successful, message: " << message.toJson().toStyledString();
-		},
-		[](const DrogonDbException& e)
-		{
-			LOG_ERROR << "Exception to insert message: " << e.base().what();
-		}
-		);
+		std::promise<Messages> records;
+
+		mapper.insert(messages, [&records](const Messages& message)
+			{
+				records.set_value(message);
+				LOG_INFO << "Insert new message successful, message: " << message.toJson().toStyledString();
+			},
+			[&records](const DrogonDbException& e)
+			{
+				LOG_ERROR << "Exception to insert message: " << e.base().what();
+			});
+
+		return records.get_future().get();
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "PushChatRecords error: " << e.what();
 	}
-}
-
-std::optional<drogon_model::sqlite3::Messages> ThreadManager::BuildMessage(const Json::Value& msg)
-{
-	return std::nullopt;
 }
 
 bool ThreadManager::ValidateMember(const std::string& uid, int thread_id)
@@ -543,15 +542,55 @@ Json::Value ThreadManager::GetAIChatContext(int thread_id)
 	Criteria message_criteria(Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id));
 	const auto& records = message_mapper.limit(CONTEXT_LEN).findBy(message_criteria);
 
-	Json::Value context(Json::arrayValue);
-	for (const auto& record:records)
+	try
 	{
-		context.append(record.toJson());
+		Json::Reader reader;
+		Json::Value context(Json::arrayValue);
+		for (const auto& record : records)
+		{
+			const auto& content = record.getValueOfContent();
+			LOG_INFO << "record: " << content;
+			Json::Value root;
+			if (reader.parse(content, root))
+			{
+				Json::Value json_record;
+				json_record["content"] = root["content"].asString();
+				json_record["role"] = root["role"].asString();
+				context.append(json_record);
+
+				//consider to handle empty and error message
+			}
+			else
+			{
+				LOG_ERROR << "can not parse record: " << content;
+			}
+		}
+
+		LOG_INFO << "get ai chat context (filtered): " << context.toStyledString();
+
+		return context;
+
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "exception :"<<e.what();
+		return Json::nullValue;
+	}
+	
+}
+
+std::optional<int> ThreadManager::GetThreadType(int thread_id)
+{
+	Mapper<Threads> threads_mapper{ DatabaseManager::GetDbClient() };
+	Criteria threads_criteria(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id));
+	const auto& threads = threads_mapper.findBy(threads_criteria);
+	if (threads.size() != 1)
+	{
+		LOG_ERROR << "can not find thread with id: " << thread_id;
+		return std::nullopt;
 	}
 
-	LOG_INFO << "get ai chat context: " << context.toStyledString();
-
-	return context;
+	return threads[0].getValueOfType();
 }
 
 std::optional<Json::Value> ThreadManager::GetOverviewRecord(long long existing_id, const std::string& uid)
@@ -641,7 +680,7 @@ std::optional<Json::Value> ThreadManager::GetOverviewRecord(long long existing_i
 		if (!private_chats.empty()) {
 			for (const auto& chat : private_chats) {
 				Json::Value info;
-				info["thread_id"] = static_cast<Json::Int64>(chat.getValueOfThreadId());
+				info["thread_id"] = static_cast<Json::Value::Int64>(chat.getValueOfThreadId());
 				info["uid1"] = chat.getValueOfUid1();
 				info["uid2"] = chat.getValueOfUid2();
 				info["type"] = "private";

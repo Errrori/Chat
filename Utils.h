@@ -48,6 +48,8 @@ namespace Utils
 
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message);
 
+    Json::Value CreateErrorResp(int code,const std::string& message);
+
 	namespace Authentication
 	{
         bool IsValidAccount(const std::string& account);

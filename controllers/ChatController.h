@@ -1,6 +1,7 @@
 #pragma once
 #include <drogon/WebSocketController.h>
 
+
 class ChatController :public drogon::WebSocketController<ChatController>
 {
 public:
@@ -15,5 +16,26 @@ public:
         WS_PATH_ADD("/ws/chat");
     WS_PATH_LIST_END
 
+    struct ChatMessage
+    {
+        int thread_id;
+        std::string message_id;
+        std::string sender_name;
+        std::string sender_uid;
+        std::string sender_avatar;
+        std::string content;
+        Json::Value attachment{ Json::nullValue };
+        std::string create_time;
+        std::string update_time;
+
+        static std::optional<ChatMessage> FromJson(const Json::Value& json);
+    };
+
+
+private:
+    Json::Value GenSyncResp(const std::string& resp);
+    std::optional<drogon_model::sqlite3::Messages> BuildMessages(const ChatMessage& message);
 };
+
+
 

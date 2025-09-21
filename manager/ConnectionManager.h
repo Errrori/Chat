@@ -19,7 +19,6 @@ public:
 	bool RemoveConnection(const std::string& uid);
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
 	bool AddUIdToNameRef(const std::string& uid, const std::string& name);
-	void BroadcastMsg(const std::string& uid, const Json::Value& msg);
 	void BroadcastMsg(const std::string& uid, const std::string& msg);
 	Json::Value GetOnlineUsers();
 
@@ -33,9 +32,9 @@ private:
 
 private:
 	//id to username
-	std::unordered_map<std::string, std::string> _name_map;
+	std::unordered_map<std::string, std::string> _id_to_name_map;
 	//id to connection
-	std::unordered_map<std::string, drogon::WebSocketConnectionPtr> _conn_map;
+	std::unordered_map<std::string, drogon::WebSocketConnectionPtr> _conn_to_id_map;
 	std::mutex _conn_mtx;
 	std::mutex _name_mtx;
 };

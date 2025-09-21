@@ -1,4 +1,6 @@
 #pragma once
+#include <curl/curl.h>
+
 namespace AI_MODELS
 {
 	const std::vector<std::string> model_list =
@@ -8,40 +10,6 @@ namespace AI_MODELS
 
 	bool ValidateModel(const std::string& name);
 }
-//  --data '{
-//  "model": "glm-4.5",
-//  "stream" : true,
-//  "thinking" : {
-//	  "type": "enabled"
-//  },
-//  "do_sample" : true,
-//  "temperature" : 0.6,
-//  "top_p" : 0.95,
-//  "response_format" : {
-//	  "type": "text"
-//  },
-//  "user_id" : "211212",
-//  "request_id" : "122121212",
-//  "messages" : [
-//  {
-//	  "role": "system",
-//		  "content" : "1212"
-//	}
-//  ] ,
-// tools = [{
-//	"type": "web_search",
-//	"web_search" : {
-//	"enable": "True",
-//	"search_engine" : "search_pro",
-//	"search_result" : "True",
-//	"search_prompt" : "You are an experienced expert teacher who is good at using search engines to summarize key information from {search_result} and need to cite the data source at the end. Search date: April 11, 2025.",
-//	"count" : "5",
-//	"search_domain_filter" : "www.sohu.com",
-//	"search_recency_filter" : "noLimit",
-//	"content_size" : "high"
-//}
-//}]
-//}'
 
 namespace API_KEY
 {
@@ -52,6 +20,8 @@ namespace SERVICE_URL
 {
 	const std::string CHAT_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
 }
+
+static const std::string terminator = "[DONE]";
 
 //user_id,temperature,top_p,tool,max_tokens,request_id,model
 struct BuildParams
@@ -67,14 +37,88 @@ struct BuildParams
 
 	static BuildParams FromJson(const Json::Value& data);
 };
+class StreamCallback {
+public:
+	virtual void onChunk(const std::string& chunk) = 0;
+	virtual void onComplete() = 0;
+	virtual void onError(const std::string& error) = 0;
+};
+
+class ChatStreamCallback : public StreamCallback {
+private:
+    drogon::WebSocketConnectionPtr _conn;
+    int _thread_id;
+    std::string _accumulated_content;
+
+public:
+    ChatStreamCallback(drogon::WebSocketConnectionPtr conn, int thread_id)
+        : _conn(std::move(conn)), _thread_id(thread_id) {
+    }
+
+	std::string GetContent() const;
+    void onChunk(const std::string& chunk) override;
+	void onComplete() override;
+	void onError(const std::string& error) override;
+};
+
+struct StreamContext {
+    std::shared_ptr<StreamCallback> _callback;
+    std::string _buffer;  
+    bool _is_complete = false;
+};
+
+
 
 class AIService
 {
 public:
-	static std::optional<std::string> SendRequest(
-		const Json::Value& data, const std::string& token, const std::string& url);
+	enum RequestMode :std::uint8_t
+	{
+		Sync = 0,
+		Stream = 1
+	};
+
+	class CURLRequest
+	{
+		friend class AIService;
+	public:
+		CURLRequest();
+		~CURLRequest();
+		CURLRequest(const CURLRequest&) = delete;
+		CURLRequest& operator=(const CURLRequest&) = delete;
+		//allow move
+		CURLRequest(CURLRequest&& other) noexcept;
+		CURLRequest& operator=(CURLRequest&& other) noexcept;
+		bool IsAllValid() const;
+	private:
+		CURL* _curl;
+		curl_slist* _headers;
+	};
+
+public:
+	//static std::optional<std::string> SendRequest(
+	//	const Json::Value& data, const std::string& token, const std::string& url);
+
+	static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
+
+	static size_t StreamWriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
+
+	static bool SendStreamRequest(const Json::Value& data,
+	                              const std::string& token,
+	                              const std::string& url,
+	                              std::shared_ptr<StreamCallback> callback = nullptr);
+
+	static bool SendRequest(const Json::Value& data,
+	                        const std::string& token,
+	                        const std::string& url, std::string& resp);
+
+	static bool SendStreamReq(const Json::Value& data,
+		const std::string& token,
+		const std::string& url, std::string& resp, std::shared_ptr<StreamCallback> callback);
+
+	static bool SendSyncReq(std::shared_ptr<CURLRequest> curl_req, std::string& response);
 
 private:
-	static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
+    static void ProcessStreamBuf(StreamContext* context);
 };
 

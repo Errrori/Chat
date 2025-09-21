@@ -30,7 +30,6 @@ public:
 	static bool ValidateUid(const std::string& uid);
 	static bool ValidateThreadId(unsigned thread_id);
 
-	static bool PushMessage(const MessageManager::MsgData& msg);
 
 	static void CreatePublicThread();
 	static void CreateDefaultUser();

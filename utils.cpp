@@ -229,4 +229,12 @@ namespace Utils {
         resp->setStatusCode(static_cast<drogon::HttpStatusCode>(statusCode));
         return resp;
     }
+
+    Json::Value CreateErrorResp(int code, const std::string& message)
+    {
+        Json::Value response;
+        response["code"] = code;
+        response["message"] = message;
+        return response;
+    }
 }

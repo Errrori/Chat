@@ -10,40 +10,16 @@ using CompareOperator = drogon::orm::CompareOperator;
 using SortOrder = drogon::orm::SortOrder;
 using drogon::orm::Mapper;
 
-bool MessageManager::PushMessage(const MsgData& msg)
-{
-	Messages message;
-	message.setMessageId(msg.message_id);
-	message.setThreadId(msg.thread_id);
-	message.setSenderUid(msg.sender_uid);
-	message.setSenderName(msg.sender_name);
-	message.setCreateTime(msg.create_time);
-	message.setUpdateTime(msg.update_time);
-	message.setSenderAvatar(msg.sender_avatar);
-	message.setContent(msg.content.value_or(""));
-	message.setAttachment(msg.attachment.value_or("").toStyledString());
 
-	Mapper<Messages> mapper(DatabaseManager::GetDbClient());
-	mapper.insert(message,
-		[](const Messages& data)
-		{
-			LOG_INFO << "Insert new message successful";
-		},
-		[](const drogon::orm::DrogonDbException& e)
-		{
-			LOG_ERROR << "Exception to insert message: " << e.base().what();
-		});
-	return true;
-}
 
 std::optional<drogon_model::sqlite3::Messages> MessageManager::BuildMessage(const Json::Value& json)
 {
+	//before use this function, make sure check all parameters
 	try
 	{
 		LOG_INFO << "uid: " << json["sender_uid"].asString();
 		Messages message;
-		message.setAttachment(json["attachment"].asString());
-		message.setContent(json["content"].asString());
+		message.setAttachment(json["content"].asString());
 		message.setCreateTime(json["create_time"].asString());
 		message.setUpdateTime(json["update_time"].asString());
 		message.setSenderAvatar(json["sender_avatar"].asString());
@@ -66,11 +42,32 @@ std::optional<drogon_model::sqlite3::Messages> MessageManager::BuildMessage(cons
 	}
 }
 
+std::optional<drogon_model::sqlite3::Messages> MessageManager::BuildMessage(const std::string& uid,
+	const std::string& name, const std::string& avatar, const Json::Value& data)
+{
+	if (!data.isMember("content")||!data.isMember("thread_id"))
+	{
+		return std::nullopt;
+	}
+
+	const std::string current_time = trantor::Date::now().toDbString();
+	Messages messages;
+	messages.setSenderUid(uid);
+	messages.setSenderName(name);
+	messages.setSenderAvatar(avatar);
+	messages.setThreadId(data["thread_id"].asInt());
+	messages.setCreateTime(current_time);
+	messages.setUpdateTime(current_time);
+	messages.setAttachmentToNull();
+	if (data.isMember("attachment"))
+		messages.setAttachment(data["attachment"].asString());
+	return messages;
+}
+
 Json::Value MessageManager::GetMessages(unsigned thread_id, int64_t existing_id, unsigned num)
 {
-	drogon::orm::Mapper<drogon_model::sqlite3::Messages> mapper(DatabaseManager::GetDbClient());
+	Mapper<drogon_model::sqlite3::Messages> mapper(DatabaseManager::GetDbClient());
 
-	// �������id�����ڣ�ֱ�ӷ���
 	auto exist_record =
 		mapper.limit(1).findBy
 		(Criteria(Criteria(Messages::Cols::_message_id, CompareOperator::EQ, existing_id)
@@ -125,58 +122,5 @@ Json::Value MessageManager::GetAllMessage(unsigned thread_id, unsigned num)
 	}
 	LOG_INFO << "Get all messages:\n" << data.toStyledString() << "\n";
 	return data;
-}
-
-std::optional<MessageManager::MsgData> MessageManager::MsgData::BuildFromJson(const Json::Value& json) {
-	MsgData msg{};
-
-	if (!json.isMember("message_id")||!json.isMember("sender_uid")||
-		!json.isMember("thread_id")||(!json.isMember("content")&&!json.isMember("attachment")))
-		return std::nullopt;
-
-	msg.sender_uid = json["sender_uid"].asString();
-	msg.message_id = std::stoll(json["message_id"].asString());
-	msg.thread_id = json["thread_id"].asInt();
-
-	if(json.isMember("sender_uid"))
-		msg.sender_uid = json["sender_uid"].asString();
-	if(json.isMember("sender_name"))
-		msg.sender_name = json["sender_name"].asString();
-	if(json.isMember("sender_avatar"))
-		msg.sender_avatar = json["sender_avatar"].asString();
-	if(json.isMember("content"))
-		msg.content = json["content"].asString();
-	if (json.isMember("attachment") && !json["attachment"].isNull() && !json["attachment"].asString().empty()) 
-		msg.attachment = json["attachment"];
-
-	if(json.isMember("create_time"))
-		msg.create_time = json["create_time"].asString();
-	if(json.isMember("update_time"))
-		msg.update_time = json["update_time"].asString();
-	if(json.isMember("status"))
-		msg.status = json["status"].asInt();
-	return msg;
-}
-
-
-std::optional<drogon_model::sqlite3::Messages> MessageManager::MsgData::TransToMessages()
-{
-	if(!message_id && !thread_id && sender_uid.empty() 
-		&& sender_name.empty() && sender_avatar.empty() 
-		&& create_time.empty() && update_time.empty() )
-		return std::nullopt;
-
-	Messages message;
-	message.setMessageId(message_id);
-	message.setThreadId(thread_id);
-	message.setSenderUid(sender_uid);
-	message.setSenderName(sender_name);
-	message.setSenderAvatar(sender_avatar);
-	message.setContent(content.value_or(""));
-	message.setAttachment(attachment.has_value() ? attachment.value().toStyledString() : "");
-	message.setCreateTime(create_time);
-	message.setUpdateTime(update_time);
-	message.setStatus(status);
-	return message;
 }
 

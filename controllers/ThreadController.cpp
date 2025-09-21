@@ -33,12 +33,6 @@ void ThreadController::AddToThread(const drogon::HttpRequestPtr& req,
         return;
     }
 
-    if (ThreadManager::ValidateMember(user_id, thread_id))
-    {
-        callback(Utils::CreateErrorResponse(400, 400, "user already in the thread"));
-        return;
-    }
-    
     bool result = ThreadManager::AddNewGroupMember(thread_id, user_id);
 
     if (!result)
@@ -78,6 +72,8 @@ void ThreadController::JoinThread(const drogon::HttpRequestPtr& req,
     const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
 	const auto& uid = visitor_info.uid;
     const auto& thread_id = json_data["thread_id"].asInt();
+
+    int thread_type;
 
 	if (ThreadManager::ValidateMember(uid, thread_id))
 	{
@@ -184,6 +180,8 @@ void ThreadController::CreateAIChats(const drogon::HttpRequestPtr& req,
 
     std::optional<int> thread_id;
     const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+
+	LOG_INFO << "user info: " << visitor_info.ToString();
 
     bool is_init = json_data.isMember("init_description");
     if (is_init)
@@ -346,3 +344,4 @@ void ThreadController::GetOverviewChat(const drogon::HttpRequestPtr& req,
     
 
 }
+

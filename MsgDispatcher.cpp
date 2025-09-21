@@ -5,7 +5,6 @@
 
 bool MsgDispatcher::DeliverMessage(const std::string& sender_uid,int thread_id, const Json::Value& msg)
 {
-	LOG_INFO << "1111";
 	const auto& thread_members = ThreadManager::GetThreadMembersUid(thread_id);
 	if (!thread_members.has_value())
 	{

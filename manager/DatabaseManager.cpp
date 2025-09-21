@@ -229,32 +229,6 @@ bool DatabaseManager::ValidateThreadId(unsigned thread_id)
 }
 
 
-bool DatabaseManager::PushMessage(const MessageManager::MsgData& msg)
-{
-	Messages message;
-	message.setMessageId(msg.message_id);
-	message.setThreadId(msg.thread_id);
-	message.setSenderUid(msg.sender_uid);
-	message.setSenderName(msg.sender_name);
-	message.setCreateTime(msg.create_time);
-	message.setUpdateTime(msg.update_time);
-	message.setSenderAvatar(msg.sender_avatar);
-	message.setContent(msg.content.value_or(""));
-	message.setAttachment(msg.attachment.value_or("").toStyledString());
-
-	Mapper<Messages> mapper(GetDbClient());
-	mapper.insert(message,
-		[](const Messages& data)
-		{
-			LOG_INFO << "Insert new message successful";
-		},
-		[](const DrogonDbException& e)
-		{
-			LOG_ERROR << "Exception to insert message: " << e.base().what();
-		});
-	return true;
-}
-
 Json::Value DatabaseManager::GetMessages(unsigned thread_id, int64_t existing_id, unsigned num)
 {
 	Mapper<Messages> mapper(GetDbClient());
