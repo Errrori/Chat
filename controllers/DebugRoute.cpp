@@ -43,7 +43,7 @@ void DbInfoController::ModifyUserInfo(const drogon::HttpRequestPtr& req,
     }
 
 
-    auto json_data = Utils::UserInfo::FromJson(*json_body);
+    auto json_data = Utils::UsersInfo::FromJson(*json_body);
     LOG_INFO << json_data.ToString();
 	bool result = DatabaseManager::ModifyUserInfo(json_data);
 

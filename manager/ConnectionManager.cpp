@@ -8,7 +8,7 @@ ConnectionManager& ConnectionManager::GetInstance()
 	return manager;
 }
 
-bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon::WebSocketConnectionPtr& conn)
+bool ConnectionManager::AddConnection(const Utils::UsersInfo& info, const drogon::WebSocketConnectionPtr& conn)
 {
 	auto uid = info.uid;
 	{
@@ -31,13 +31,13 @@ bool ConnectionManager::AddConnection(const Utils::UserInfo& info, const drogon:
 	{
 		return false;
 	}
-	Utils::UserInfo conn_info;
+	Utils::UsersInfo conn_info;
 	conn_info.uid = user_data["uid"].asString();
 	conn_info.account = user_data["account"].asString();
 	conn_info.username = user_data["username"].asString();
 	conn_info.avatar = user_data["avatar"].asString();
 	LOG_INFO << "user info:" << conn_info.ToString();
-	conn->setContext(std::make_shared<Utils::UserInfo>(conn_info));
+	conn->setContext(std::make_shared<Utils::UsersInfo>(conn_info));
 
 	std::lock_guard lock(_conn_mtx);
 
@@ -66,7 +66,7 @@ bool ConnectionManager::RemoveConnection(const std::string& uid)
 
 bool ConnectionManager::RemoveConnection(const drogon::WebSocketConnectionPtr& conn)
 {
-	auto info_ptr = conn->getContext<Utils::UserInfo>();
+	auto info_ptr = conn->getContext<Utils::UsersInfo>();
 	if (info_ptr)
 	{
 		LOG_INFO << "Remove Connection: " << info_ptr->uid;

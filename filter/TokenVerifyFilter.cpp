@@ -7,7 +7,7 @@ void TokenVerifyFilter::doFilter(const drogon::HttpRequestPtr& req, drogon::Filt
 
 	auto token = Utils::Authentication::GetToken(req);
 
-	Utils::UserInfo info;
+	Utils::UsersInfo info;
 	if (token.empty() || !Utils::Authentication::VerifyJWT(token, info))
 	{
 		fcb(Utils::CreateErrorResponse(400, 400, "can not verify token"));

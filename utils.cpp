@@ -5,6 +5,7 @@
 #include <json/json.h>
 #include "jwt-cpp/jwt.h"
 #include <random>
+#include "Common/User.h"
 
 
 namespace Utils {
@@ -15,7 +16,7 @@ namespace Utils {
             //{
             //    return false;
             //}
-            static const std::regex limit{ "^[a-zA-Z0-9]{8,15}$" };
+            static const std::regex limit{ "^[a-zA-Z0-9]{6,16}$" };
             if (!std::regex_match(account, limit)) {
                 return false;
             }
@@ -133,6 +134,7 @@ namespace Utils {
             return secret;
         }
 
+    	//before use this function,make sure the user information is correct
         std::string GenerateJWT(const UserInfo& info)
         {
             auto secret = GetJwtSecret();
@@ -142,11 +144,6 @@ namespace Utils {
                 return {};
             }
 
-            auto name = info.username;
-            auto uid = info.uid;
-            auto account = info.account;
-            auto avatar = info.avatar;
-
             auto now = std::chrono::system_clock::now();
             auto expiry = now + std::chrono::seconds{ EffectiveTime };
 
@@ -155,16 +152,16 @@ namespace Utils {
                 .set_algorithm("HS256")
                 .set_issued_at(now)
                 .set_expires_at(expiry)
-                .set_payload_claim("uid", jwt::claim(uid))
-                .set_payload_claim("username", jwt::claim(name))
-                .set_payload_claim("account", jwt::claim(account))
-				.set_payload_claim("avatar",jwt::claim(avatar))
+                .set_payload_claim("uid", jwt::claim(info.getUid()))
+                .set_payload_claim("username", jwt::claim(info.getUsername()))
+                .set_payload_claim("account", jwt::claim(info.getAccount()))
+				.set_payload_claim("avatar",jwt::claim(info.getAvatar()))
                 .sign(jwt::algorithm::hs256{ secret });
 
             return token;
         }
 
-        bool VerifyJWT(const std::string& token, UserInfo& info)
+        bool VerifyJWT(const std::string& token, UsersInfo& info)
         {
             try
             {
@@ -230,11 +227,29 @@ namespace Utils {
         return resp;
     }
 
-    Json::Value CreateErrorResp(int code, const std::string& message)
+    drogon::HttpResponsePtr CreateSuccessResp(int statusCode, int code, const std::string& message)
     {
         Json::Value response;
         response["code"] = code;
         response["message"] = message;
-        return response;
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+        resp->setStatusCode(static_cast<drogon::HttpStatusCode>(statusCode));
+        return resp;
+    }
+
+    drogon::HttpResponsePtr CreateSuccessJsonResp(int statusCode, int code, const std::string& message,const Json::Value& data)
+    {
+        Json::Value response;
+        response["code"] = code;
+        response["message"] = message;
+        response["data"] = data;
+        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+        resp->setStatusCode(static_cast<drogon::HttpStatusCode>(statusCode));
+        return resp;
+    }
+
+    std::string GetCurrentTimeStr()
+    {
+        return trantor::Date::now().toDbString();
     }
 }

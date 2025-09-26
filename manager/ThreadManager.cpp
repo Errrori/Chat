@@ -374,6 +374,7 @@ std::optional<drogon_model::sqlite3::Messages>  ThreadManager::PushChatRecords(c
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "PushChatRecords error: " << e.what();
+		return std::nullopt;
 	}
 }
 
@@ -777,6 +778,117 @@ std::optional<Json::Value> ThreadManager::GetOverviewRecord(long long existing_i
 	}
 	catch (const std::exception& e) {
 		LOG_ERROR << "GetOverviewRecord error: " << e.what();
+		return std::nullopt;
+	}
+}
+
+std::optional<Json::Value> ThreadManager::FindThreadInfo(int thread_id,const std::string& uid)
+{
+	try
+	{
+		Mapper<Threads> thread_mapper(DatabaseManager::GetDbClient());
+		const auto& thread_criteria = Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id);
+		const auto& threads = thread_mapper.limit(1).findBy(thread_criteria);
+		
+		if (threads.empty())
+		{
+			LOG_ERROR << "Thread not found with id: " << thread_id;
+			return std::nullopt;
+		}
+		
+		auto thread_type = ChatThreads::ToType(threads[0].getValueOfType());
+
+		std::string thread_name, thread_avatar;
+		int thread_type_val;
+		
+
+		switch (thread_type)
+		{
+		case ChatThreads::ThreadType::PRIVATE:
+		{
+			thread_type_val = PRIVATE_TYPE;
+			Mapper<PrivateChats> private_mapper(DatabaseManager::GetDbClient());
+			const auto& criteria = Criteria(PrivateChats::Cols::_thread_id, CompareOperator::EQ, thread_id);
+			const auto& chats = private_mapper.limit(1).findBy(criteria);
+			
+			if (chats.empty())
+			{
+				LOG_ERROR << "Private chat not found for thread_id: " << thread_id;
+				return std::nullopt;
+			}
+			
+			std::string target_uid;
+			const auto& info = chats[0];
+			if (uid == info.getValueOfUid1())
+				target_uid = info.getValueOfUid2();
+			else
+				target_uid = info.getValueOfUid1();
+				
+			Json::Value target_info;
+			if (DatabaseManager::GetUserInfoByUid(target_uid, target_info))
+			{
+				thread_name = target_info["username"].asString();
+				thread_avatar = target_info["avatar"].asString();
+			}
+			else
+			{
+				LOG_ERROR << "Failed to get user info for uid: " << target_uid;
+				return std::nullopt;
+			}
+		}
+			break;
+		case ChatThreads::ThreadType::GROUP:
+		{
+			thread_type_val = GROUP_TYPE;
+			Mapper<GroupChats> group_mapper(DatabaseManager::GetDbClient());
+			const auto& criteria = Criteria(GroupChats::Cols::_thread_id, CompareOperator::EQ, thread_id);
+			const auto& groups = group_mapper.limit(1).findBy(criteria);
+			
+			if (groups.empty())
+			{
+				LOG_ERROR << "Group chat not found for thread_id: " << thread_id;
+				return std::nullopt;
+			}
+			
+			const auto& group_info = groups[0];
+			thread_name = group_info.getValueOfName();
+			thread_avatar = group_info.getValueOfAvatar();
+		}
+			break;
+		case ChatThreads::ThreadType::AI:
+		{
+			thread_type_val = AI_TYPE;
+			Mapper<drogon_model::sqlite3::AiChats> ai_mapper(DatabaseManager::GetDbClient());
+			const auto& criteria = Criteria(drogon_model::sqlite3::AiChats::Cols::_thread_id, CompareOperator::EQ, thread_id);
+			const auto& ai_chats = ai_mapper.limit(1).findBy(criteria);
+			
+			if (ai_chats.empty())
+			{
+				LOG_ERROR << "AI chat not found for thread_id: " << thread_id;
+				return std::nullopt;
+			}
+			
+			const auto& ai_info = ai_chats[0];
+			thread_name = ai_info.getValueOfName();
+			thread_avatar = ai_info.getValueOfAvatar();
+		}
+			break;
+		default:
+		{
+			LOG_ERROR << "Unknown thread type: " << static_cast<int>(thread_type);
+			return std::nullopt;
+		}
+		}
+		
+		Json::Value result;
+		result["thread_name"] = thread_name;
+		result["thread_avatar"] = thread_avatar;
+		result["thread_type"] = thread_type_val;
+		return result;
+
+	}catch (const std::exception& e)
+	{
+		LOG_ERROR << "Exception in FindThreadInfo: " << e.what();
 		return std::nullopt;
 	}
 }

@@ -2,6 +2,8 @@
 #include <drogon/drogon.h>
 #include <csignal>
 #include "Utils.h"
+#include "Service/UserService.h"
+#include "Data/SQLiteUserRepository.h"
 
 using namespace Utils;
 
@@ -108,7 +110,20 @@ void AddOptionHandle()
 	drogon::app().registerHandler("/thread/record/get",
 		&HandleOptions,
 		{ drogon::Options });
+	drogon::app().registerHandler("/thread/info",
+		&HandleOptions,
+		{ drogon::Options });
 
+	drogon::app().registerHandler("/thread/create/private-chat",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/create/group-chat",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/create/ai-chat",
+		&HandleOptions,
+		{ drogon::Options });
+	
 }
 
 int main()

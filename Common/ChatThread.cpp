@@ -1,0 +1,268 @@
+#include "pch.h"
+#include "ChatThread.h"
+#include "Utils.h"
+#include "manager/ConnectionManager.h"
+#include "models/GroupMembers.h"
+
+std::shared_ptr<ChatThread> ChatThread::FromJson(const Json::Value& json) {
+    if (!json.isMember("type")) {
+        return nullptr;
+    }
+    
+    auto type = static_cast<ThreadType>(json["type"].asInt());
+    switch (type) {
+        case ThreadType::PRIVATE:
+            return PrivateThread::FromJson(json);
+        case ThreadType::GROUP:
+            return GroupThread::FromJson(json);
+        case ThreadType::AI:
+            return AIThread::FromJson(json);
+        default:
+            return nullptr;
+    }
+}
+
+std::unique_ptr<ChatThread> ChatThread::FromThreadId(int thread_id) {
+    // 这里需要从数据库查询thread类型，然后调用对应的构造方法
+    // 暂时返回nullptr，具体实现需要集成ThreadManager
+    return nullptr;
+}
+
+
+ChatThread::ThreadType PrivateThread::GetThreadType() const {
+    return ThreadType::PRIVATE;
+}
+
+bool PrivateThread::IsDbValid() const {
+    return thread_id_ > 0 && !_first_uid.empty() && !_second_uid.empty()
+		&& _first_uid < _second_uid;
+}
+
+bool PrivateThread::IsDataValid() const
+{
+    return !_first_uid.empty() && !_second_uid.empty()
+		&& _first_uid < _second_uid;
+}
+
+
+Json::Value PrivateThread::ToJson() const {
+    Json::Value json;
+    json["thread_id"] = thread_id_;
+    json["type"] = static_cast<int>(GetThreadType());
+    json["uid1"] = _first_uid;
+    json["uid2"] = _second_uid;
+    return json;
+}
+
+std::optional<drogon_model::sqlite3::Threads> PrivateThread::ToDbThread() const {
+    if (!IsDataValid()) {
+        return std::nullopt;
+    }
+    
+    drogon_model::sqlite3::Threads thread;
+    thread.setType(static_cast<int64_t>(GetThreadType()));
+    thread.setCreateTime(Utils::GetCurrentTimeStr());
+    return thread;
+}
+
+std::string PrivateThread::GetDisplayName(const std::string& current_uid) const {
+    if (current_uid.empty()) {
+        return GetUserDisplayName(_first_uid) + " & " + GetUserDisplayName(_second_uid);
+    }
+    
+    // 对于当前用户，显示对方的名字
+    if (current_uid == _first_uid) {
+        return GetUserDisplayName(_second_uid);
+    } else if (current_uid == _second_uid) {
+        return GetUserDisplayName(_first_uid);
+    } else {
+        // 当前用户不在此私聊中，显示组合名
+        return GetUserDisplayName(_first_uid) + " & " + GetUserDisplayName(_second_uid);
+    }
+}
+
+std::string PrivateThread::GetPeerUid(const std::string& current_uid) const {
+    if (current_uid == _first_uid) {
+        return _second_uid;
+    }
+    if (current_uid == _second_uid) {
+        return _first_uid;
+    }
+    return "";  // 当前用户不在此私聊中
+}
+
+std::optional<drogon_model::sqlite3::PrivateChats> PrivateThread::ToDbPrivateChat() const {
+    if (!IsDbValid()) {
+        return std::nullopt;
+    }
+    
+    drogon_model::sqlite3::PrivateChats privateChat;
+    if (thread_id_>0)
+		privateChat.setThreadId(thread_id_);
+    privateChat.setUid1(_first_uid);
+    privateChat.setUid2(_second_uid);
+    return privateChat;
+}
+
+std::shared_ptr<PrivateThread> PrivateThread::FromJson(const Json::Value& json) {
+    auto chat = std::make_shared<PrivateThread>();
+    chat->SetThreadId(json.get("thread_id", -1).asInt());
+    chat->SetFirstUid(json.get("uid1", "").asString());
+    chat->SetSecondUid(json.get("uid2", "").asString());
+    return chat;
+}
+
+std::string PrivateThread::GetUserDisplayName(const std::string& uid) const {
+    // 这里可以通过Container获取UserService来查询用户名
+    // 或者使用现有的ConnectionManager::GetName方法
+    auto& connMgr = ConnectionManager::GetInstance();
+    std::string name = connMgr.GetName(uid);
+    return name.empty() ? uid : name;
+}
+
+// ===== GroupThread 实现 =====
+
+ChatThread::ThreadType GroupThread::GetThreadType() const {
+    return ThreadType::GROUP;
+}
+
+bool GroupThread::IsDbValid() const {
+    return thread_id_ > 0 && !_name.empty()&&!_owner_uid.empty();
+}
+
+bool GroupThread::IsDataValid() const
+{
+    return !_name.empty()&&!_owner_uid.empty();
+}
+
+Json::Value GroupThread::ToJson() const {
+    Json::Value json;
+    json["thread_id"] = thread_id_;
+    json["type"] = static_cast<int>(GetThreadType());
+    json["name"] = _name;
+    json["description"] = _description;
+    json["avatar"] = _avatar;
+    return json;
+}
+
+std::optional<drogon_model::sqlite3::Threads> GroupThread::ToDbThread() const {
+    drogon_model::sqlite3::Threads thread;
+    thread.setType(static_cast<int64_t>(GetThreadType()));
+    thread.setCreateTime(Utils::GetCurrentTimeStr());
+    return thread;
+}
+
+
+std::string GroupThread::GetDisplayName(const std::string& current_uid) const {
+    return _name;
+}
+
+std::string GroupThread::GetDescription() const {
+    return _description;
+}
+
+std::string GroupThread::GetAvatar() const {
+    return _avatar;
+}
+
+std::optional<drogon_model::sqlite3::GroupChats> GroupThread::ToDbGroupChat() const {
+    if (!IsDbValid()) {
+        return std::nullopt;
+    }
+    
+    drogon_model::sqlite3::GroupChats groupChat;
+    groupChat.setThreadId(thread_id_);
+    groupChat.setName(_name);
+    groupChat.setDescription(_description);
+    groupChat.setAvatar(_avatar);
+    return groupChat;
+}
+
+std::optional<drogon_model::sqlite3::GroupMembers> GroupThread::ToDbOwner() const
+{
+    if (!IsDbValid())
+    {
+        return std::nullopt;
+    }
+    drogon_model::sqlite3::GroupMembers members;
+    members.setJoinTime(Utils::GetCurrentTimeStr());
+    members.setRole(GroupConstant::Role::owner);
+	members.setUserUid(_owner_uid);
+    members.setThreadId(thread_id_);
+    return members;
+}
+
+std::shared_ptr<GroupThread> GroupThread::FromJson(const Json::Value& json) {
+    auto chat = std::make_shared<GroupThread>();
+    chat->SetThreadId(json.get("thread_id", -1).asInt());
+    chat->SetName(json.get("name", "").asString());
+    chat->SetDescription(json.get("description", "").asString());
+    chat->SetAvatar(json.get("avatar", "").asString());
+    chat->SetOwnerUid(json.get("uid", "").asString());
+    return chat;
+}
+
+// ===== AIThread 实现 =====
+
+ChatThread::ThreadType AIThread::GetThreadType() const {
+    return ThreadType::AI;
+}
+
+bool AIThread::IsDbValid() const {
+    return thread_id_ > 0 && !_name.empty() && !_creator_uid.empty();
+}
+
+bool AIThread::IsDataValid() const {
+    return !_name.empty() && !_creator_uid.empty();
+}
+
+Json::Value AIThread::ToJson() const {
+    Json::Value json;
+    json["thread_id"] = thread_id_;
+    json["type"] = static_cast<int>(GetThreadType());
+    json["name"] = _name;
+    json["creator_uid"] = _creator_uid;
+    json["init_settings"] = _init_setting;
+    json["avatar"] = _avatar;
+    return json;
+}
+
+std::optional<drogon_model::sqlite3::Threads> AIThread::ToDbThread() const {
+    drogon_model::sqlite3::Threads thread;
+    thread.setType(static_cast<int64_t>(GetThreadType()));
+    thread.setCreateTime(Utils::GetCurrentTimeStr());
+    return thread;
+}
+
+std::string AIThread::GetDisplayName(const std::string& current_uid) const {
+    return _name;
+}
+
+std::string AIThread::GetAvatar() const {
+    return _avatar;
+}
+
+std::optional<drogon_model::sqlite3::AiChats> AIThread::ToDbAiChat() const {
+    if (!IsDbValid()) {
+        return std::nullopt;
+    }
+    
+    drogon_model::sqlite3::AiChats aiChat;
+    if (thread_id_>0)
+		aiChat.setThreadId(thread_id_);
+    aiChat.setName(_name);
+    aiChat.setCreatorUid(_creator_uid);
+    aiChat.setInitSettings(_init_setting);
+    aiChat.setAvatar(_avatar);
+    return aiChat;
+}
+
+std::shared_ptr<AIThread> AIThread::FromJson(const Json::Value& json) {
+    auto chat = std::make_shared<AIThread>();
+    chat->SetThreadId(json.get("thread_id", -1).asInt());
+    chat->SetName(json.get("name", "").asString());
+    chat->SetCreatorUid(json.get("creator_uid", "").asString());
+    chat->SetInitSetting(json.get("init_settings", "").asString());
+    chat->SetAvatar(json.get("avatar", "").asString());
+    return chat;
+}

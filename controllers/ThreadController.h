@@ -13,6 +13,12 @@ public:
 		ADD_METHOD_TO(ThreadController::GetUserThreadIds, "/thread/user/get_id", drogon::Get, "CorsMiddleware", "TokenVerifyFilter");
 		ADD_METHOD_TO(ThreadController::GetOverviewChat, "/thread/record/overview", drogon::Get, "CorsMiddleware", "TokenVerifyFilter");
         ADD_METHOD_TO(ThreadController::GetChatRecords, "/thread/record/get", drogon::Get, "CorsMiddleware", "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::FindThreadInfo, "/thread/info", drogon::Get, "CorsMiddleware", "TokenVerifyFilter");
+
+        ADD_METHOD_TO(ThreadController::CreatePrivateThread, "/thread/create/private-chat", drogon::Post, "CorsMiddleware", "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::CreateGroupThread, "/thread/create/group-chat", drogon::Post, "CorsMiddleware", "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::CreateAIThread, "/thread/create/ai-chat", drogon::Post, "CorsMiddleware", "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::QueryThreadInfo, "/thread/info/query", drogon::Get, "CorsMiddleware", "TokenVerifyFilter");
     METHOD_LIST_END
 
 private:
@@ -34,5 +40,19 @@ private:
         std::function<void(const drogon::HttpResponsePtr&)>&& callback);
     void GetOverviewChat(const drogon::HttpRequestPtr& req,
         std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+    void FindThreadInfo(const drogon::HttpRequestPtr& req,
+        std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+
+    void CreatePrivateThread(const drogon::HttpRequestPtr& req,
+        std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+    void CreateGroupThread(const drogon::HttpRequestPtr& req,
+        std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+    void CreateAIThread(const drogon::HttpRequestPtr& req,
+        std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+    void QueryThreadInfo(const drogon::HttpRequestPtr& req,
+        std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+
+    
+
 };
 

@@ -173,7 +173,7 @@ bool DatabaseManager::ModifyPassword(const std::string& uid, const std::string& 
 	return result == 1;
 }
 
-bool DatabaseManager::ModifyUserInfo(const Utils::UserInfo& info)
+bool DatabaseManager::ModifyUserInfo(const Utils::UsersInfo& info)
 {
 	Mapper<Users> mapper(GetDbClient());
 	Criteria criteria;
@@ -289,42 +289,3 @@ Json::Value DatabaseManager::GetAllMessage(unsigned thread_id, unsigned num)
 	LOG_INFO << "Get all messages:\n" << data.toStyledString() << "\n";
 	return data;
 }
-
-void DatabaseManager::CreatePublicThread()
-{
-	Mapper<Threads> mapper(drogon::app().getDbClient());
-
-	for (int i = 1;i<6;i++)
-	{
-		Threads thread;
-		thread.setType(0);
-
-		mapper.insert(thread,
-			[](const Threads& t) {},
-			[](const DrogonDbException& e) {
-				LOG_ERROR << "Failed to create public thread: " << e.base().what();
-			});
-	}
-}
-
-void DatabaseManager::CreateDefaultUser()
-{
-	Mapper<Users> mapper(drogon::app().getDbClient());
-	
-	for (int i = 1;i<6;i++)
-	{
-		Users user;
-		auto serial = std::to_string(i);
-		user.setUsername("user"+serial);
-		user.setUid(serial);
-		user.setAccount(serial);
-		user.setPassword(Utils::Authentication::PasswordHashed(serial));
-		user.setEmail("");
-		mapper.insert(user,
-			[](const Users& user) {},
-			[](const DrogonDbException& e) {
-				LOG_ERROR << "Failed to create default user: " << e.base().what();
-			});
-	}
-}
-

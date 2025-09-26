@@ -38,7 +38,7 @@ void AIController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn, 
 
     auto thread_id = msg_data["thread_id"].asInt();
 
-    auto info = conn->getContext<Utils::UserInfo>();
+    auto info = conn->getContext<Utils::UsersInfo>();
     if (!info)
     {
         conn->send("can not get user info from connection!");
@@ -79,7 +79,7 @@ void AIController::handleNewConnection(const drogon::HttpRequestPtr& req, const 
         token = req->getParameter("token");
     }
 
-    Utils::UserInfo info;
+    Utils::UsersInfo info;
     if (!Utils::Authentication::VerifyJWT(token, info))
     {
         conn->send("Failed to verify token");
@@ -99,7 +99,7 @@ void AIController::handleNewConnection(const drogon::HttpRequestPtr& req, const 
 
 void AIController::handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn)
 {
-    const auto& info_ptr = conn->getContext<Utils::UserInfo>();
+    const auto& info_ptr = conn->getContext<Utils::UsersInfo>();
     if (info_ptr) {
         LOG_INFO << "username: " << info_ptr->username << " : connection close";
         ConnectionManager::GetInstance().RemoveConnection(info_ptr->uid);

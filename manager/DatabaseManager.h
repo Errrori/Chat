@@ -23,15 +23,11 @@ public:
 	static bool ModifyAvatar(const std::string& uid, const std::string& avatar);
 	static bool ModifyUsername(const std::string& uid, const std::string& username);
 	static bool ModifyPassword(const std::string& uid, const std::string& password);
-	static bool ModifyUserInfo(const Utils::UserInfo& info);
+	static bool ModifyUserInfo(const Utils::UsersInfo& info);
 
 	static bool DeleteUser(const std::string& uid);
 	static bool ValidateAccount(const std::string& account);
 	static bool ValidateUid(const std::string& uid);
 	static bool ValidateThreadId(unsigned thread_id);
-
-
-	static void CreatePublicThread();
-	static void CreateDefaultUser();
 };
 

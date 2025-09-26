@@ -1,6 +1,9 @@
 #pragma once
 #include <drogon/WebSocketController.h>
 
+class UserService;
+
+std::shared_ptr<UserService> user_service;
 
 class ChatController :public drogon::WebSocketController<ChatController>
 {

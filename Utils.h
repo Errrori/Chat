@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+class UserInfo;
 
 namespace Utils
 {
@@ -7,7 +8,7 @@ namespace Utils
     constexpr unsigned SecretLength = 32;
     const std::string SecretFilePath = "jwt_secret.json";
 
-	struct UserInfo
+	struct UsersInfo
 	{
 		std::string username;
 		std::string uid;
@@ -31,9 +32,9 @@ namespace Utils
 				", update_time: " + update_time + ", last_login_time: " + last_login_time;
         }
 
-        static UserInfo FromJson(const Json::Value& json)
+        static UsersInfo FromJson(const Json::Value& json)
         {
-            UserInfo info{};
+            UsersInfo info{};
             if (json.isMember("username"))
 				info.username = json["username"].asString();
         	if (json.isMember("avatar"))
@@ -47,8 +48,10 @@ namespace Utils
 	};
 
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message);
+    drogon::HttpResponsePtr CreateSuccessResp(int statusCode, int code, const std::string& message);
+    drogon::HttpResponsePtr CreateSuccessJsonResp(int statusCode, int code, const std::string& message, const Json::Value& data);
 
-    Json::Value CreateErrorResp(int code,const std::string& message);
+    std::string GetCurrentTimeStr();
 
 	namespace Authentication
 	{
@@ -59,7 +62,7 @@ namespace Utils
         std::string PasswordHashed(const std::string& password);
         std::string LoadJwtSecret(const std::string& file_path = SecretFilePath);
         std::string GenerateJWT(const UserInfo& info);
-        bool VerifyJWT(const std::string& token, UserInfo& info);
+        bool VerifyJWT(const std::string& token, UsersInfo& info);
         std::string GetToken(const drogon::HttpRequestPtr& req);
 	}
 };

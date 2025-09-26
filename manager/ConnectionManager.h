@@ -15,7 +15,7 @@ public:
 	ConnectionManager& operator=(ConnectionManager&& manager) = delete;
 
 	static ConnectionManager& GetInstance();
-	bool AddConnection(const Utils::UserInfo& info, const drogon::WebSocketConnectionPtr& conn);
+	bool AddConnection(const Utils::UsersInfo& info, const drogon::WebSocketConnectionPtr& conn);
 	bool RemoveConnection(const std::string& uid);
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
 	bool AddUIdToNameRef(const std::string& uid, const std::string& name);
@@ -35,6 +35,7 @@ private:
 	std::unordered_map<std::string, std::string> _id_to_name_map;
 	//id to connection
 	std::unordered_map<std::string, drogon::WebSocketConnectionPtr> _conn_to_id_map;
+	std::unordered_map<std::string, drogon::WebSocketConnectionPtr> _id_to_conn_map;
 	std::mutex _conn_mtx;
 	std::mutex _name_mtx;
 };

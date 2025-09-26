@@ -57,7 +57,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         auto thread_id = msg_data["thread_id"].asInt();
         chat_msg.thread_id = thread_id;
 
-        const auto& info = conn->getContext<Utils::UserInfo>();
+        const auto& info = conn->getContext<Utils::UsersInfo>();
         if (!info)
         {
             conn->send("can not get user info from connection!");
@@ -83,10 +83,10 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         }
 
 
-        switch (ChatThread::ToType(thread_type_opt.value()))
+        switch (ChatThreads::ToType(thread_type_opt.value()))
         {
-		case ChatThread::ThreadType::PRIVATE:
-        case ChatThread::ThreadType::GROUP:
+		case ChatThreads::ThreadType::PRIVATE:
+        case ChatThreads::ThreadType::GROUP:
         {
             const auto& message = MessageManager::BuildMessage(info->uid, info->username, info->avatar, msg_data);
             if (!message.has_value())
@@ -111,7 +111,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             break;
         }
 
-		case ChatThread::ThreadType::AI:
+		case ChatThreads::ThreadType::AI:
 			{
             Json::Value current_msg;
             current_msg["role"] = "user";
@@ -252,7 +252,7 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
         token = req->getParameter("token");
     }
 
-    Utils::UserInfo info;
+    Utils::UsersInfo info;
     if (!Utils::Authentication::VerifyJWT(token, info))
     {
         conn->send("Failed to verify token");
@@ -272,7 +272,7 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
 
 void ChatController::handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn)
 {
-    auto info_ptr = conn->getContext<Utils::UserInfo>();
+    auto info_ptr = conn->getContext<Utils::UsersInfo>();
     if (info_ptr) {
 		LOG_INFO << "username: " << info_ptr->username << " : connection close";
         ConnectionManager::GetInstance().RemoveConnection(info_ptr->uid);

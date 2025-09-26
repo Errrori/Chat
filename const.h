@@ -85,6 +85,17 @@ namespace DataBase
 		"following INTEGER DEFAULT 0 "
 		");";
 
+	const static std::vector<std::string> db_table_list = {
+		THREAD_TABLE,
+		AI_TABLE,
+		PRIVATE_TABLE,
+		GROUP_TABLE,
+		GROUP_MEMBER_TABLE,
+		MESSAGE_TABLE,
+		USER_TABLE
+	};
+
+
 	static const std::string idx1 = "CREATE INDEX idx_messages_thread_msg ON messages(thread_id, message_id)";
 
 	

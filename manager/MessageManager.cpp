@@ -58,6 +58,16 @@ std::optional<drogon_model::sqlite3::Messages> MessageManager::BuildMessage(cons
 	messages.setThreadId(data["thread_id"].asInt());
 	messages.setCreateTime(current_time);
 	messages.setUpdateTime(current_time);
+
+	try
+	{
+		messages.setContent(data["content"].asString());
+	}catch (const std::exception&)
+	{
+		Json::StreamWriterBuilder builder;
+		builder["indentation"] = "";
+		messages.setContent(Json::writeString(builder,data["content"]));
+	}
 	messages.setAttachmentToNull();
 	if (data.isMember("attachment"))
 		messages.setAttachment(data["attachment"].asString());

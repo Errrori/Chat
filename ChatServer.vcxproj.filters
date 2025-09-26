@@ -93,6 +93,27 @@
     <ClCompile Include="middleware\FormatChecker.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Data\SQLiteUserRepository.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\User.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Service\UserService.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Container.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\ChatThread.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Service\ThreadService.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Data\SQLiteThreadRepository.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
@@ -171,6 +192,39 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="middleware\FormatChecker.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\DbAccessor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\IUserRepository.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\SQLiteUserRepository.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\User.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Service\UserService.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Container.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\IMessageRepository.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\IThreadRepository.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\ChatThread.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Service\ThreadService.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\SQLiteThreadRepository.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

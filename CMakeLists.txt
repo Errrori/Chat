@@ -45,6 +45,10 @@ add_executable(${PROJECT_NAME}
     controllers/AIController.cpp
     AIService.cpp
     pch.cpp
+    Common/User.cpp
+    Container.cpp
+    Service/UserService.cpp
+    Data/SQLiteUserRepository.cpp
 )
 
 # 查找 Drogon 包

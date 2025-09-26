@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "ThreadController.h"
+
+#include "Container.h"
+#include "Common/ChatThread.h"
 #include "manager/ThreadManager.h"
+#include "Service/ThreadService.h"
 
 void ThreadController::AddToThread(const drogon::HttpRequestPtr& req,
                                    std::function<void(const drogon::HttpResponsePtr&)>&& callback)
@@ -27,7 +31,7 @@ void ThreadController::AddToThread(const drogon::HttpRequestPtr& req,
 	const auto& thread_id = json_data["thread_id"].asInt();
 	const auto& user_id = json_data["uid"].asString();
     
-    const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+    const auto& visitor_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
 	if(!ThreadManager::ValidateMember(visitor_info.uid,thread_id)){
         callback(Utils::CreateErrorResponse(400, 400, "invitor is not in the thread!"));
         return;
@@ -69,7 +73,7 @@ void ThreadController::JoinThread(const drogon::HttpRequestPtr& req,
     }
 
 	const auto& json_data = *json_body;
-    const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+    const auto& visitor_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
 	const auto& uid = visitor_info.uid;
     const auto& thread_id = json_data["thread_id"].asInt();
 
@@ -145,7 +149,7 @@ void ThreadController::CreateGroupChats(const drogon::HttpRequestPtr& req,
         return;
     }
 
-	const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+	const auto& visitor_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
     bool result = ThreadManager::AddNewGroupMember(thread_id.value(), visitor_info.uid,MASTER_ROLE);
     if (!result) {
         callback(Utils::CreateErrorResponse(400, 400, "fail to create thread"));
@@ -179,7 +183,7 @@ void ThreadController::CreateAIChats(const drogon::HttpRequestPtr& req,
     }
 
     std::optional<int> thread_id;
-    const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+    const auto& visitor_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
 
 	LOG_INFO << "user info: " << visitor_info.ToString();
 
@@ -236,7 +240,7 @@ void ThreadController::CreatePrivateChats(const drogon::HttpRequestPtr& req,
 		return;
     }
 
-    const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+    const auto& visitor_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
     if (visitor_info.uid != first_uid&&visitor_info.uid!=second_uid)
     {
         callback(Utils::CreateErrorResponse(400,400,"can not operate other users!"));
@@ -264,7 +268,7 @@ void ThreadController::CreatePrivateChats(const drogon::HttpRequestPtr& req,
 void ThreadController::GetUserThreadIds(const drogon::HttpRequestPtr& req,
                                         std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    const auto& visitor_info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+    const auto& visitor_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
 
     Json::Value thread_ids = ThreadManager::GetUserThreadIds(visitor_info.uid);
 
@@ -324,7 +328,7 @@ void ThreadController::GetOverviewChat(const drogon::HttpRequestPtr& req,
             return;
         }
 
-        const auto& info = req->getAttributes()->get<Utils::UserInfo>("visitor_info");
+        const auto& info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
 
        const auto& overview = ThreadManager::GetOverviewRecord(existing_id.value(), info.uid);
 
@@ -343,5 +347,125 @@ void ThreadController::GetOverviewChat(const drogon::HttpRequestPtr& req,
     }
     
 
+}
+
+void ThreadController::FindThreadInfo(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    try
+    {
+        auto thread_id_opt = req->getOptionalParameter<int>("thread_id");
+
+        int thread_id;
+        if (thread_id_opt.has_value())
+        {
+            thread_id = thread_id_opt.value();
+        }
+        else
+        {
+            callback(Utils::CreateErrorResponse(400, 400, "can not get essential parameter"));
+            return;
+        }
+
+        const auto& info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
+
+        const auto& thread_info_opt = ThreadManager::FindThreadInfo(thread_id, info.uid);
+
+        if (!thread_info_opt.has_value())
+        {
+            callback(Utils::CreateErrorResponse(400, 400, "can not find thread info"));
+            return;
+        }
+
+        callback(Utils::CreateSuccessJsonResp(200, 200, "find thread info", thread_info_opt.value()));
+
+    }catch (const std::exception& e)
+    {
+        LOG_ERROR << "error: " << e.what();
+        callback(Utils::CreateErrorResponse(400, 400, "can not find thread info"));
+    }
+}
+
+void ThreadController::CreatePrivateThread(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    const auto& req_body = req->getJsonObject();
+
+    if (!req_body)
+    {
+        callback(Utils::CreateErrorResponse(400, 400, "can not get request data"));
+        return;
+    }
+
+    auto thread_info = PrivateThread::FromJson(*req_body);
+
+    if (!thread_info->IsDataValid())
+    {
+        callback(Utils::CreateErrorResponse(400,400,"lack of essential fields"));
+    }
+
+    Container::GetInstance().GetService<ThreadService>()->CreateChatThread(thread_info, std::move(callback));
+}
+
+void ThreadController::CreateGroupThread(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    const auto& req_body = req->getJsonObject();
+
+    if (!req_body)
+    {
+        callback(Utils::CreateErrorResponse(400, 400, "can not get request data"));
+        return;
+    }
+
+    const auto& user_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
+	auto thread_info = GroupThread::FromJson(*req_body);
+    thread_info->SetOwnerUid(user_info.uid);
+
+    if (!thread_info->IsDataValid())
+    {
+        callback(Utils::CreateErrorResponse(400, 400, "lack of essential fields"));
+        return;
+    }
+
+    Container::GetInstance().GetService<ThreadService>()->CreateChatThread(thread_info, std::move(callback));
+
+}
+
+void ThreadController::CreateAIThread(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    const auto& req_body = req->getJsonObject();
+
+    if (!req_body)
+    {
+        callback(Utils::CreateErrorResponse(400, 400, "can not get request data"));
+        return;
+    }
+
+    auto thread_info = AIThread::FromJson(*req_body);
+    const auto& user_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
+    thread_info->SetCreatorUid(user_info.uid);
+
+    if (!thread_info->IsDataValid())
+    {
+        callback(Utils::CreateErrorResponse(400, 400, "lack of essential fields"));
+    }
+
+    Container::GetInstance().GetService<ThreadService>()->CreateChatThread(thread_info, std::move(callback));
+}
+
+void ThreadController::QueryThreadInfo(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    auto thread_id_opt = req->getOptionalParameter<int>("thread_id");
+    if (!thread_id_opt.has_value())
+    {
+        callback(Utils::CreateErrorResponse(400, 400, "lack of essential fields"));
+        return;
+    }
+
+	Container::GetInstance().GetService<ThreadService>()
+		->QueryThreadInfo(thread_id_opt.value(), std::move(callback));
 }
 

@@ -11,7 +11,7 @@ static constexpr int DEFAULT_ROLE = 0;
 static constexpr int ADMIN_ROLE = 1;
 static constexpr int MASTER_ROLE = 2;
 
-namespace ChatThread
+namespace ChatThreads
 {
     enum class ThreadType :std::int8_t
     {
@@ -83,7 +83,7 @@ public:
     static Json::Value GetAIChatContext(int thread_id);
 	static std::optional<int> GetThreadType(int thread_id);
 	static std::optional<Json::Value> GetOverviewRecord(long long existing_id, const std::string& uid);
-
+    static std::optional<Json::Value> FindThreadInfo(int thread_id,const std::string& uid);
     static bool AddNewGroupMember(int thread_id, const std::string& user_id,int role = DEFAULT_ROLE);
 
     //会话创建

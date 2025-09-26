@@ -203,3 +203,146 @@ public:
 // 在AI消息处理中使用
 auto callback = std::make_shared<ChatStreamCallback>(conn, thread_id);
 AIService::SendStreamRequest(json_body, API_KEY::key1, SERVICE_URL::CHAT_URL, callback);
+
+
+
+
+方案1：组合 + 依赖注入（最推荐）
+cpp
+// 1. 数据库连接管理器（保持静态）
+class DatabaseManager {
+public:
+    static void InitDatabase();
+    static drogon::orm::DbClientPtr GetDbClient();
+    
+private:
+    DatabaseManager() = delete;
+};
+
+// 2. 用户数据访问层
+class UserRepository {
+private:
+    drogon::orm::DbClientPtr dbClient_;
+    
+public:
+    explicit UserRepository(drogon::orm::DbClientPtr client = nullptr) 
+        : dbClient_(client ? client : DatabaseManager::GetDbClient()) {}
+    
+    bool PushUser(const Json::Value& user_info);
+    bool GetUserInfoByUid(const std::string& uid, Json::Value& data);
+    bool ModifyAvatar(const std::string& uid, const std::string& avatar);
+    // ... 其他用户操作
+};
+
+// 3. 聊天数据访问层
+class ChatRepository {
+private:
+    drogon::orm::DbClientPtr dbClient_;
+    
+public:
+    explicit ChatRepository(drogon::orm::DbClientPtr client = nullptr)
+        : dbClient_(client ? client : DatabaseManager::GetDbClient()) {}
+    
+    bool SaveMessage(const Json::Value& message);
+    Json::Value GetMessages(unsigned thread_id, int64_t existing_id);
+    Json::Value GetAllMessage(unsigned thread_id, unsigned num);
+    // ... 其他聊天操作
+};
+方案2：完全依赖注入（最灵活）
+cpp
+// 1. 数据库客户端接口
+class IDbClient {
+public:
+    virtual ~IDbClient() = default;
+    virtual drogon::orm::DbClientPtr getClient() = 0;
+};
+
+// 2. 数据库客户端实现
+class DrogonDbClient : public IDbClient {
+public:
+    drogon::orm::DbClientPtr getClient() override {
+        return DatabaseManager::GetDbClient();
+    }
+};
+
+// 3. 仓储接口
+class IUserRepository {
+public:
+    virtual ~IUserRepository() = default;
+    virtual bool PushUser(const Json::Value& user_info) = 0;
+    virtual bool GetUserInfoByUid(const std::string& uid, Json::Value& data) = 0;
+};
+
+class IChatRepository {
+public:
+    virtual ~IChatRepository() = default;
+    virtual bool SaveMessage(const Json::Value& message) = 0;
+    virtual Json::Value GetMessages(unsigned thread_id, int64_t existing_id) = 0;
+};
+
+// 4. 具体实现
+class UserRepository : public IUserRepository {
+private:
+    std::shared_ptr<IDbClient> dbClient_;
+    
+public:
+    explicit UserRepository(std::shared_ptr<IDbClient> client)
+        : dbClient_(std::move(client)) {}
+    
+    bool PushUser(const Json::Value& user_info) override {
+        auto client = dbClient_->getClient();
+        Mapper<Users> mapper(client);
+        // ... 实现
+    }
+};
+方案3：服务层架构（业务导向）
+cpp
+// 1. 保持DatabaseManager的基础功能
+class DatabaseManager {
+public:
+    static void InitDatabase();
+    static drogon::orm::DbClientPtr GetDbClient();
+};
+
+// 2. 数据访问层 (Repository Layer)
+class UserRepository {
+    // 用户数据访问
+};
+
+class MessageRepository {
+    // 消息数据访问
+};
+
+class ThreadRepository {
+    // 线程数据访问
+};
+
+// 3. 业务服务层 (Service Layer)
+class UserService {
+private:
+    std::unique_ptr<UserRepository> userRepo_;
+    
+public:
+    explicit UserService(std::unique_ptr<UserRepository> repo)
+        : userRepo_(std::move(repo)) {}
+    
+    // 业务逻辑方法
+    bool RegisterUser(const Utils::UserInfo& userInfo);
+    bool AuthenticateUser(const std::string& account, const std::string& password);
+    bool UpdateUserProfile(const std::string& uid, const Utils::UserInfo& info);
+};
+
+class ChatService {
+private:
+    std::unique_ptr<MessageRepository> messageRepo_;
+    std::unique_ptr<ThreadRepository> threadRepo_;
+    
+public:
+    ChatService(std::unique_ptr<MessageRepository> msgRepo,
+                std::unique_ptr<ThreadRepository> threadRepo)
+        : messageRepo_(std::move(msgRepo))
+        , threadRepo_(std::move(threadRepo)) {}
+    
+    bool SendMessage(const std::string& senderId, int threadId, const std::string& content);
+    Json::Value GetChatHistory(int threadId, int limit);
+};
