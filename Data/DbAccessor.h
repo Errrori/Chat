@@ -37,7 +37,7 @@ public:
         static std::once_flag flag;
 	    std::call_once(flag, []
 		{
-			InitDb();
+			assert(InitDb());
 			LOG_INFO << "Database init success";
 		});
 	    return drogon::app().getDbClient();

@@ -22,12 +22,36 @@ target_include_directories(pch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(${PROJECT_NAME} 
     main.cpp
     controllers/Authentication.cpp
-    manager/DatabaseManager.cpp
-    manager/MessageManager.cpp
-    controllers/DebugRoute.cpp
     controllers/ThreadController.cpp
+    controllers/ChatController.cpp
+    controllers/FileController.cpp
     utils.cpp
-    middleware/CorsMiddleware.cpp
+    filter/TokenVerifyFilter.cpp
+    AuthService.cpp
+    pch.cpp
+    
+    # Common layer
+    Common/User.cpp
+    Common/ChatMessage.cpp
+    Common/ChatThread.cpp
+    
+    # Service layer
+    Service/UserService.cpp
+    Service/MessageService.cpp
+    Service/ThreadService.cpp
+    Service/ConnectionService.cpp
+    Service/FileService.cpp
+    Service/AIService.cpp
+    Service/AIMsgProcessor.cpp
+    Service/UserMsgProcessor.cpp
+    Service/IMsgProcessor.cpp
+    
+    # Data layer
+    Data/SQLiteUserRepository.cpp
+    Data/SQLiteMessageRepository.cpp
+    Data/SQLiteThreadRepository.cpp
+    
+    # Models
     models/Users.cc
     models/GroupChats.cc
     models/GroupMembers.cc
@@ -35,20 +59,9 @@ add_executable(${PROJECT_NAME}
     models/Threads.cc  
     models/PrivateChats.cc
     models/AiChats.cc
-    manager/ConnectionManager.cpp
-    manager/ThreadManager.cpp
-    controllers/ChatController.cpp
-    controllers/FileController.cpp
-    MsgDispatcher.cpp
-    manager/FileManager.cpp
-    filter/TokenVerifyFilter.cpp
-    controllers/AIController.cpp
-    AIService.cpp
-    pch.cpp
-    Common/User.cpp
+    
+    # Container
     Container.cpp
-    Service/UserService.cpp
-    Data/SQLiteUserRepository.cpp
 )
 
 # 查找 Drogon 包

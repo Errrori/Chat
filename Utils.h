@@ -27,9 +27,9 @@ namespace Utils
         std::string ToString() const
         {
             return "name: " + username + ", uid: " + uid + ", account: " + account + ", avatar: " + avatar+", email: " + email +
-                   ", signature: " + signature + ", status: " + std::to_string(status) + ", posts: " + posts +
-                   ", followers: " + followers + ", following: " + following + ", create_time: " + create_time +
-				", update_time: " + update_time + ", last_login_time: " + last_login_time;
+                   ", signature: " + signature + ", _status: " + std::to_string(status) + ", posts: " + posts +
+                   ", followers: " + followers + ", following: " + following + ", _create_time: " + create_time +
+				", _update_time: " + update_time + ", last_login_time: " + last_login_time;
         }
 
         static UsersInfo FromJson(const Json::Value& json)
@@ -51,7 +51,11 @@ namespace Utils
     drogon::HttpResponsePtr CreateSuccessResp(int statusCode, int code, const std::string& message);
     drogon::HttpResponsePtr CreateSuccessJsonResp(int statusCode, int code, const std::string& message, const Json::Value& data);
 
+    Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code);
+    Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code, const std::string& message_id);
+
     std::string GetCurrentTimeStr();
+    long long GetCurrentTimeStamp();
 
 	namespace Authentication
 	{

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "User.h"
 
+#include "models/Users.h"
+
 UserInfo UserInfo::FromJson(const Json::Value& json)
 {
 	UserInfo info{};

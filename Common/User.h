@@ -1,4 +1,9 @@
 #pragma once
+namespace drogon_model::sqlite3
+{
+	class Users;
+}
+
     constexpr int DefaultVal = -1;
 class UserInfo
 {
@@ -21,8 +26,8 @@ private:
     //std::string ToString() const
     //{
     //    return "name: " + username + ", uid: " + uid + ", account: " + account + ", avatar: " + avatar + ", email: " + email +
-    //        ", signature: " + signature + ", status: " + std::to_string(status) + ", posts: " + posts +
-    //        ", followers: " + followers + ", following: " + following + ", create_time: " + create_time 
+    //        ", signature: " + signature + ", _status: " + std::to_string(_status) + ", posts: " + posts +
+    //        ", followers: " + followers + ", following: " + following + ", _create_time: " + _create_time 
     //        + ", last_login_time: " + last_login_time;
     //}
 public:

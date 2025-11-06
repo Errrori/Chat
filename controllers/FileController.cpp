@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "FileController.h"
-#include "../manager/FileManager.h"
+#include "Service/FileService.h"
 
 using namespace drogon;
 
@@ -44,7 +44,7 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 
 	std::string new_file_name = Utils::Authentication::GenerateUid() + "."+file_extension;
 	std::string file_url;
-	if (FileManager::UploadFile(file, new_file_name,file_url))
+	if (FileService::UploadFile(file, new_file_name,file_url))
 	{
 		Json::Value data;
 		data["code"] = 200;

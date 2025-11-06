@@ -1,8 +1,15 @@
 #include "pch.h"
 #include "ChatThread.h"
+
+#include "Convert.h"
 #include "Utils.h"
-#include "manager/ConnectionManager.h"
+#include "Service/ConnectionService.h"
 #include "models/GroupMembers.h"
+#include "models/PrivateChats.h"
+#include "models/AiChats.h"
+#include "models/GroupChats.h"
+#include "models/Threads.h"
+
 
 std::shared_ptr<ChatThread> ChatThread::FromJson(const Json::Value& json) {
     if (!json.isMember("type")) {
@@ -115,9 +122,7 @@ std::shared_ptr<PrivateThread> PrivateThread::FromJson(const Json::Value& json) 
 std::string PrivateThread::GetUserDisplayName(const std::string& uid) const {
     // 这里可以通过Container获取UserService来查询用户名
     // 或者使用现有的ConnectionManager::GetName方法
-    auto& connMgr = ConnectionManager::GetInstance();
-    std::string name = connMgr.GetName(uid);
-    return name.empty() ? uid : name;
+    return {};
 }
 
 // ===== GroupThread 实现 =====
@@ -186,7 +191,7 @@ std::optional<drogon_model::sqlite3::GroupMembers> GroupThread::ToDbOwner() cons
     }
     drogon_model::sqlite3::GroupMembers members;
     members.setJoinTime(Utils::GetCurrentTimeStr());
-    members.setRole(GroupConstant::Role::owner);
+    members.setRole(GroupConstant::owner);
 	members.setUserUid(_owner_uid);
     members.setThreadId(thread_id_);
     return members;
@@ -266,3 +271,61 @@ std::shared_ptr<AIThread> AIThread::FromJson(const Json::Value& json) {
     chat->SetAvatar(json.get("avatar", "").asString());
     return chat;
 }
+
+// ===== MemberData 实现 =====
+
+// 静态工厂方法实现
+MemberData MemberData::FromJson(const Json::Value& json_data) {
+    if (!json_data.isMember("thread_id") || !json_data.isMember("user_uid")) {
+        return MemberData{};
+    }
+
+    MemberData member;
+    member.SetThreadId(json_data.get("thread_id", -1).asInt());
+    member.SetUserUid(json_data.get("user_uid", "").asString());
+    member.SetRole(json_data.get("role", GroupConstant::member).asInt());
+    
+    if (json_data.isMember("join_time")) {
+        member.SetJoinTime(json_data.get("join_time", "").asString());
+    } else {
+        member.SetJoinTime(Utils::GetCurrentTimeStr());
+    }
+
+    return member;
+}
+
+// JSON 序列化实现
+Json::Value MemberData::ToJson() const {
+    Json::Value json;
+    json["thread_id"] = _thread_id;
+    json["user_uid"] = _user_uid;
+    json["role"] = GroupRoleConvert::ToVal(_role);
+    json["join_time"] = _join_time;
+    return json;
+}
+
+// 数据库转换实现
+std::optional<drogon_model::sqlite3::GroupMembers> MemberData::ToDbGroupMember() const {
+    if (!IsValid()) {
+        return std::nullopt;
+    }
+
+    drogon_model::sqlite3::GroupMembers member;
+    member.setThreadId(_thread_id);
+    member.setUserUid(_user_uid);
+    member.setRole(GroupRoleConvert::ToVal(_role));
+    member.setJoinTime(_join_time.empty() ? Utils::GetCurrentTimeStr() : _join_time);
+    return member;
+}
+
+void MemberData::SetRole(int role)
+{
+    _role = GroupRoleConvert::ToRole(role);
+}
+
+// 验证方法实现
+bool MemberData::IsValid() const {
+    return _thread_id > 0 && !_user_uid.empty() && 
+           (_role!=Role::Unknown);
+}
+

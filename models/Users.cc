@@ -784,7 +784,7 @@ void Users::updateByJson(const Json::Value &pJson) noexcept(false)
     }
 }
 
-const int64_t &Users::getValueOfThreadId() const noexcept
+const int64_t &Users::getValueOfId() const noexcept
 {
     static const int64_t defaultValue = int64_t();
     if(id_)
@@ -1552,7 +1552,7 @@ Json::Value Users::toJson() const
     Json::Value ret;
     if(getId())
     {
-        ret["id"]=(Json::Int64)getValueOfThreadId();
+        ret["id"]=(Json::Int64)getValueOfId();
     }
     else
     {
@@ -1683,7 +1683,7 @@ Json::Value Users::toMasqueradedJson(
         {
             if(getId())
             {
-                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfThreadId();
+                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfId();
             }
             else
             {
@@ -1849,7 +1849,7 @@ Json::Value Users::toMasqueradedJson(
     LOG_ERROR << "Masquerade failed";
     if(getId())
     {
-        ret["id"]=(Json::Int64)getValueOfThreadId();
+        ret["id"]=(Json::Int64)getValueOfId();
     }
     else
     {

@@ -3,9 +3,12 @@
 
 #include "DbAccessor.h"
 #include "Common/ChatThread.h"
-#include "manager/ThreadManager.h"
 #include "models/GroupMembers.h"
 #include "models/PrivateChats.h"
+#include "models/AiChats.h"
+#include "models/GroupChats.h"
+#include "models/Threads.h"
+#include "Common/Convert.h"
 
 using namespace drogon::orm;
 using Threads = drogon_model::sqlite3::Threads;
@@ -22,10 +25,16 @@ std::future<int> SQLiteThreadRepository::CreatePrivateThread(const std::shared_p
 	if (private_info->IsDataValid())
 	{
 		DbAccessor::GetDbClient()->newTransactionAsync
-		([private_info, promise](const std::shared_ptr<drogon::orm::Transaction>& trans)
+		([private_info, promise](const std::shared_ptr<Transaction>& trans)
 			{
 				try
 				{
+					if (trans == nullptr)
+					{
+						LOG_ERROR << "fail to create transaction";
+						promise->set_exception(std::make_exception_ptr("fail to create transaction"));
+						return;
+					}
 					Mapper<Threads> thread_mapper(trans);
 					thread_mapper.insert(private_info->ToDbThread().value(), [promise, trans, private_info](const Threads& record)
 						{
@@ -76,6 +85,12 @@ std::future<int> SQLiteThreadRepository::CreateGroupThread(const std::shared_ptr
 			{
 				try
 				{
+					if (trans == nullptr)
+					{
+						LOG_ERROR << "fail to create transaction";
+						promise->set_exception(std::make_exception_ptr("fail to create transaction"));
+						return;
+					}
 					Mapper<Threads> thread_mapper(trans);
 					thread_mapper.insert(group_info->ToDbThread().value(), [trans, promise, group_info](const Threads& record)
 						{
@@ -84,14 +99,16 @@ std::future<int> SQLiteThreadRepository::CreateGroupThread(const std::shared_ptr
 							group_mapper.insert(group_info->ToDbGroupChat().value(), [promise, trans, group_info](const GroupChats& group_record)
 								{
 									Mapper<GroupMembers> members_mapper(trans);
+									LOG_INFO << group_info->ToDbOwner().value().toJson().toStyledString();
 									members_mapper.insert(group_info->ToDbOwner().value(), [promise](const GroupMembers& member_record)
 										{
 											promise->set_value(member_record.getValueOfThreadId());
 										},
-										[trans](const DrogonDbException& e)
+										[trans,promise](const DrogonDbException& e)
 										{
 											trans->rollback();
 											LOG_ERROR << "exception: " << e.base().what();
+											promise->set_value(-1);
 										});
 
 								}, [trans, promise](const DrogonDbException& e)
@@ -135,6 +152,12 @@ std::future<int> SQLiteThreadRepository::CreateAIThread(const std::shared_ptr<AI
 			{
 				try
 				{
+					if (trans==nullptr)
+					{
+						LOG_ERROR << "fail to create transaction";
+						promise->set_exception(std::make_exception_ptr("fail to create transaction"));
+						return;
+					}
 					Mapper<Threads> mapper(trans);
 					mapper.insert(ai_info->ToDbThread().value(), [trans, ai_info, promise](const Threads& record)
 						{
@@ -163,7 +186,8 @@ std::future<int> SQLiteThreadRepository::CreateAIThread(const std::shared_ptr<AI
 					trans->rollback();
 					LOG_ERROR << "exception: " << e.what();
 					promise->set_value(-1);
-				}});
+				}
+			});
 	}
 	else
 	{
@@ -183,7 +207,7 @@ std::future<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id) no
 		{
 			switch (ThreadTypeConvert::ToType(t[0].getValueOfType()))
 			{
-			case ChatThreads::ThreadType::PRIVATE:
+			case ChatThread::ThreadType::PRIVATE:
 			{
 				Mapper<PrivateChats> private_mapper(DbAccessor::GetDbClient());
 				private_mapper.limit(1).findBy(Criteria(PrivateChats::Cols::_thread_id, CompareOperator::EQ, thread_id),
@@ -199,7 +223,7 @@ std::future<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id) no
 					});
 			}
 			break;
-			case ChatThreads::ThreadType::GROUP:
+			case ChatThread::ThreadType::GROUP:
 			{
 				Mapper<GroupChats> group_mapper(DbAccessor::GetDbClient());
 				group_mapper.limit(1).findBy(Criteria(GroupChats::Cols::_thread_id, CompareOperator::EQ, thread_id),
@@ -215,7 +239,7 @@ std::future<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id) no
 					});
 			}
 			break;
-			case ChatThreads::ThreadType::AI:
+			case ChatThread::ThreadType::AI:
 			{
 				Mapper<AIChats> ai_mapper(DbAccessor::GetDbClient());
 				ai_mapper.limit(1).findBy(Criteria(AIChats::Cols::_thread_id, CompareOperator::EQ, thread_id),
@@ -244,9 +268,136 @@ std::future<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id) no
 	return promise->get_future();
 }
 
-std::future<bool> SQLiteThreadRepository::JoinThread()
+std::future<bool> SQLiteThreadRepository::AddToThread(const MemberData& member)
 {
-	std::promise<bool> promise;
-	promise.set_value(true);
-	return promise.get_future();
+	auto promise = std::make_shared<std::promise<bool>>();
+	if (!member.IsValid())
+	{
+		LOG_ERROR << "error: member data is not valid";
+		promise->set_value(false);
+		return promise->get_future();
+	}
+
+	try
+	{
+		Mapper<GroupMembers> mapper(DbAccessor::GetDbClient());
+		const auto& member_data = member.ToDbGroupMember();
+		mapper.insert(member_data.value(), [promise](const GroupMembers& member)
+			{
+				promise->set_value(true);
+			},
+			[promise](const DrogonDbException& e)	
+			{
+				LOG_ERROR << "exception: " << e.base().what();
+				promise->set_value(false);
+			});
+	}catch (const std::exception& e)
+	{
+		LOG_ERROR << "exception: " << e.what();
+		promise->set_value(false);
+	}
+
+	return promise->get_future();
+
+}
+
+bool SQLiteThreadRepository::IsThreadMember(int thread_id, const std::string& uid)
+{
+	Mapper<Threads> mapper(DbAccessor::GetDbClient());
+	const auto& members = GetThreadMember(thread_id).get();
+	return std::find(members.begin(), members.end(), uid) != members.end();
+}
+
+std::future<std::vector<std::string>> SQLiteThreadRepository::GetThreadMember(
+	int thread_id)
+{
+	auto promise = std::make_shared<std::promise<std::vector<std::string>>>();
+	Mapper<Threads> mapper(DbAccessor::GetDbClient());
+	mapper.limit(1).findBy(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id),
+		[thread_id,promise](const std::vector<Threads>& records)
+		{
+			try
+			{
+				auto thread_type = ThreadTypeConvert::ToType(records[0].getValueOfType());
+				switch (thread_type)
+				{
+				case ChatThread::ThreadType::PRIVATE:
+				{
+					Mapper<PrivateChats> private_mapper(DbAccessor::GetDbClient());
+					const auto& members = private_mapper.limit(1).
+						findBy(Criteria(PrivateChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
+					if (!members.empty())
+						promise->set_value({ members[0].getValueOfUid1(),members[0].getValueOfUid2() });
+					else
+						promise->set_exception(std::make_exception_ptr(
+							std::runtime_error("can not find thread member,id: " + std::to_string(thread_id))));
+				}
+				break;
+				case ChatThread::ThreadType::GROUP:
+				{
+					Mapper<GroupMembers> group_mapper(DbAccessor::GetDbClient());
+					const auto& members = group_mapper.
+						findBy(Criteria(GroupMembers::Cols::_thread_id, CompareOperator::EQ, thread_id));
+					std::vector<std::string> user_list;
+					user_list.reserve(members.size());
+					for (const auto& member : members)
+					{
+						user_list.emplace_back(member.getValueOfUserUid());
+					}
+					promise->set_value(std::move(user_list));
+				}
+				break;
+				case ChatThread::ThreadType::AI:
+				{
+					Mapper<AIChats> ai_mapper(DbAccessor::GetDbClient());
+					const auto& members = ai_mapper.limit(1).
+						findBy(Criteria(AIChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
+					if (!members.empty())
+						promise->set_value({ members[0].getValueOfCreatorUid()});
+					else
+						promise->set_exception(std::make_exception_ptr(
+							std::runtime_error("can not find thread member,id: " + std::to_string(thread_id))));
+				}
+				break;
+				default:
+					promise->set_exception(std::make_exception_ptr(std::invalid_argument("error thread type")));
+					LOG_ERROR << "error thread type";
+					break;
+				}
+
+			}catch (const std::exception& e)
+			{
+				LOG_ERROR << "exception: " << e.what();
+				promise->set_exception(std::make_exception_ptr(e));
+			}
+		},
+		[promise](const DrogonDbException& e)
+		{
+			LOG_ERROR << "db exception: " << e.base().what();
+			promise->set_exception(std::make_exception_ptr(e.base()));
+		});
+
+	return promise->get_future();
+}
+
+std::future<ChatThread::ThreadType> SQLiteThreadRepository::GetThreadType(int thread_id) noexcept
+{
+	Mapper<Threads> mapper(DbAccessor::GetDbClient());
+	auto promise = std::make_shared<std::promise<ChatThread::ThreadType>>();
+	mapper.limit(1).findBy(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id),
+		[promise](const std::vector<Threads>& records)
+		{
+			if (records.empty())
+			{
+				promise->set_value(ChatThread::ThreadType::UNKNOWN);
+				return;
+			}
+			promise->set_value(ThreadTypeConvert::ToType(records[0].getValueOfType()));
+		},
+		[promise](const DrogonDbException& e)
+		{
+			LOG_ERROR << "exception: " << e.base().what();
+			promise->set_value(ChatThread::ThreadType::UNKNOWN);
+		});
+	return promise->get_future();
 }

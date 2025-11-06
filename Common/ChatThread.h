@@ -4,25 +4,21 @@
 #include <optional>
 #include <json/json.h>
 
-#include "manager/ThreadManager.h"
-#include "models/Threads.h"
-#include "models/PrivateChats.h"
-#include "models/GroupChats.h"
-#include "models/AiChats.h"
-
 namespace drogon_model::sqlite3
 {
 	class GroupMembers;
+	class PrivateChats;
+	class AiChats;
+    class GroupChats;
+    class Threads;
 }
 
 namespace GroupConstant
 {
-	namespace Role
-	{
-        constexpr int member = 0;
-        constexpr int admin = 1;
-        constexpr int owner = 2;
-	}	
+    constexpr int member = 0;
+    constexpr int admin = 1;
+    constexpr int owner = 2;
+
 }
 
 constexpr int TYPE_GROUP_CHAT = 0;
@@ -32,7 +28,7 @@ constexpr int TYPE_AI_CHAT = 2;
 class ChatThread
 {
 public:
-    enum class ThreadType :std::int8_t
+    enum ThreadType :std::int8_t
     {
         GROUP = TYPE_GROUP_CHAT,
         PRIVATE = TYPE_PRIVATE_CHAT,
@@ -61,37 +57,6 @@ protected:
     int thread_id_ = -1;
 };
 
-namespace ThreadTypeConvert
-{
-    const std::unordered_map<int, ChatThreads::ThreadType> val_to_thread_map = {
-		{TYPE_GROUP_CHAT, ChatThreads::ThreadType::GROUP},
-		{TYPE_AI_CHAT, ChatThreads::ThreadType::AI},
-		{TYPE_PRIVATE_CHAT, ChatThreads::ThreadType::PRIVATE}
-    };
-
-    // 从枚举到整数的映射
-    const std::unordered_map<ChatThreads::ThreadType, int> thread_to_val_map = {
-        {ChatThreads::ThreadType::GROUP, TYPE_GROUP_CHAT},
-        {ChatThreads::ThreadType::AI, TYPE_AI_CHAT},
-        {ChatThreads::ThreadType::PRIVATE, TYPE_PRIVATE_CHAT}
-    };
-
-    inline int ToVal(ChatThreads::ThreadType type)
-    {
-        if (type != ChatThreads::ThreadType::UNKNOWN)
-            return thread_to_val_map.at(type);
-    	return -1;
-    }
-
-    inline ChatThreads::ThreadType ToType(int val)
-    {
-	    auto it = val_to_thread_map.find(val);
-        if (it != val_to_thread_map.end())
-            return it->second;
-        
-    	return ChatThreads::ThreadType::UNKNOWN;
-    }
-}
 
 class PrivateThread : public ChatThread
 {
@@ -109,8 +74,16 @@ public:
     void SetFirstUid(const std::string& uid) { _first_uid = uid; }
     void SetSecondUid(const std::string& uid) { _second_uid = uid; }
     void SetUsers(const std::string& uid1, const std::string& uid2) {
-        _first_uid = uid1;
-        _second_uid = uid2;
+        std::string first_uid, second_uid;
+        if (uid1 < uid2) {
+            first_uid = uid1;
+            second_uid = uid2;
+        } else {
+            first_uid = uid2;
+            second_uid = uid1;
+		}
+        _first_uid = first_uid;
+        _second_uid = second_uid;
     }
     
     std::string GetPeerUid(const std::string& current_uid) const;
@@ -189,4 +162,44 @@ private:
     std::string _init_setting;
 };
 
+class MemberData
+{
+public:
+	enum class Role :std::int8_t
+    {
+		member = GroupConstant::member,
+		admin = GroupConstant::admin,
+		owner = GroupConstant::owner,
+        Unknown = -1
+    };
+
+    static MemberData FromJson(const Json::Value& json_data);
+    // JSON 序列化
+    Json::Value ToJson() const;
+
+    // 数据库转换
+    std::optional<drogon_model::sqlite3::GroupMembers> ToDbGroupMember() const;
+
+    // Setter 方法
+	void SetThreadId(int thread_id) { _thread_id = thread_id; }
+	void SetUserUid(const std::string& uid) { _user_uid = uid; }
+    void SetRole(Role role) { _role = role; }
+	void SetJoinTime(const std::string& join_time) { _join_time = join_time; }
+    void SetRole(int role);
+
+    // Getter 方法
+    int GetThreadId() const { return _thread_id; }
+    const std::string& GetUserUid() const { return _user_uid; }
+    Role GetRole() const { return _role; }
+    const std::string& GetJoinTime() const { return _join_time; }
+
+    // 验证方法
+    bool IsValid() const;
+
+private:
+	int _thread_id = -1;
+	std::string _user_uid;
+	Role _role = Role::Unknown;
+    std::string _join_time;
+};
 

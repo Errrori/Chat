@@ -67,6 +67,15 @@ namespace DataBase
 		"FOREIGN KEY (sender_uid) REFERENCES users(uid) ON DELETE CASCADE"
 		");";
 
+	const static std::string AI_MESSAGE_TABLE = "CREATE TABLE IF NOT EXISTS ai_context("
+		"message_id TEXT PRIMARY KEY,"
+		"thread_id INTEGER NOT NULL,"
+		"role TEXT NOT NULL,"
+		"content TEXT NOT NULL,"
+		"attachment TEXT,"
+		"reasoning_content TEXT,"
+		"created_time INTEGER DEFAULT (strftime('%s','now')))";
+
 	const static std::string USER_TABLE = "CREATE TABLE IF NOT EXISTS users("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"username TEXT NOT NULL,"
@@ -92,7 +101,8 @@ namespace DataBase
 		GROUP_TABLE,
 		GROUP_MEMBER_TABLE,
 		MESSAGE_TABLE,
-		USER_TABLE
+		USER_TABLE,
+		AI_MESSAGE_TABLE
 	};
 
 
@@ -120,10 +130,30 @@ namespace UploadsFile
 	constexpr int FILE_LEN_CHECK_LIMIT = 255;
 }
 
+namespace ChatCode
+{
+	enum Code
+	{
+		SystemException = -1,
+		Unknown = 0,
+		OK = 100,
+		InValidJson = 101,
+		MissingField = 102,
+		BadDbOp = 103,
+		FailAccessInfo = 104,
+		NotPermission = 105,
+		BadAIRequest = 106,
+		FailAddConn = 107,
+		UnMatchedType = 108,//thread type is not matched to thread_id
+	};
+}
+
+
+
 
 //attachment
 //{
-//	"type":"image",
+//	"_type":"image",
 //	"file_path":"upload/image/file",
 //	"metadata" (可选) :
 //	{

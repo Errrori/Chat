@@ -1,9 +1,9 @@
 #include "pch.h"
 #include <filesystem>
-#include "FileManager.h"
+#include "FileService.h"
 
 
-bool FileManager::UploadFile(const drogon::HttpFile& file, const std::string& file_name, std::string& file_url)
+bool FileService::UploadFile(const drogon::HttpFile& file, const std::string& file_name, std::string& file_url)
 {
 	//获取默认上传路径
 	auto upload_path = drogon::app().getUploadPath();
@@ -51,7 +51,7 @@ bool FileManager::UploadFile(const drogon::HttpFile& file, const std::string& fi
 	return false;
 }
 
-bool FileManager::CheckFileExists(const std::string& file_path)
+bool FileService::CheckFileExists(const std::string& file_path)
 {
 	if (file_path.length()>=UploadsFile::FILE_LEN_CHECK_LIMIT)
 	{

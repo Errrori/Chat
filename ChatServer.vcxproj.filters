@@ -1,232 +1,77 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="资源文件">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
+    <ClCompile Include="middleware\CORSMiddleware.cpp" />
+    <ClCompile Include="Common\ChatMessage.cpp" />
+    <ClCompile Include="Common\ChatThread.cpp" />
+    <ClCompile Include="Container.cpp" />
+    <ClCompile Include="Common\AIRequestMsg.cpp" />
+    <ClCompile Include="controllers\Authentication.cpp" />
+    <ClCompile Include="controllers\FileController.cpp" />
+    <ClCompile Include="Service\MessageService.cpp" />
+    <ClCompile Include="Service\FileService.cpp" />
+    <ClCompile Include="Service\ConnectionService.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="controllers\ChatController.cpp" />
+    <ClCompile Include="models\AiChats.cc" />
+    <ClCompile Include="models\GroupChats.cc" />
+    <ClCompile Include="models\GroupMembers.cc" />
+    <ClCompile Include="models\Messages.cc" />
+    <ClCompile Include="models\PrivateChats.cc" />
+    <ClCompile Include="models\Threads.cc" />
+    <ClCompile Include="models\Users.cc" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="filter\TokenVerifyFilter.cpp" />
+    <ClCompile Include="controllers\ThreadController.cpp" />
+    <ClCompile Include="Data\SQLiteUserRepository.cpp" />
+    <ClCompile Include="Common\User.cpp" />
+    <ClCompile Include="Service\ThreadService.cpp" />
+    <ClCompile Include="Service\UserService.cpp" />
+    <ClCompile Include="Data\SQLiteThreadRepository.cpp" />
+    <ClCompile Include="Data\SQLiteMessageRepository.cpp" />
+    <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="models\AiContext.cc" />
+    <ClCompile Include="Common\AIMessage.cpp" />
+    <ClCompile Include="HttpClient.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="controllers\DebugRoute.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="middleware\CorsMiddleware.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="controllers\Authentication.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="manager\ConnectionManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="pch.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="controllers\FileController.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="manager\FileManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\Users.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="manager\DatabaseManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="controllers\ChatController.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\GroupMembers.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="filter\TokenVerifyFilter.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\GroupChats.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\Messages.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\PrivateChats.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\Threads.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="manager\MessageManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="controllers\ThreadController.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="manager\ThreadManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="MsgDispatcher.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="controllers\AIController.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="AIService.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="models\AiChats.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="middleware\FormatChecker.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Data\SQLiteUserRepository.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\User.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Service\UserService.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Container.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Common\ChatThread.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Service\ThreadService.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Data\SQLiteThreadRepository.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Utils.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="controllers\DebugRoute.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="middleware\CorsMiddleware.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="controllers\Authentication.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="manager\ConnectionManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="controllers\FileController.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="manager\FileManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="const.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\Users.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="manager\DatabaseManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="controllers\ChatController.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\GroupMembers.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="filter\TokenVerifyFilter.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\GroupChats.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\Messages.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\PrivateChats.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\Threads.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="manager\MessageManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="controllers\ThreadController.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="manager\ThreadManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MsgDispatcher.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="controllers\AIController.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="AIService.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="models\AiChats.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="middleware\FormatChecker.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\DbAccessor.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\IUserRepository.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\SQLiteUserRepository.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\User.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Service\UserService.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Container.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\IMessageRepository.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\IThreadRepository.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\ChatThread.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Service\ThreadService.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\SQLiteThreadRepository.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <ClInclude Include="middleware\CORSMiddleware.h" />
+    <ClInclude Include="Common\ChatMessage.h" />
+    <ClInclude Include="Common\ChatThread.h" />
+    <ClInclude Include="Common\Convert.h" />
+    <ClInclude Include="Container.h" />
+    <ClInclude Include="Common\AIRequestMsg.h" />
+    <ClInclude Include="const.h" />
+    <ClInclude Include="controllers\Authentication.h" />
+    <ClInclude Include="controllers\FileController.h" />
+    <ClInclude Include="Data\DbAccessor.h" />
+    <ClInclude Include="Data\IUserRepository.h" />
+    <ClInclude Include="Data\IMessageRepository.h" />
+    <ClInclude Include="Data\IThreadRepository.h" />
+    <ClInclude Include="Service\MessageService.h" />
+    <ClInclude Include="Service\FileService.h" />
+    <ClInclude Include="Service\ConnectionService.h" />
+    <ClInclude Include="controllers\ChatController.h" />
+    <ClInclude Include="models\AiChats.h" />
+    <ClInclude Include="models\GroupChats.h" />
+    <ClInclude Include="models\GroupMembers.h" />
+    <ClInclude Include="models\Messages.h" />
+    <ClInclude Include="models\PrivateChats.h" />
+    <ClInclude Include="models\Threads.h" />
+    <ClInclude Include="models\Users.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="filter\TokenVerifyFilter.h" />
+    <ClInclude Include="controllers\ThreadController.h" />
+    <ClInclude Include="Data\SQLiteUserRepository.h" />
+    <ClInclude Include="Common\User.h" />
+    <ClInclude Include="Service\ThreadService.h" />
+    <ClInclude Include="Service\UserService.h" />
+    <ClInclude Include="Data\SQLiteThreadRepository.h" />
+    <ClInclude Include="Data\SQLiteMessageRepository.h" />
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="models\AiContext.h" />
+    <ClInclude Include="Common\AIMessage.h" />
+    <ClInclude Include="HttpClient.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="models\model.json" />

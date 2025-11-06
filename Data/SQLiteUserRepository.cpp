@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "SQLiteUserRepository.h"
 #include "Common/User.h"
+#include "models/Users.h"
 #include "DbAccessor.h"
 
 using namespace drogon::orm;

@@ -248,8 +248,31 @@ namespace Utils {
         return resp;
     }
 
+    Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code)
+    {
+        Json::Value resp;
+        resp["code"] = code;
+        resp["error"] = msg;
+        return resp;
+    }
+
+    //only for Ai request
+    Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code,const std::string& message_id)
+    {
+        Json::Value resp;
+        resp["code"] = code;
+        resp["error"] = msg;
+        resp["message_id"] = message_id;
+        return resp;
+    }
+
     std::string GetCurrentTimeStr()
     {
         return trantor::Date::now().toDbString();
+    }
+
+    long long GetCurrentTimeStamp()
+    {
+		return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
     }
 }

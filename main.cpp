@@ -2,8 +2,6 @@
 #include <drogon/drogon.h>
 #include <csignal>
 #include "Utils.h"
-#include "Service/UserService.h"
-#include "Data/SQLiteUserRepository.h"
 
 using namespace Utils;
 
@@ -128,6 +126,8 @@ void AddOptionHandle()
 
 int main()
 {
+	SetConsoleOutputCP(65001);
+
 	signal(SIGINT, SignalHandler);
 	signal(SIGTERM, SignalHandler);
 
@@ -137,5 +137,6 @@ int main()
 	drogon::app().setLogLevel(trantor::Logger::kDebug)
 		.loadConfigFile("config.json").setThreadNum(16);
 	LOG_INFO << "Server start!";
+	
 	drogon::app().run();
 }
