@@ -39,9 +39,9 @@ const std::vector<typename Users::MetaData> Users::metaData_={
 {"password","std::string","text",0,0,0,1},
 {"uid","std::string","text",0,0,0,1},
 {"avatar","std::string","text",0,0,0,0},
-{"create_time","std::string","timestamp",0,0,0,0},
+{"create_time","int64_t","integer",8,0,0,0},
 {"signature","std::string","text",0,0,0,0},
-{"last_login_time","std::string","timestamp",0,0,0,0},
+{"last_login_time","int64_t","integer",8,0,0,0},
 {"posts","int64_t","integer",8,0,0,0},
 {"level","int64_t","integer",8,0,0,0},
 {"status","int64_t","integer",8,0,0,0},
@@ -84,25 +84,7 @@ Users::Users(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["create_time"].isNull())
         {
-            auto timeStr = r["create_time"].as<std::string>();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                createTime_=std::make_shared<std::string>(timeStr);
-            }
+            createTime_=std::make_shared<int64_t>(r["create_time"].as<int64_t>());
         }
         if(!r["signature"].isNull())
         {
@@ -110,25 +92,7 @@ Users::Users(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["last_login_time"].isNull())
         {
-            auto timeStr = r["last_login_time"].as<std::string>();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                lastLoginTime_=std::make_shared<std::string>(timeStr);
-            }
+            lastLoginTime_=std::make_shared<int64_t>(r["last_login_time"].as<int64_t>());
         }
         if(!r["posts"].isNull())
         {
@@ -197,25 +161,7 @@ Users::Users(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 6;
         if(!r[index].isNull())
         {
-            auto timeStr = r[index].as<std::string>();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                createTime_=std::make_shared<std::string>(timeStr);
-            }
+            createTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
         }
         index = offset + 7;
         if(!r[index].isNull())
@@ -225,25 +171,7 @@ Users::Users(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 8;
         if(!r[index].isNull())
         {
-            auto timeStr = r[index].as<std::string>();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                lastLoginTime_=std::make_shared<std::string>(timeStr);
-            }
+            lastLoginTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
         }
         index = offset + 9;
         if(!r[index].isNull())
@@ -339,7 +267,7 @@ Users::Users(const Json::Value &pJson, const std::vector<std::string> &pMasquera
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+            createTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[6]].asInt64());
         }
     }
     if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
@@ -355,7 +283,7 @@ Users::Users(const Json::Value &pJson, const std::vector<std::string> &pMasquera
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            lastLoginTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+            lastLoginTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[8]].asInt64());
         }
     }
     if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
@@ -463,7 +391,7 @@ Users::Users(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[6]=true;
         if(!pJson["create_time"].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson["create_time"].asString());
+            createTime_=std::make_shared<int64_t>((int64_t)pJson["create_time"].asInt64());
         }
     }
     if(pJson.isMember("signature"))
@@ -479,7 +407,7 @@ Users::Users(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[8]=true;
         if(!pJson["last_login_time"].isNull())
         {
-            lastLoginTime_=std::make_shared<std::string>(pJson["last_login_time"].asString());
+            lastLoginTime_=std::make_shared<int64_t>((int64_t)pJson["last_login_time"].asInt64());
         }
     }
     if(pJson.isMember("posts"))
@@ -592,7 +520,7 @@ void Users::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+            createTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[6]].asInt64());
         }
     }
     if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
@@ -608,7 +536,7 @@ void Users::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            lastLoginTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+            lastLoginTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[8]].asInt64());
         }
     }
     if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
@@ -715,7 +643,7 @@ void Users::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[6] = true;
         if(!pJson["create_time"].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson["create_time"].asString());
+            createTime_=std::make_shared<int64_t>((int64_t)pJson["create_time"].asInt64());
         }
     }
     if(pJson.isMember("signature"))
@@ -731,7 +659,7 @@ void Users::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[8] = true;
         if(!pJson["last_login_time"].isNull())
         {
-            lastLoginTime_=std::make_shared<std::string>(pJson["last_login_time"].asString());
+            lastLoginTime_=std::make_shared<int64_t>((int64_t)pJson["last_login_time"].asInt64());
         }
     }
     if(pJson.isMember("posts"))
@@ -926,25 +854,20 @@ void Users::setAvatarToNull() noexcept
     dirtyFlag_[5] = true;
 }
 
-const std::string &Users::getValueOfCreateTime() const noexcept
+const int64_t &Users::getValueOfCreateTime() const noexcept
 {
-    static const std::string defaultValue = std::string();
+    static const int64_t defaultValue = int64_t();
     if(createTime_)
         return *createTime_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &Users::getCreateTime() const noexcept
+const std::shared_ptr<int64_t> &Users::getCreateTime() const noexcept
 {
     return createTime_;
 }
-void Users::setCreateTime(const std::string &pCreateTime) noexcept
+void Users::setCreateTime(const int64_t &pCreateTime) noexcept
 {
-    createTime_ = std::make_shared<std::string>(pCreateTime);
-    dirtyFlag_[6] = true;
-}
-void Users::setCreateTime(std::string &&pCreateTime) noexcept
-{
-    createTime_ = std::make_shared<std::string>(std::move(pCreateTime));
+    createTime_ = std::make_shared<int64_t>(pCreateTime);
     dirtyFlag_[6] = true;
 }
 void Users::setCreateTimeToNull() noexcept
@@ -980,25 +903,20 @@ void Users::setSignatureToNull() noexcept
     dirtyFlag_[7] = true;
 }
 
-const std::string &Users::getValueOfLastLoginTime() const noexcept
+const int64_t &Users::getValueOfLastLoginTime() const noexcept
 {
-    static const std::string defaultValue = std::string();
+    static const int64_t defaultValue = int64_t();
     if(lastLoginTime_)
         return *lastLoginTime_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &Users::getLastLoginTime() const noexcept
+const std::shared_ptr<int64_t> &Users::getLastLoginTime() const noexcept
 {
     return lastLoginTime_;
 }
-void Users::setLastLoginTime(const std::string &pLastLoginTime) noexcept
+void Users::setLastLoginTime(const int64_t &pLastLoginTime) noexcept
 {
-    lastLoginTime_ = std::make_shared<std::string>(pLastLoginTime);
-    dirtyFlag_[8] = true;
-}
-void Users::setLastLoginTime(std::string &&pLastLoginTime) noexcept
-{
-    lastLoginTime_ = std::make_shared<std::string>(std::move(pLastLoginTime));
+    lastLoginTime_ = std::make_shared<int64_t>(pLastLoginTime);
     dirtyFlag_[8] = true;
 }
 void Users::setLastLoginTimeToNull() noexcept
@@ -1600,7 +1518,7 @@ Json::Value Users::toJson() const
     }
     if(getCreateTime())
     {
-        ret["create_time"]=getValueOfCreateTime();
+        ret["create_time"]=(Json::Int64)getValueOfCreateTime();
     }
     else
     {
@@ -1616,7 +1534,7 @@ Json::Value Users::toJson() const
     }
     if(getLastLoginTime())
     {
-        ret["last_login_time"]=getValueOfLastLoginTime();
+        ret["last_login_time"]=(Json::Int64)getValueOfLastLoginTime();
     }
     else
     {
@@ -1749,7 +1667,7 @@ Json::Value Users::toMasqueradedJson(
         {
             if(getCreateTime())
             {
-                ret[pMasqueradingVector[6]]=getValueOfCreateTime();
+                ret[pMasqueradingVector[6]]=(Json::Int64)getValueOfCreateTime();
             }
             else
             {
@@ -1771,7 +1689,7 @@ Json::Value Users::toMasqueradedJson(
         {
             if(getLastLoginTime())
             {
-                ret[pMasqueradingVector[8]]=getValueOfLastLoginTime();
+                ret[pMasqueradingVector[8]]=(Json::Int64)getValueOfLastLoginTime();
             }
             else
             {
@@ -1897,7 +1815,7 @@ Json::Value Users::toMasqueradedJson(
     }
     if(getCreateTime())
     {
-        ret["create_time"]=getValueOfCreateTime();
+        ret["create_time"]=(Json::Int64)getValueOfCreateTime();
     }
     else
     {
@@ -1913,7 +1831,7 @@ Json::Value Users::toMasqueradedJson(
     }
     if(getLastLoginTime())
     {
-        ret["last_login_time"]=getValueOfLastLoginTime();
+        ret["last_login_time"]=(Json::Int64)getValueOfLastLoginTime();
     }
     else
     {
@@ -2497,7 +2415,7 @@ bool Users::validJsonOfField(size_t index,
             {
                 return true;
             }
-            if(!pJson.isString())
+            if(!pJson.isInt64())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2519,7 +2437,7 @@ bool Users::validJsonOfField(size_t index,
             {
                 return true;
             }
-            if(!pJson.isString())
+            if(!pJson.isInt64())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

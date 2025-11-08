@@ -126,12 +126,11 @@ class GroupMembers
 
     /**  For column join_time  */
     ///Get the value of the column join_time, returns the default value if the column is null
-    const std::string &getValueOfJoinTime() const noexcept;
+    const int64_t &getValueOfJoinTime() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getJoinTime() const noexcept;
+    const std::shared_ptr<int64_t> &getJoinTime() const noexcept;
     ///Set the value of the column join_time
-    void setJoinTime(const std::string &pJoinTime) noexcept;
-    void setJoinTime(std::string &&pJoinTime) noexcept;
+    void setJoinTime(const int64_t &pJoinTime) noexcept;
     void setJoinTimeToNull() noexcept;
 
 
@@ -159,7 +158,7 @@ class GroupMembers
     std::shared_ptr<int64_t> threadId_;
     std::shared_ptr<std::string> userUid_;
     std::shared_ptr<int64_t> role_;
-    std::shared_ptr<std::string> joinTime_;
+    std::shared_ptr<int64_t> joinTime_;
     struct MetaData
     {
         const std::string colName_;

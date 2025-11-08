@@ -308,96 +308,75 @@ bool SQLiteThreadRepository::IsThreadMember(int thread_id, const std::string& ui
 	return std::find(members.begin(), members.end(), uid) != members.end();
 }
 
-std::future<std::vector<std::string>> SQLiteThreadRepository::GetThreadMember(
+drogon::Task<std::vector<std::string>> SQLiteThreadRepository::GetThreadMember(
 	int thread_id)
 {
-	auto promise = std::make_shared<std::promise<std::vector<std::string>>>();
-	Mapper<Threads> mapper(DbAccessor::GetDbClient());
-	mapper.limit(1).findBy(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id),
-		[thread_id,promise](const std::vector<Threads>& records)
-		{
-			try
-			{
-				auto thread_type = ThreadTypeConvert::ToType(records[0].getValueOfType());
-				switch (thread_type)
-				{
-				case ChatThread::ThreadType::PRIVATE:
-				{
-					Mapper<PrivateChats> private_mapper(DbAccessor::GetDbClient());
-					const auto& members = private_mapper.limit(1).
-						findBy(Criteria(PrivateChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
-					if (!members.empty())
-						promise->set_value({ members[0].getValueOfUid1(),members[0].getValueOfUid2() });
-					else
-						promise->set_exception(std::make_exception_ptr(
-							std::runtime_error("can not find thread member,id: " + std::to_string(thread_id))));
-				}
-				break;
-				case ChatThread::ThreadType::GROUP:
-				{
-					Mapper<GroupMembers> group_mapper(DbAccessor::GetDbClient());
-					const auto& members = group_mapper.
-						findBy(Criteria(GroupMembers::Cols::_thread_id, CompareOperator::EQ, thread_id));
-					std::vector<std::string> user_list;
-					user_list.reserve(members.size());
-					for (const auto& member : members)
-					{
-						user_list.emplace_back(member.getValueOfUserUid());
-					}
-					promise->set_value(std::move(user_list));
-				}
-				break;
-				case ChatThread::ThreadType::AI:
-				{
-					Mapper<AIChats> ai_mapper(DbAccessor::GetDbClient());
-					const auto& members = ai_mapper.limit(1).
-						findBy(Criteria(AIChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
-					if (!members.empty())
-						promise->set_value({ members[0].getValueOfCreatorUid()});
-					else
-						promise->set_exception(std::make_exception_ptr(
-							std::runtime_error("can not find thread member,id: " + std::to_string(thread_id))));
-				}
-				break;
-				default:
-					promise->set_exception(std::make_exception_ptr(std::invalid_argument("error thread type")));
-					LOG_ERROR << "error thread type";
-					break;
-				}
+	try
+	{
+		CoroMapper<Threads> mapper(DbAccessor::GetDbClient());
 
-			}catch (const std::exception& e)
-			{
-				LOG_ERROR << "exception: " << e.what();
-				promise->set_exception(std::make_exception_ptr(e));
-			}
-		},
-		[promise](const DrogonDbException& e)
-		{
-			LOG_ERROR << "db exception: " << e.base().what();
-			promise->set_exception(std::make_exception_ptr(e.base()));
-		});
+		auto type = co_await mapper.limit(1).findBy(
+			Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id));
 
-	return promise->get_future();
+		if (type.empty())
+			co_return{};
+
+		switch (ThreadTypeConvert::ToType(type[0].getValueOfType()))
+		{
+		case ChatThread::ThreadType::PRIVATE:
+		{
+			CoroMapper<PrivateChats> private_mapper(DbAccessor::GetDbClient());
+			const auto& members = co_await private_mapper.limit(1).
+				findBy(Criteria(PrivateChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
+			if (!members.empty())
+				co_return{ members[0].getValueOfUid1(),members[0].getValueOfUid2() };
+
+			throw std::runtime_error("can not find thread member,id: " + std::to_string(thread_id));
+		}
+		case ChatThread::ThreadType::GROUP:
+		{
+			CoroMapper<GroupMembers> group_mapper(DbAccessor::GetDbClient());
+			const auto& members = co_await group_mapper.
+				findBy(Criteria(GroupMembers::Cols::_thread_id, CompareOperator::EQ, thread_id));
+			std::vector<std::string> user_list;
+			user_list.reserve(members.size());
+			for (const auto& member : members)
+				user_list.emplace_back(member.getValueOfUserUid());
+			co_return std::move(user_list);
+		}
+		case ChatThread::ThreadType::AI:
+		{
+			CoroMapper<AIChats> ai_mapper(DbAccessor::GetDbClient());
+			const auto& members = co_await ai_mapper.limit(1).
+				findBy(Criteria(AIChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
+			if (!members.empty())
+				co_return{ members[0].getValueOfCreatorUid() };
+			throw std::runtime_error("can not find thread member,id: " + std::to_string(thread_id));
+		}
+		default:
+			throw std::invalid_argument("error thread type");
+		}
+	}catch (const std::exception& e)
+	{
+		LOG_ERROR << "exception: " << e.what();
+		throw;
+	}
+	
 }
 
-std::future<ChatThread::ThreadType> SQLiteThreadRepository::GetThreadType(int thread_id) noexcept
+drogon::Task<ChatThread::ThreadType> SQLiteThreadRepository::GetThreadType(int thread_id)
 {
-	Mapper<Threads> mapper(DbAccessor::GetDbClient());
-	auto promise = std::make_shared<std::promise<ChatThread::ThreadType>>();
-	mapper.limit(1).findBy(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id),
-		[promise](const std::vector<Threads>& records)
-		{
-			if (records.empty())
-			{
-				promise->set_value(ChatThread::ThreadType::UNKNOWN);
-				return;
-			}
-			promise->set_value(ThreadTypeConvert::ToType(records[0].getValueOfType()));
-		},
-		[promise](const DrogonDbException& e)
-		{
-			LOG_ERROR << "exception: " << e.base().what();
-			promise->set_value(ChatThread::ThreadType::UNKNOWN);
-		});
-	return promise->get_future();
+	try
+	{
+		CoroMapper<Threads> mapper(DbAccessor::GetDbClient());
+		auto type = co_await mapper.limit(1).
+			findBy(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id));
+		if (type.empty())
+			co_return ChatThread::UNKNOWN;
+
+		co_return ThreadTypeConvert::ToType(type[0].getValueOfType());
+	}catch (const std::exception& e)
+	{
+		throw;
+	}
 }

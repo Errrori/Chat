@@ -6,16 +6,16 @@
 
 ThreadService::ThreadService(ThreadService&& service) noexcept
 {
-	this->_repo = std::move(service._repo);
-	service._repo = nullptr;
+	this->_thread_repo = std::move(service._thread_repo);
+	service._thread_repo = nullptr;
 }
 
 ThreadService& ThreadService::operator=(ThreadService&& service) noexcept
 {
 	if (this!=&service)
 	{
-		this->_repo = std::move(service._repo);
-		service._repo = nullptr;
+		this->_thread_repo = std::move(service._thread_repo);
+		service._thread_repo = nullptr;
 	}
 	return *this;
 }
@@ -28,13 +28,13 @@ void ThreadService::CreateChatThread(const std::shared_ptr<ChatThread> chat, Res
 			switch (chat->GetThreadType())
 			{
 			case ChatThread::ThreadType::PRIVATE:
-				future = _repo->CreatePrivateThread(std::dynamic_pointer_cast<PrivateThread>(chat));
+				future = _thread_repo->CreatePrivateThread(std::dynamic_pointer_cast<PrivateThread>(chat));
 				break;
 			case ChatThread::ThreadType::GROUP:
-				future = _repo->CreateGroupThread(std::dynamic_pointer_cast<GroupThread>(chat));
+				future = _thread_repo->CreateGroupThread(std::dynamic_pointer_cast<GroupThread>(chat));
 				break;
 			case ChatThread::ThreadType::AI:
-				future = _repo->CreateAIThread(std::dynamic_pointer_cast<AIThread>(chat));
+				future = _thread_repo->CreateAIThread(std::dynamic_pointer_cast<AIThread>(chat));
 				break;
 			default:
 				LOG_ERROR << "unknown thread type";
@@ -62,14 +62,14 @@ void ThreadService::QueryThreadInfo(int thread_id, RespCallback&& callback) cons
 		{
 			try
 			{
-				const auto& info = _repo->GetThreadInfo(thread_id).get();
+				const auto& info = _thread_repo->GetThreadInfo(thread_id).get();
 				if (info==Json::nullValue)
 				{
 					LOG_ERROR << "can not find thread info";
 					callback(Utils::CreateErrorResponse(400, 400, "can not find thread info"));
 					return;
 				}
-				const auto& members = _repo->GetThreadMember(thread_id).get();
+				const auto& members = _thread_repo->GetThreadMember(thread_id).get();
 				Json::Value thread_info;
 				thread_info["info"] = info;
 				Json::Value members_info(Json::arrayValue);
@@ -99,7 +99,7 @@ void ThreadService::AddThreadMember(const MemberData& data, RespCallback&& callb
 			{
 				if (!operator_uid.empty())
 				{
-					bool is_member = _repo->IsThreadMember(data.GetThreadId(), operator_uid);
+					bool is_member = _thread_repo->IsThreadMember(data.GetThreadId(), operator_uid);
 					if (!is_member)
 					{
 						callback(Utils::CreateErrorResponse(400, 400, "not access to operate"));
@@ -111,7 +111,7 @@ void ThreadService::AddThreadMember(const MemberData& data, RespCallback&& callb
 					callback(Utils::CreateErrorResponse(400, 400, "lack of operator info"));
 				}
 
-				if (_repo->AddToThread(data).get())
+				if (_thread_repo->AddToThread(data).get())
 					callback(Utils::CreateSuccessResp(200, 200, "success add to thread"));
 				else
 					callback(Utils::CreateErrorResponse(400, 400, "fail to add to thread"));
@@ -125,29 +125,48 @@ void ThreadService::AddThreadMember(const MemberData& data, RespCallback&& callb
 		});
 }
 
-std::vector<std::string> ThreadService::GetThreadMember(int thread_id) const noexcept(false)
+
+drogon::Task<std::vector<std::string>> ThreadService::GetThreadMember(int thread_id) const
 {
-	//���Կ�������ʹ��switch���
 	try
 	{
-		auto result = _repo->GetThreadMember(thread_id);
-
-		return result.get();
+		if (thread_id <= 0)
+		{
+			LOG_ERROR << "invalid thread_id";
+			throw std::invalid_argument("invalid thread_id: "+std::to_string(thread_id));
+		}
+		auto result = co_await _thread_repo->GetThreadMember(thread_id);
+		co_return result;
 	}catch (const std::exception& e){
 		LOG_ERROR << "exception in GetThreadMember: " << e.what();
-		return {};
+		co_return {};
 	}
-
-
 }
 
-std::future<ChatThread::ThreadType> ThreadService::GetThreadType(int thread_id) const
+drogon::Task<ChatThread::ThreadType> ThreadService::GetThreadType(int thread_id) const
 {
-	return _repo->GetThreadType(thread_id);
+	try
+	{
+		co_return co_await _thread_repo->GetThreadType(thread_id);
+	}catch (const std::exception& e)
+	{
+		throw;
+	}
 }
 
-bool ThreadService::ValidateMember(int thread_id, const std::string& uid)
+drogon::Task<bool> ThreadService::ValidateMember(int thread_id, const std::string& uid) const
 {
-	return true;
-}
+	try
+	{
+		auto members = co_await GetThreadMember(thread_id);
 
+		if (std::find(members.begin(), members.end(), uid) != members.end())
+			co_return true;
+
+		co_return false;
+	}catch (const std::exception& e)
+	{
+		throw;
+	}
+	
+}

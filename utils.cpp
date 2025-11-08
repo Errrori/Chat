@@ -271,8 +271,8 @@ namespace Utils {
         return trantor::Date::now().toDbString();
     }
 
-    long long GetCurrentTimeStamp()
+    int64_t GetCurrentTimeStamp()
     {
-		return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+		return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 }

@@ -9,9 +9,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/controllers
-    ${CMAKE_CURRENT_SOURCE_DIR}/manager
+    ${CMAKE_CURRENT_SOURCE_DIR}/filter
     ${CMAKE_CURRENT_SOURCE_DIR}/middleware
     ${CMAKE_CURRENT_SOURCE_DIR}/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/Common
+    ${CMAKE_CURRENT_SOURCE_DIR}/Service
+    ${CMAKE_CURRENT_SOURCE_DIR}/Data
     ${CMAKE_CURRENT_SOURCE_DIR}/static
 )
 
@@ -19,21 +22,29 @@ include_directories(
 add_library(pch INTERFACE)
 target_include_directories(pch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(${PROJECT_NAME} 
+# 收集所有源文件
+set(SOURCES
     main.cpp
+    HttpClient.cpp
+    utils.cpp
+    pch.cpp
+    Container.cpp
+    
+    # Controllers
     controllers/Authentication.cpp
     controllers/ThreadController.cpp
     controllers/ChatController.cpp
     controllers/FileController.cpp
-    utils.cpp
+    
+    # Filters
     filter/TokenVerifyFilter.cpp
-    AuthService.cpp
-    pch.cpp
     
     # Common layer
     Common/User.cpp
     Common/ChatMessage.cpp
     Common/ChatThread.cpp
+    Common/AIMessage.cpp
+    Common/AIRequestMsg.cpp
     
     # Service layer
     Service/UserService.cpp
@@ -41,10 +52,6 @@ add_executable(${PROJECT_NAME}
     Service/ThreadService.cpp
     Service/ConnectionService.cpp
     Service/FileService.cpp
-    Service/AIService.cpp
-    Service/AIMsgProcessor.cpp
-    Service/UserMsgProcessor.cpp
-    Service/IMsgProcessor.cpp
     
     # Data layer
     Data/SQLiteUserRepository.cpp
@@ -59,10 +66,10 @@ add_executable(${PROJECT_NAME}
     models/Threads.cc  
     models/PrivateChats.cc
     models/AiChats.cc
-    
-    # Container
-    Container.cpp
+    models/AiContext.cc
 )
+
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # 查找 Drogon 包
 find_package(Drogon REQUIRED)

@@ -168,8 +168,76 @@ void ThreadController::JoinThread(const drogon::HttpRequestPtr& req,
 void ThreadController::GetAIContext(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
-    auto thread_id = req->getOptionalParameter<int>("thread_id");
+    try
+    {
+        auto thread_id = req->getOptionalParameter<int>("thread_id");
+        auto existed_time = req->getOptionalParameter<int64_t>("existed_time");
+        const auto& user_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
 
-    const auto& records = GET_MESSAGE_SERVICE->GetChatRecords(thread_id.value());
-    callback(drogon::HttpResponse::newHttpJsonResponse(records));
+        if (!thread_id.has_value()||!existed_time.has_value())
+        {
+            LOG_ERROR << "lack of field: thread_id";
+			callback(Utils::CreateErrorResponse(400, 400, "lack of essential fields"));
+        	return;
+        }
+
+        if (!GET_THREAD_SERVICE->ValidateMember(thread_id.value(), user_info.uid))
+        {
+            LOG_ERROR << "user is not in thread: "<<thread_id.value();
+            callback(Utils::CreateErrorResponse(400, 400, "not in thread"));
+            return;
+        }
+
+        const auto& records = GET_MESSAGE_SERVICE->GetAIRecords(thread_id.value(),existed_time.value());
+
+		callback(drogon::HttpResponse::newHttpJsonResponse(records));
+
+    }catch (const std::exception& e)
+    {
+        callback(Utils::CreateErrorResponse(400, 400, "exception to get records"));
+		LOG_ERROR << "exception in GetAIContext: " << e.what();
+    }
+}
+
+void ThreadController::GetChatRecords(const drogon::HttpRequestPtr& req,
+	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+{
+    try
+    {
+        auto thread_id = req->getOptionalParameter<int>("thread_id");
+        auto existed_time = req->getOptionalParameter<int64_t>("existing_id");
+		auto num = req->getOptionalParameter<int>("num");
+        const auto& user_info = req->getAttributes()->get<Utils::UsersInfo>("visitor_info");
+
+        if (!thread_id.has_value() || !existed_time.has_value())
+        {
+            LOG_ERROR << "lack of field: thread_id";
+            callback(Utils::CreateErrorResponse(400, 400, "lack of essential fields"));
+            return;
+        }
+
+        if (num.has_value()&&num.value()<=0)
+        {
+            callback(Utils::CreateErrorResponse(400,400,"invalid parameter value"));
+            return;
+        }
+
+        if (!GET_THREAD_SERVICE->ValidateMember(thread_id.value(), user_info.uid))
+        {
+            LOG_ERROR << "user is not in thread: " << thread_id.value();
+            callback(Utils::CreateErrorResponse(400, 400, "not in thread"));
+            return;
+        }
+
+        const auto& records = GET_MESSAGE_SERVICE->GetChatRecords(thread_id.value(), num.value_or(50),existed_time.value());
+
+        callback(drogon::HttpResponse::newHttpJsonResponse(records));
+
+    }
+    catch (const std::exception& e)
+    {
+        callback(Utils::CreateErrorResponse(400, 400, "exception to get records"));
+        LOG_ERROR << "exception in GetAIContext: " << e.what();
+    }
+
 }

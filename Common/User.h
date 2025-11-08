@@ -19,8 +19,8 @@ private:
     int following = DefaultVal;
     int level = DefaultVal;
     int status = 0; // 0: normal, 1: banned
-    std::string create_time;
-    std::string last_login_time;
+    int64_t create_time = -1;
+    int64_t last_login_time = -1;
     std::string signature;
 
     //std::string ToString() const
@@ -50,8 +50,8 @@ public:
     int getFollowing() const { return following; }
     int getLevel() const { return level; }
     int getStatus() const { return status; }
-    const std::string& getCreateTime() const { return create_time; }
-    const std::string& getLastLoginTime() const { return last_login_time; }
+    int64_t getCreateTime() const { return create_time; }
+    int64_t getLastLoginTime() const { return last_login_time; }
     const std::string& getSignature() const { return signature; }
     
     // Setter方法
@@ -66,8 +66,8 @@ public:
     void setFollowing(int value) { following = value; }
     void setLevel(int value) { level = value; }
     void setStatus(int value) { status = value; }
-    void setCreateTime(const std::string& value) { create_time = value; }
-    void setLastLoginTime(const std::string& value) { last_login_time = value; }
+    void setCreateTime(int64_t value) { create_time = value; }
+    void setLastLoginTime(int64_t value) { last_login_time = value; }
     void setSignature(const std::string& value) { signature = value; }
     
     // 移动语义的Setter方法（优化性能）
@@ -77,8 +77,6 @@ public:
     void setHashedPassword(std::string&& value) { hashed_password = std::move(value); }
     void setAvatar(std::string&& value) { avatar = std::move(value); }
     void setEmail(std::string&& value) { email = std::move(value); }
-    void setCreateTime(std::string&& value) { create_time = std::move(value); }
-    void setLastLoginTime(std::string&& value) { last_login_time = std::move(value); }
     void setSignature(std::string&& value) { signature = std::move(value); }
     
     // 实用方法

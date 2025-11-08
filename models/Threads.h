@@ -117,12 +117,11 @@ class Threads
 
     /**  For column create_time  */
     ///Get the value of the column create_time, returns the default value if the column is null
-    const std::string &getValueOfCreateTime() const noexcept;
+    const int64_t &getValueOfCreateTime() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getCreateTime() const noexcept;
+    const std::shared_ptr<int64_t> &getCreateTime() const noexcept;
     ///Set the value of the column create_time
-    void setCreateTime(const std::string &pCreateTime) noexcept;
-    void setCreateTime(std::string &&pCreateTime) noexcept;
+    void setCreateTime(const int64_t &pCreateTime) noexcept;
     void setCreateTimeToNull() noexcept;
 
 
@@ -149,7 +148,7 @@ class Threads
     void updateId(const uint64_t id);
     std::shared_ptr<int64_t> threadId_;
     std::shared_ptr<int64_t> type_;
-    std::shared_ptr<std::string> createTime_;
+    std::shared_ptr<int64_t> createTime_;
     struct MetaData
     {
         const std::string colName_;

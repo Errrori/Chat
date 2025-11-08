@@ -4,7 +4,7 @@
   "dbname": "",
   "user": "",
   "passwd": "",
-  "tables": ["ai_context"],
+  "tables": ["threads","group_members","messages","users"],
   "relationships": {
     "enabled": false,
     "items": []

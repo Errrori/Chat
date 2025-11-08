@@ -55,7 +55,7 @@ namespace Utils
     Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code, const std::string& message_id);
 
     std::string GetCurrentTimeStr();
-    long long GetCurrentTimeStamp();
+    int64_t GetCurrentTimeStamp();
 
 	namespace Authentication
 	{

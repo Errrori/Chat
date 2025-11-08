@@ -14,8 +14,8 @@ public:
 	std::future<bool> AddToThread(const MemberData& member) override;
 
 	std::future<Json::Value> GetThreadInfo(int thread_id) override;
-	std::future<std::vector<std::string>> GetThreadMember(int thread_id) override ;
-	std::future<ChatThread::ThreadType> GetThreadType(int thread_id) noexcept override;
+	drogon::Task<std::vector<std::string>> GetThreadMember(int thread_id) override ;
+	drogon::Task<ChatThread::ThreadType> GetThreadType(int thread_id) noexcept override;
 
 	bool IsThreadMember(int thread_id, const std::string& uid) override;
 

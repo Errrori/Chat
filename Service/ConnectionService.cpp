@@ -1,29 +1,24 @@
 #include "pch.h"
 #include "ConnectionService.h"
 
-
-bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn)
+bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn,ConnInfo info)
 {
-	const auto& user_info = conn->getContext<ConnInfo>();
-	if (!user_info)
-	{
-		LOG_INFO << "can not get user info from connection context";
-		return false;
-	}
-	
+	conn->setContext(std::make_shared<ConnInfo>(info));
+
 	{
 		std::lock_guard lock(_mutex);
-		auto it = _conn_to_id_map.find(user_info->uid);
+		auto it = _conn_to_id_map.find(info.uid);
 		if (it != _conn_to_id_map.end())
 		{
-			LOG_ERROR << "user already have a connection";
-			//这里说明之前这个用户连接已经存在了，需要关闭用户原来的连接，但是目前没有相关机制
-			if (conn->connected())
-				it->second->shutdown();
+			LOG_INFO << "user already have a connection";
+			const auto& old_conn = it->second;
+			if (old_conn&&old_conn->connected())
+				old_conn->shutdown(drogon::CloseCode::kViolation,"another device log in");
 			_conn_to_id_map.erase(it);
 		}
-		_conn_to_id_map.emplace(user_info->uid, conn);
-		LOG_INFO << "Add Connection,user name: " << user_info->username;
+		_conn_to_id_map.emplace(info.uid, conn);
+		LOG_INFO << "new user connected: " << info.username;
+		conn->setContext(std::make_shared<ConnInfo>(std::move(info)));
 	}
 
 	return true;
@@ -67,57 +62,33 @@ void ConnectionService::WriteConnInfo(const Utils::UsersInfo& info, const drogon
 	conn->setContext(std::make_shared<ConnInfo>(std::move(conn_info)));
 }
 
-
-drogon::WebSocketConnectionPtr ConnectionService::GetConnection(const std::string& uid)
-{
-	std::lock_guard lock(_mutex);
-	auto it = _conn_to_id_map.find(uid);
-	if (it == _conn_to_id_map.end())
-	{
-		LOG_INFO << "can not find connection, uid:" << uid;
-		return nullptr;
-	}
-	return it->second;
-}
-
-std::vector<drogon::WebSocketConnectionPtr> ConnectionService::GetConnections(
-	const std::vector<std::string>& uids)
-{
-	std::lock_guard lock(_mutex);
-	std::vector<drogon::WebSocketConnectionPtr> connections{};
-	for (const auto& uid:uids)
-	{
-		auto it = _conn_to_id_map.find(uid);
-		if (it!= _conn_to_id_map.end())
-		{
-			connections.emplace_back(it->second);
-		}
-	}
-	return connections;
-}
-
 std::shared_ptr<ConnectionService::ConnInfo> ConnectionService::GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const
 {
-	if (conn)
+	if (conn&&conn->connected())
 		return conn->getContext<ConnInfo>();
 
 	return nullptr;
 }
 
-void ConnectionService::Send(const std::vector<std::string>& targets, const Json::Value& message)
+void ConnectionService::Broadcast(const std::vector<std::string>& targets, const Json::Value& message)
 {
-	std::lock_guard lock(_mutex);
 	if (targets.empty())
 	{
-		LOG_INFO << "send target is 0";
+		LOG_INFO << "not target to send";
 		return;
 	}
+	std::lock_guard lock(_mutex);
 
 	for (const auto& uid : targets)
 	{
 		auto it = _conn_to_id_map.find(uid);
 		if (it != _conn_to_id_map.end())
-			it->second->sendJson(message);
+		{
+			if (it->second && it->second->connected())
+				it->second->sendJson(message);
+			else
+				_conn_to_id_map.erase(it);
+		}
 	}
 }
 

@@ -8,84 +8,92 @@
 #include "Common/AIRequestMsg.h"
 
 
-//synchronous interface
-std::optional<int> MessageService::RecordMessage(const ChatMessage& message) const
+drogon::Task<Json::Value> MessageService::GetChatRecords(int thread_id, int num, int64_t existed_id)
 {
 	try
 	{
-		auto future = _msg_repo->RecordUserMessage(message);
-		auto id = future.get();
+		if (thread_id <= 0 || num <= 0||existed_id<0)
+		{
+			LOG_ERROR << "invalid parameters";
+			co_return Json::nullValue;
+		}
+		
+		co_return co_await _msg_repo->GetMessageRecords(thread_id,existed_id,num);
+	}catch (const std::exception& e)
+	{
+		throw;
+	}
 
-		return id;
-	}
-	catch (const std::exception& e)
-	{
-		LOG_ERROR << "exception in RecordMessage: " << e.what();
-		return std::nullopt;
-	}
-	catch (const drogon::orm::DrogonDbException& e)
-	{
-		LOG_ERROR << "database exception: " << e.base().what();
-		return std::nullopt;
-	}
 }
 
-void MessageService::DeliverMessage(const ChatMessage& message, 
-	const std::vector<drogon::WebSocketConnectionPtr>& targets,const ErrorCb& cb) const
+drogon::Task<Json::Value> MessageService::GetAIRecords(int thread_id, int64_t existed_time)
 {
-
-	if (!message.IsValid())
+	try
 	{
-		LOG_ERROR << "message to delivered is not valid";
-		cb("message to delivered is not valid");
-		return;
-	}
-
-	Json::Value json_msg;
-	json_msg["thread_id"] = message.getThreadId();
-	json_msg["message_id"] = message.getMessageId();
-	json_msg["content"] = message.getContent();
-	json_msg["attachment"] = message.getAttachment();
-	json_msg["sender_uid"] = message.getSenderUid();
-	json_msg["sender_name"] = message.getSenderName();
-	json_msg["sender_avatar"] = message.getSenderAvatar();
-	json_msg["status"] = message.getStatus();
-	json_msg["create_time"] = message.getCreateTime();
-	json_msg["update_time"] = message.getUpdateTime();
-
-	for (const auto& target:targets)
+		if (thread_id <= 0 || existed_time < 0)
+		{
+			LOG_ERROR << "invalid parameters";
+			co_return Json::nullValue;
+		}
+		//check time if its existed in records and valid
+		co_return co_await _msg_repo->GetAIContext(thread_id,existed_time);
+	}catch (const std::exception& e)
 	{
-		if (target)
-			target->sendJson(json_msg);
-		else
-			LOG_INFO << "connection is not active";
+		throw;
 	}
 }
 
-Json::Value MessageService::GetChatRecords(int thread_id, int64_t existed_id)
-{
-	return _msg_repo->GetAIContext(thread_id).get();
-}
-
-void MessageService::ProcessMessage(ChatMessage msg, const ErrorCb& cb) const
+void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 {
 	//message here contains attachment/content/thread_id/sender_info
 
 	try
 	{
-		auto id = _msg_repo->RecordUserMessage(msg);
+		drogon::async_run([this,msg = std::move(msg),cb]() mutable ->drogon::Task<>
+		{
+			try
+			{
+				bool result = co_await _thread_service->ValidateMember(msg.getThreadId(),
+					msg.getSenderUid());
 
-		auto msg_id = id.get();
+				if (!result)
+				{
+					LOG_ERROR << "user is not in the thread!";
+					cb(Utils::GenErrorResponse("user is not in thread", ChatCode::NotPermission));
+					co_return;
+				}
+				auto msg_id = co_await _msg_repo->RecordUserMessage(msg);
+				msg.setMessageId(msg_id);
 
-		LOG_INFO << "message id: " << msg_id;
+				if (!msg.IsValid())
+				{
+					LOG_ERROR << "message to delivered is not valid";
+					cb("message to delivered is not valid");
+					co_return;
+				}
+				auto members = co_await _thread_service->GetThreadMember(msg.getThreadId());
 
-		msg.setMessageId(msg_id);
-		const auto& members = _thread_service->GetThreadMember(msg.getThreadId());
-		const auto& connections = _conn_service->GetConnections(members);
+				Json::Value json_msg;
+				json_msg["thread_id"] = msg.getThreadId();
+				json_msg["msg_id"] = (Json::Value::Int64)msg.getMessageId();
+				json_msg["content"] = msg.getContent();
+				json_msg["attachment"] = msg.getAttachment();
+				json_msg["sender_uid"] = msg.getSenderUid();
+				json_msg["sender_name"] = msg.getSenderName();
+				json_msg["sender_avatar"] = msg.getSenderAvatar();
+				json_msg["status"] = msg.getStatus();
+				json_msg["create_time"] = (Json::Value::Int64)msg.getCreateTime();
+				json_msg["update_time"] = (Json::Value::Int64)msg.getUpdateTime();
 
-		DeliverMessage(msg, connections, cb);
+				LOG_INFO << "send message: " << json_msg.toStyledString();
 
-
+				_conn_service->Broadcast(members, json_msg);
+			}catch (const std::exception& e)
+			{
+				LOG_ERROR << "exception: " << e.what();
+				cb(Utils::GenErrorResponse("can not store the message", ChatCode::SystemException));
+			}
+		});
 	}catch (const std::exception& e)
 	{
 		LOG_ERROR << "exception in ProcessMessage: " << e.what();
@@ -98,78 +106,77 @@ void MessageService::ProcessMessage(ChatMessage msg, const ErrorCb& cb) const
 
 void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnectionPtr conn) const
 {
-	try
+
+	drogon::async_func([msg = std::move(msg),conn = std::move(conn),this]()->drogon::Task<>
 	{
-		//after check content and thread_id
-		//build message
-		AIMessage ai_msg = AIMessage::FromJson(msg);
-
-		auto type = _thread_service->GetThreadType(ai_msg.getThreadId()).get();
-		if (type!=ChatThread::AI)
+		try
 		{
-			LOG_ERROR << "thread id is not corresponding to an AI thread";
-			conn->sendJson(Utils::GenErrorResponse("unmatched type", ChatCode::UnMatchedType));
-			return;
-		}
+			AIMessage ai_msg = AIMessage::FromJson(msg);
 
-		ai_msg.setMessageId(Utils::Authentication::GenerateUid());
-		//role should be set by server
-		ai_msg.setRole(AIMessage::Role::user);
-		//request should not have reasoning content
-		ai_msg.setReasoningContent({});
+			bool result = co_await _thread_service->ValidateMember(ai_msg.getThreadId(),
+				conn->getContext<Utils::UsersInfo>()->uid);
 
-		if (!ai_msg.IsValid())
-		{
-			LOG_ERROR << "AI message is not valid";
-			conn->sendJson(Utils::GenErrorResponse("invalid AI message", ChatCode::MissingField));
-			return;//handle
-		}
-
-		//get context before record new message
-		const auto& json_context =  _msg_repo->GetAIContext(ai_msg.getThreadId()).get();
-		//push message to database
-		auto result = _msg_repo->RecordAIMessage(ai_msg);
-
-		if (!result.get())
-		{
-			conn->sendJson(Utils::GenErrorResponse("can not store the message",ChatCode::SystemException));
-			return;
-		}
-
-
-		RequestMsg req_msg(msg["content"].asString(),Utils::Authentication::GenerateUid(),RequestMsg::Role::User);
-		//build request msg , if has context ,append
-		//here need to check request data fields
-		//.....
-		const auto& req_data = msg["request_data"];
-		if (req_data.isMember("is_stream")&&req_data["is_stream"].isBool())
-			req_msg.SetStream(req_data["is_stream"].asBool());
-		req_msg.SetContext(json_context);
-
-		conn->sendJson(req_msg.ToJsonReq());
-
-		auto response = 
-			AIRequestProcessor()("https://open.bigmodel.cn/api/paas/v4/chat/completions", "45664786303e46ca9caa8dc3d82ce7c4.VzuV8oSl4Nb2H3GU"
-			, ai_msg.getThreadId(), req_msg,[conn](const Json::Value& resp)
+			if (!result)
 			{
-				conn->sendJson(resp);
-			});
+				LOG_ERROR << "user is not in the thread!";
+				conn->sendJson(Utils::GenErrorResponse("user is not in thread", ChatCode::NotPermission));
+				co_return;
+			}
 
-		if (!response.has_value())
-			conn->sendJson(Utils::GenErrorResponse("AI response is empty", ChatCode::SystemException));
+			auto type = co_await _thread_service->GetThreadType(ai_msg.getThreadId());
+			if (type != ChatThread::AI)
+			{
+				LOG_ERROR << "thread id is not corresponding to an AI thread";
+				conn->sendJson(Utils::GenErrorResponse("unmatched type", ChatCode::UnMatchedType));
+				co_return;
+			}
 
-		if (!_msg_repo->RecordAIMessage(response.value()).get())
-			conn->sendJson(Utils::GenErrorResponse("can not store the AI response", ChatCode::SystemException));
-		LOG_INFO << "content: " << response.value().getContent();
-		LOG_INFO << "reason: " << response.value().getReasoningContent();
-		conn->sendJson(response.value().getContent());
-		conn->sendJson(response.value().getReasoningContent());
+			ai_msg.setMessageId(Utils::Authentication::GenerateUid());
+			//role should be set by server
+			ai_msg.setRole(AIMessage::Role::user);
+			//request should not have reasoning content
+			ai_msg.setReasoningContent({});
 
+			if (!ai_msg.IsValid())
+			{
+				LOG_ERROR << "AI message is not valid";
+				conn->sendJson(Utils::GenErrorResponse("invalid AI message", ChatCode::MissingField));
+				co_return;//handle
+			}
+
+			//get context before record new message
+			auto json_context = co_await _msg_repo->GetAIContext(ai_msg.getThreadId());
+			//push message to database
+			co_await _msg_repo->RecordAIMessage(ai_msg);
+
+			RequestMsg req_msg(msg["content"].asString(), Utils::Authentication::GenerateUid(), RequestMsg::Role::User);
+			//build request msg , if has context ,append
+			//here need to check request data fields
+			//.....
+
+			const auto& req_data = msg["request_data"];
+			if (req_data.isMember("is_stream") && req_data["is_stream"].isBool())
+				req_msg.SetStream(req_data["is_stream"].asBool());
+			req_msg.SetContext(json_context);
+
+			conn->sendJson(req_msg.ToJsonReq());
+
+			auto response = co_await AIRequestProcessor()
+				("https://open.bigmodel.cn/api/paas/v4/chat/completions", "45664786303e46ca9caa8dc3d82ce7c4.VzuV8oSl4Nb2H3GU"
+					, ai_msg.getThreadId(), req_msg, [conn](const Json::Value& resp)
+					{
+						conn->sendJson(resp);
+					});
+
+			co_await _msg_repo->RecordAIMessage(response);
+		}
+		catch (const std::exception& e)
+		{
+			LOG_ERROR << "exception: " << e.what();
+			conn->sendJson(Utils::GenErrorResponse("server exception: "+std::string(e.what()),ChatCode::SystemException));
+		}
 	}
-	catch (const std::exception& e)
-	{
-		LOG_ERROR << "exception in ProcessAIRequest: " << e.what();
-	}
+	);
 }
 
 
@@ -178,7 +185,7 @@ MessageService::AIRequestProcessor::AIRequestProcessor()
 	_curl = curl_easy_init();
 }
 
-std::optional<AIMessage> MessageService::AIRequestProcessor::operator()(const std::string& url, const std::string& token,int thread_id,
+drogon::Task<AIMessage> MessageService::AIRequestProcessor::operator()(const std::string& url, const std::string& token,int thread_id,
 	const RequestMsg& req, const SendCallback& send_cb)
 {
 	try
@@ -191,7 +198,7 @@ std::optional<AIMessage> MessageService::AIRequestProcessor::operator()(const st
 		if (req.ToJsonReq() == Json::nullValue)
 		{
 			LOG_ERROR << "request data is not valid";
-			return std::nullopt;
+			throw std::invalid_argument("request data is not valid");
 		}
 		const auto& req_body = Json::writeString(builder, req.ToJsonReq());
 
@@ -204,7 +211,6 @@ std::optional<AIMessage> MessageService::AIRequestProcessor::operator()(const st
 		_headers = curl_slist_append(_headers, "Content-Type: application/json");
 		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _headers);
 
-		//��ʽ���
 		if (req.IsStream())
 		{
 			curl_easy_setopt(_curl, CURLOPT_BUFFERSIZE, 1024L);
@@ -219,20 +225,14 @@ std::optional<AIMessage> MessageService::AIRequestProcessor::operator()(const st
 			{
 				LOG_ERROR << "curl error: " << std::string(curl_easy_strerror(res_code));
 				send_cb(Utils::GenErrorResponse("request perform fail ", ChatCode::BadAIRequest,req.GetRequestId()));
-				return std::nullopt;
-			}
-
-			if (content._is_complete)
-			{
-				LOG_INFO << "response is completed: " << content._buffer;
-				return std::nullopt;
+				throw std::runtime_error("request perform fail");
 			}
 
 			AIMessage response(thread_id,req.GetRequestId(),content._acc_content,
 				Utils::GetCurrentTimeStamp(),AIMessage::Role::assistant);
 			response.setReasoningContent(content._acc_reason);
 
-			return response;
+			co_return response;
 		}
 
 		std::string resp;
@@ -245,7 +245,7 @@ std::optional<AIMessage> MessageService::AIRequestProcessor::operator()(const st
 		{
 			LOG_ERROR << "curl error: " << std::string(curl_easy_strerror(res_code));
 			send_cb(Utils::GenErrorResponse("request perform fail ", ChatCode::BadAIRequest, req_id));
-			return std::nullopt;
+			throw std::runtime_error("request perform fail");
 		}
 		//lack of process Json
 		Json::Value json_resp;
@@ -253,14 +253,13 @@ std::optional<AIMessage> MessageService::AIRequestProcessor::operator()(const st
 		if (!reader.parse(resp, json_resp))
 		{
 			send_cb(Utils::GenErrorResponse("can not parse response", ChatCode::InValidJson,req_id));
-			return std::nullopt;
+			throw std::invalid_argument("can not parse response");
 		}
-
 
 		if (json_resp.isMember("error"))
 		{
 			send_cb(Utils::GenErrorResponse(json_resp["error"]["message"].toStyledString(), ChatCode::BadAIRequest, req_id));
-			return std::nullopt;
+			throw std::runtime_error("request error: "+ json_resp["error"]["message"].asString());
 		}
 
 		auto resp_content = json_resp["choices"][0]["message"];
@@ -268,21 +267,20 @@ std::optional<AIMessage> MessageService::AIRequestProcessor::operator()(const st
 		resp_content["message_id"] = req.GetRequestId();
 		LOG_INFO << "response:" << resp_content.toStyledString();
 
-		send_cb(json_resp["choices"][0]["message"]);
+		send_cb(resp_content);
 
 		AIMessage response(thread_id, req.GetRequestId(), resp_content["content"].asString(),
 			Utils::GetCurrentTimeStamp(), AIMessage::Role::assistant);
 
 		response.setReasoningContent(resp_content["reasoning_content"].asString());
 
-		return response;
+		co_return response;
 
 	}catch (const std::exception& e)
 	{
 		LOG_ERROR << "exception in AIRequestProcessor: " << e.what();
-		send_cb(Utils::GenErrorResponse(e.what(),ChatCode::SystemException,req.GetRequestId()));
+		throw;
 	}
-	return std::nullopt;
 }
 
 
@@ -311,7 +309,6 @@ size_t MessageService::AIRequestProcessor::StreamWriteCallback(void* contents, s
 
 	if (context->_is_complete)
 	{
-		//idk if this will be executed
 		LOG_INFO << "response is completed";
 		return size * nmemb;
 	}
@@ -328,11 +325,21 @@ size_t MessageService::AIRequestProcessor::StreamWriteCallback(void* contents, s
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 1);
 
-		if (line.starts_with("data: "))
+		if (line.substr(0, 6) == "data: ")
 		{
 			std::string data = line.substr(6);
 			if (data == terminator)
+			{
+				context->_is_complete = true;
+				Json::Value final_msg;
+				final_msg["is_complete"] = true;
+				final_msg["thread_id"] = context->_thread_id;
+				final_msg["message_id"] = context->_req_id;
+				final_msg["complete_content"] = context->_acc_content;
+				final_msg["complete_reason"] = context->_acc_reason;
+				context->_cb(final_msg);
 				return total_size;
+			}
 
 			try
 			{

@@ -3,7 +3,6 @@
 
 #include "Convert.h"
 #include "Utils.h"
-#include "Service/ConnectionService.h"
 #include "models/GroupMembers.h"
 #include "models/PrivateChats.h"
 #include "models/AiChats.h"
@@ -68,7 +67,7 @@ std::optional<drogon_model::sqlite3::Threads> PrivateThread::ToDbThread() const 
     
     drogon_model::sqlite3::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
-    thread.setCreateTime(Utils::GetCurrentTimeStr());
+    thread.setCreateTime(Utils::GetCurrentTimeStamp());
     return thread;
 }
 
@@ -153,7 +152,7 @@ Json::Value GroupThread::ToJson() const {
 std::optional<drogon_model::sqlite3::Threads> GroupThread::ToDbThread() const {
     drogon_model::sqlite3::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
-    thread.setCreateTime(Utils::GetCurrentTimeStr());
+    thread.setCreateTime(Utils::GetCurrentTimeStamp());
     return thread;
 }
 
@@ -190,7 +189,7 @@ std::optional<drogon_model::sqlite3::GroupMembers> GroupThread::ToDbOwner() cons
         return std::nullopt;
     }
     drogon_model::sqlite3::GroupMembers members;
-    members.setJoinTime(Utils::GetCurrentTimeStr());
+    members.setJoinTime(Utils::GetCurrentTimeStamp());
     members.setRole(GroupConstant::owner);
 	members.setUserUid(_owner_uid);
     members.setThreadId(thread_id_);
@@ -235,7 +234,7 @@ Json::Value AIThread::ToJson() const {
 std::optional<drogon_model::sqlite3::Threads> AIThread::ToDbThread() const {
     drogon_model::sqlite3::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
-    thread.setCreateTime(Utils::GetCurrentTimeStr());
+    thread.setCreateTime(Utils::GetCurrentTimeStamp());
     return thread;
 }
 
@@ -286,9 +285,9 @@ MemberData MemberData::FromJson(const Json::Value& json_data) {
     member.SetRole(json_data.get("role", GroupConstant::member).asInt());
     
     if (json_data.isMember("join_time")) {
-        member.SetJoinTime(json_data.get("join_time", "").asString());
+        member.SetJoinTime(json_data.get("join_time", "").asInt64());
     } else {
-        member.SetJoinTime(Utils::GetCurrentTimeStr());
+        member.SetJoinTime(Utils::GetCurrentTimeStamp());
     }
 
     return member;
@@ -300,7 +299,7 @@ Json::Value MemberData::ToJson() const {
     json["thread_id"] = _thread_id;
     json["user_uid"] = _user_uid;
     json["role"] = GroupRoleConvert::ToVal(_role);
-    json["join_time"] = _join_time;
+    json["join_time"] = (Json::Value::Int64)_join_time;
     return json;
 }
 
@@ -314,7 +313,7 @@ std::optional<drogon_model::sqlite3::GroupMembers> MemberData::ToDbGroupMember()
     member.setThreadId(_thread_id);
     member.setUserUid(_user_uid);
     member.setRole(GroupRoleConvert::ToVal(_role));
-    member.setJoinTime(_join_time.empty() ? Utils::GetCurrentTimeStr() : _join_time);
+    member.setJoinTime(_join_time<0 ? Utils::GetCurrentTimeStamp() : _join_time);
     return member;
 }
 

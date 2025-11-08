@@ -167,12 +167,11 @@ class Users
 
     /**  For column create_time  */
     ///Get the value of the column create_time, returns the default value if the column is null
-    const std::string &getValueOfCreateTime() const noexcept;
+    const int64_t &getValueOfCreateTime() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getCreateTime() const noexcept;
+    const std::shared_ptr<int64_t> &getCreateTime() const noexcept;
     ///Set the value of the column create_time
-    void setCreateTime(const std::string &pCreateTime) noexcept;
-    void setCreateTime(std::string &&pCreateTime) noexcept;
+    void setCreateTime(const int64_t &pCreateTime) noexcept;
     void setCreateTimeToNull() noexcept;
 
     /**  For column signature  */
@@ -187,12 +186,11 @@ class Users
 
     /**  For column last_login_time  */
     ///Get the value of the column last_login_time, returns the default value if the column is null
-    const std::string &getValueOfLastLoginTime() const noexcept;
+    const int64_t &getValueOfLastLoginTime() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getLastLoginTime() const noexcept;
+    const std::shared_ptr<int64_t> &getLastLoginTime() const noexcept;
     ///Set the value of the column last_login_time
-    void setLastLoginTime(const std::string &pLastLoginTime) noexcept;
-    void setLastLoginTime(std::string &&pLastLoginTime) noexcept;
+    void setLastLoginTime(const int64_t &pLastLoginTime) noexcept;
     void setLastLoginTimeToNull() noexcept;
 
     /**  For column posts  */
@@ -278,9 +276,9 @@ class Users
     std::shared_ptr<std::string> password_;
     std::shared_ptr<std::string> uid_;
     std::shared_ptr<std::string> avatar_;
-    std::shared_ptr<std::string> createTime_;
+    std::shared_ptr<int64_t> createTime_;
     std::shared_ptr<std::string> signature_;
-    std::shared_ptr<std::string> lastLoginTime_;
+    std::shared_ptr<int64_t> lastLoginTime_;
     std::shared_ptr<int64_t> posts_;
     std::shared_ptr<int64_t> level_;
     std::shared_ptr<int64_t> status_;

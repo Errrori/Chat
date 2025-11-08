@@ -21,16 +21,14 @@ public:
 	ConnectionService(ConnectionService&& manager) = delete;
 	ConnectionService& operator=(ConnectionService&& manager) = delete;
 
-	bool AddConnection(const drogon::WebSocketConnectionPtr& conn);
+	bool AddConnection(const drogon::WebSocketConnectionPtr& conn,ConnInfo info);
 	bool RemoveConnection(const std::string& uid);
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
 	void WriteConnInfo(const Utils::UsersInfo& info, const drogon::WebSocketConnectionPtr& conn);
 
-	drogon::WebSocketConnectionPtr GetConnection(const std::string& uid);
-	std::vector<drogon::WebSocketConnectionPtr> GetConnections(const std::vector<std::string>& uids);
 	std::shared_ptr<ConnInfo> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
 
-	void Send(const std::vector<std::string>& targets, const Json::Value& message);
+	void Broadcast(const std::vector<std::string>& targets, const Json::Value& message);
 
 	ConnectionService() = default;
 	~ConnectionService() = default;

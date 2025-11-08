@@ -5,7 +5,7 @@ namespace DataBase
 	const static std::string THREAD_TABLE = "CREATE TABLE IF NOT EXISTS threads("
 		"thread_id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"type INTEGER NOT NULL," // 0=group, 1=private,2=ai
-		"create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+		"create_time INTEGER DEFAULT (strftime('%s','now'))"
 		");";
 
 	const static std::string AI_TABLE = "CREATE TABLE IF NOT EXISTS ai_chats("
@@ -44,7 +44,7 @@ namespace DataBase
 		"thread_id INTEGER NOT NULL,"
 		"user_uid TEXT NOT NULL,"
 		"role INTEGER NOT NULL DEFAULT 0," //(CHECK(role IN (0, 1, 2)) 0=member, 1=admin, 2=owner
-		"join_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+		"join_time INTEGER DEFAULT (strftime('%s','now')),"
 		"FOREIGN KEY (thread_id) REFERENCES group_chats(thread_id) ON DELETE CASCADE,"
 		"FOREIGN KEY (user_uid) REFERENCES users(uid) ON DELETE CASCADE,"
 		"PRIMARY KEY (thread_id,user_uid),"
@@ -61,8 +61,8 @@ namespace DataBase
 		"content TEXT,"
 		"attachment TEXT," // JSON格式存储附件信息
 		"status INTEGER NOT NULL DEFAULT 1,"
-		"create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-		"update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+		"create_time INTEGER DEFAULT (strftime('%s','now')),"
+		"update_time INTEGER DEFAULT (strftime('%s','now')),"
 		"FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE,"
 		"FOREIGN KEY (sender_uid) REFERENCES users(uid) ON DELETE CASCADE"
 		");";
@@ -74,7 +74,8 @@ namespace DataBase
 		"content TEXT NOT NULL,"
 		"attachment TEXT,"
 		"reasoning_content TEXT,"
-		"created_time INTEGER DEFAULT (strftime('%s','now')))";
+		"created_time INTEGER DEFAULT (strftime('%s','now'))"
+		");";
 
 	const static std::string USER_TABLE = "CREATE TABLE IF NOT EXISTS users("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -83,9 +84,9 @@ namespace DataBase
 		"password TEXT NOT NULL,"
 		"uid TEXT NOT NULL UNIQUE,"
 		"avatar TEXT DEFAULT 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',"
-		"create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+		"create_time INTEGER DEFAULT (strftime('%s','now')),"
 		"signature TEXT,"
-		"last_login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+		"last_login_time INTEGER DEFAULT (strftime('%s','now')),"
 		"posts INTEGER DEFAULT 0,"
 		"level INTEGER DEFAULT 0,"
 		"status INTEGER DEFAULT 0,"
@@ -145,6 +146,7 @@ namespace ChatCode
 		BadAIRequest = 106,
 		FailAddConn = 107,
 		UnMatchedType = 108,//thread type is not matched to thread_id
+		LoginKicked = 109,//logged in from another device
 	};
 }
 

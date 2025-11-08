@@ -179,22 +179,20 @@ class Messages
 
     /**  For column create_time  */
     ///Get the value of the column create_time, returns the default value if the column is null
-    const std::string &getValueOfCreateTime() const noexcept;
+    const int64_t &getValueOfCreateTime() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getCreateTime() const noexcept;
+    const std::shared_ptr<int64_t> &getCreateTime() const noexcept;
     ///Set the value of the column create_time
-    void setCreateTime(const std::string &pCreateTime) noexcept;
-    void setCreateTime(std::string &&pCreateTime) noexcept;
+    void setCreateTime(const int64_t &pCreateTime) noexcept;
     void setCreateTimeToNull() noexcept;
 
     /**  For column update_time  */
     ///Get the value of the column update_time, returns the default value if the column is null
-    const std::string &getValueOfUpdateTime() const noexcept;
+    const int64_t &getValueOfUpdateTime() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getUpdateTime() const noexcept;
+    const std::shared_ptr<int64_t> &getUpdateTime() const noexcept;
     ///Set the value of the column update_time
-    void setUpdateTime(const std::string &pUpdateTime) noexcept;
-    void setUpdateTime(std::string &&pUpdateTime) noexcept;
+    void setUpdateTime(const int64_t &pUpdateTime) noexcept;
     void setUpdateTimeToNull() noexcept;
 
 
@@ -227,8 +225,8 @@ class Messages
     std::shared_ptr<std::string> content_;
     std::shared_ptr<std::string> attachment_;
     std::shared_ptr<int64_t> status_;
-    std::shared_ptr<std::string> createTime_;
-    std::shared_ptr<std::string> updateTime_;
+    std::shared_ptr<int64_t> createTime_;
+    std::shared_ptr<int64_t> updateTime_;
     struct MetaData
     {
         const std::string colName_;

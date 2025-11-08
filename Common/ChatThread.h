@@ -184,14 +184,14 @@ public:
 	void SetThreadId(int thread_id) { _thread_id = thread_id; }
 	void SetUserUid(const std::string& uid) { _user_uid = uid; }
     void SetRole(Role role) { _role = role; }
-	void SetJoinTime(const std::string& join_time) { _join_time = join_time; }
+	void SetJoinTime(int64_t join_time) { _join_time = join_time; }
     void SetRole(int role);
 
     // Getter 方法
     int GetThreadId() const { return _thread_id; }
     const std::string& GetUserUid() const { return _user_uid; }
     Role GetRole() const { return _role; }
-    const std::string& GetJoinTime() const { return _join_time; }
+    int64_t GetJoinTime() const { return _join_time; }
 
     // 验证方法
     bool IsValid() const;
@@ -200,6 +200,6 @@ private:
 	int _thread_id = -1;
 	std::string _user_uid;
 	Role _role = Role::Unknown;
-    std::string _join_time;
+    int64_t _join_time;
 };
 

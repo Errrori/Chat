@@ -50,7 +50,7 @@ private:
 	std::string _sender_name;
 	std::string _sender_avatar;
 	int _status = 1;
-	int64_t _create_time;
-	int64_t _update_time;
+	int64_t _create_time = -1;
+	int64_t _update_time = -1;
 };
 

@@ -26,7 +26,7 @@ const std::vector<typename GroupMembers::MetaData> GroupMembers::metaData_={
 {"thread_id","int64_t","integer",8,0,1,1},
 {"user_uid","std::string","text",0,0,1,1},
 {"role","int64_t","integer",8,0,0,1},
-{"join_time","std::string","timestamp",0,0,0,0}
+{"join_time","int64_t","integer",8,0,0,0}
 };
 const std::string &GroupMembers::getColumnName(size_t index) noexcept(false)
 {
@@ -51,25 +51,7 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["join_time"].isNull())
         {
-            auto timeStr = r["join_time"].as<std::string>();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                joinTime_=std::make_shared<std::string>(timeStr);
-            }
+            joinTime_=std::make_shared<int64_t>(r["join_time"].as<int64_t>());
         }
     }
     else
@@ -99,25 +81,7 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 3;
         if(!r[index].isNull())
         {
-            auto timeStr = r[index].as<std::string>();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                joinTime_=std::make_shared<std::string>(timeStr);
-            }
+            joinTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
         }
     }
 
@@ -159,7 +123,7 @@ GroupMembers::GroupMembers(const Json::Value &pJson, const std::vector<std::stri
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            joinTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+            joinTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[3]].asInt64());
         }
     }
 }
@@ -195,7 +159,7 @@ GroupMembers::GroupMembers(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[3]=true;
         if(!pJson["join_time"].isNull())
         {
-            joinTime_=std::make_shared<std::string>(pJson["join_time"].asString());
+            joinTime_=std::make_shared<int64_t>((int64_t)pJson["join_time"].asInt64());
         }
     }
 }
@@ -235,7 +199,7 @@ void GroupMembers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            joinTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+            joinTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[3]].asInt64());
         }
     }
 }
@@ -269,7 +233,7 @@ void GroupMembers::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[3] = true;
         if(!pJson["join_time"].isNull())
         {
-            joinTime_=std::make_shared<std::string>(pJson["join_time"].asString());
+            joinTime_=std::make_shared<int64_t>((int64_t)pJson["join_time"].asInt64());
         }
     }
 }
@@ -330,25 +294,20 @@ void GroupMembers::setRole(const int64_t &pRole) noexcept
     dirtyFlag_[2] = true;
 }
 
-const std::string &GroupMembers::getValueOfJoinTime() const noexcept
+const int64_t &GroupMembers::getValueOfJoinTime() const noexcept
 {
-    static const std::string defaultValue = std::string();
+    static const int64_t defaultValue = int64_t();
     if(joinTime_)
         return *joinTime_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &GroupMembers::getJoinTime() const noexcept
+const std::shared_ptr<int64_t> &GroupMembers::getJoinTime() const noexcept
 {
     return joinTime_;
 }
-void GroupMembers::setJoinTime(const std::string &pJoinTime) noexcept
+void GroupMembers::setJoinTime(const int64_t &pJoinTime) noexcept
 {
-    joinTime_ = std::make_shared<std::string>(pJoinTime);
-    dirtyFlag_[3] = true;
-}
-void GroupMembers::setJoinTime(std::string &&pJoinTime) noexcept
-{
-    joinTime_ = std::make_shared<std::string>(std::move(pJoinTime));
+    joinTime_ = std::make_shared<int64_t>(pJoinTime);
     dirtyFlag_[3] = true;
 }
 void GroupMembers::setJoinTimeToNull() noexcept
@@ -522,7 +481,7 @@ Json::Value GroupMembers::toJson() const
     }
     if(getJoinTime())
     {
-        ret["join_time"]=getValueOfJoinTime();
+        ret["join_time"]=(Json::Int64)getValueOfJoinTime();
     }
     else
     {
@@ -574,7 +533,7 @@ Json::Value GroupMembers::toMasqueradedJson(
         {
             if(getJoinTime())
             {
-                ret[pMasqueradingVector[3]]=getValueOfJoinTime();
+                ret[pMasqueradingVector[3]]=(Json::Int64)getValueOfJoinTime();
             }
             else
             {
@@ -610,7 +569,7 @@ Json::Value GroupMembers::toMasqueradedJson(
     }
     if(getJoinTime())
     {
-        ret["join_time"]=getValueOfJoinTime();
+        ret["join_time"]=(Json::Int64)getValueOfJoinTime();
     }
     else
     {
@@ -844,7 +803,7 @@ bool GroupMembers::validJsonOfField(size_t index,
             {
                 return true;
             }
-            if(!pJson.isString())
+            if(!pJson.isInt64())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

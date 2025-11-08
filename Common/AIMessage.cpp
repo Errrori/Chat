@@ -99,9 +99,13 @@ std::optional<drogon_model::sqlite3::AiContext> AIMessage::ToDbObject() const
 		dbObject.setReasoningContent(_reasoning_content);
 	}
 
-	if (_created_time!=-1)
+	if (_created_time>0)
 	{
 		dbObject.setCreatedTime(_created_time);
+	}
+	else
+	{
+		dbObject.setCreatedTime(Utils::GetCurrentTimeStamp());
 	}
 
 	return dbObject;

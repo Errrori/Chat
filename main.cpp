@@ -1,6 +1,8 @@
 #include "pch.h"
 #include <drogon/drogon.h>
 #include <csignal>
+#include <curl/curl.h>
+
 #include "Utils.h"
 
 using namespace Utils;
@@ -126,7 +128,11 @@ void AddOptionHandle()
 
 int main()
 {
+#ifdef _WIN32
 	SetConsoleOutputCP(65001);
+#endif
+
+	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	signal(SIGINT, SignalHandler);
 	signal(SIGTERM, SignalHandler);
@@ -139,4 +145,6 @@ int main()
 	LOG_INFO << "Server start!";
 	
 	drogon::app().run();
+
+	curl_global_cleanup();
 }

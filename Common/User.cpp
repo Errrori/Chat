@@ -23,9 +23,13 @@ UserInfo UserInfo::FromJson(const Json::Value& json)
 		if (json.isMember("following"))
 			info.following = json["following"].asInt();
 		if (json.isMember("create_time"))
-			info.create_time = json["create_time"].asString();
+			info.create_time = json["create_time"].asInt64();
+		else
+			info.create_time = Utils::GetCurrentTimeStamp();
 		if (json.isMember("last_login_time"))
-			info.last_login_time = json["last_login_time"].asString();
+			info.last_login_time = json["last_login_time"].asInt64();
+		else
+			info.last_login_time = Utils::GetCurrentTimeStamp();
 		if (json.isMember("status"))
 			info.status = json["status"].asInt();
 		if (json.isMember("uid"))
@@ -64,11 +68,15 @@ std::optional<drogon_model::sqlite3::Users> UserInfo::ToDbUsers() const
 		user.setEmail(email);
 	if (!signature.empty())
 		user.setSignature(signature);
-	if (!create_time.empty())
+	if (create_time>0)
 		user.setCreateTime(create_time);
-	if (!last_login_time.empty())
+	else
+		user.setCreateTime(Utils::GetCurrentTimeStamp());
+	if (last_login_time>0)
 		user.setLastLoginTime(last_login_time);
-	
+	else
+		user.setLastLoginTime(Utils::GetCurrentTimeStamp());
+
 	// 设置数值字段
 	if (posts>0)
 		user.setPosts(static_cast<int64_t>(posts));
@@ -102,8 +110,8 @@ std::string UserInfo::ToString() const
 		", followers: " + std::to_string(followers) + 
 		", following: " + std::to_string(following) + 
 		", level: " + std::to_string(level) + 
-		", create_time: " + create_time + 
-		", last_login_time: " + last_login_time + "}";
+		", create_time: " + std::to_string(create_time) + 
+		", last_login_time: " + std::to_string(last_login_time) + "}";
 }
 
 Json::Value UserInfo::ToJson() const
@@ -131,11 +139,11 @@ Json::Value UserInfo::ToJson() const
 		json["level"] = level;
 	}
 	
-	if (!create_time.empty()) {
-		json["create_time"] = create_time;
+	if (create_time>0) {
+		json["create_time"] = (Json::Value::Int64)create_time;
 	}
-	if (!last_login_time.empty()) {
-		json["last_login_time"] = last_login_time;
+	if (last_login_time>0) {
+		json["last_login_time"] = (Json::Value::Int64)last_login_time;
 	}
 	
 	return json;
@@ -154,7 +162,7 @@ void UserInfo::Reset()
 	following = DefaultVal;
 	level = DefaultVal;
 	status = 0;
-	create_time.clear();
-	last_login_time.clear();
+	create_time = -1;
+	last_login_time = -1;
 	signature.clear();
 }

@@ -17,24 +17,6 @@ public:
         WS_PATH_ADD("/ws/chat");
     WS_PATH_LIST_END
 
-    struct ChatMessages
-    {
-        int thread_id;
-        std::string message_id;
-        std::string sender_name;
-        std::string sender_uid;
-        std::string sender_avatar;
-        std::string content;
-        Json::Value attachment{ Json::nullValue };
-        std::string create_time;
-        std::string update_time;
-
-        static std::optional<ChatMessages> FromJson(const Json::Value& json);
-    };
-
-
-private:
-    std::optional<Json::Value> ParseMessage(const std::string& message, std::string& error) const;
 };
 
 

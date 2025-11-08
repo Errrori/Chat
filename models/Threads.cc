@@ -24,7 +24,7 @@ const std::string Threads::tableName = "threads";
 const std::vector<typename Threads::MetaData> Threads::metaData_={
 {"thread_id","int64_t","integer",8,1,1,0},
 {"type","int64_t","integer",8,0,0,1},
-{"create_time","std::string","timestamp",0,0,0,0}
+{"create_time","int64_t","integer",8,0,0,0}
 };
 const std::string &Threads::getColumnName(size_t index) noexcept(false)
 {
@@ -45,25 +45,7 @@ Threads::Threads(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["create_time"].isNull())
         {
-            auto timeStr = r["create_time"].as<std::string>();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                createTime_=std::make_shared<std::string>(timeStr);
-            }
+            createTime_=std::make_shared<int64_t>(r["create_time"].as<int64_t>());
         }
     }
     else
@@ -88,25 +70,7 @@ Threads::Threads(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 2;
         if(!r[index].isNull())
         {
-            auto timeStr = r[index].as<std::string>();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                createTime_=std::make_shared<std::string>(timeStr);
-            }
+            createTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
         }
     }
 
@@ -140,7 +104,7 @@ Threads::Threads(const Json::Value &pJson, const std::vector<std::string> &pMasq
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+            createTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
 }
@@ -168,7 +132,7 @@ Threads::Threads(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[2]=true;
         if(!pJson["create_time"].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson["create_time"].asString());
+            createTime_=std::make_shared<int64_t>((int64_t)pJson["create_time"].asInt64());
         }
     }
 }
@@ -201,7 +165,7 @@ void Threads::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+            createTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
 }
@@ -228,7 +192,7 @@ void Threads::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[2] = true;
         if(!pJson["create_time"].isNull())
         {
-            createTime_=std::make_shared<std::string>(pJson["create_time"].asString());
+            createTime_=std::make_shared<int64_t>((int64_t)pJson["create_time"].asInt64());
         }
     }
 }
@@ -277,25 +241,20 @@ void Threads::setType(const int64_t &pType) noexcept
     dirtyFlag_[1] = true;
 }
 
-const std::string &Threads::getValueOfCreateTime() const noexcept
+const int64_t &Threads::getValueOfCreateTime() const noexcept
 {
-    static const std::string defaultValue = std::string();
+    static const int64_t defaultValue = int64_t();
     if(createTime_)
         return *createTime_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &Threads::getCreateTime() const noexcept
+const std::shared_ptr<int64_t> &Threads::getCreateTime() const noexcept
 {
     return createTime_;
 }
-void Threads::setCreateTime(const std::string &pCreateTime) noexcept
+void Threads::setCreateTime(const int64_t &pCreateTime) noexcept
 {
-    createTime_ = std::make_shared<std::string>(pCreateTime);
-    dirtyFlag_[2] = true;
-}
-void Threads::setCreateTime(std::string &&pCreateTime) noexcept
-{
-    createTime_ = std::make_shared<std::string>(std::move(pCreateTime));
+    createTime_ = std::make_shared<int64_t>(pCreateTime);
     dirtyFlag_[2] = true;
 }
 void Threads::setCreateTimeToNull() noexcept
@@ -404,7 +363,7 @@ Json::Value Threads::toJson() const
     }
     if(getCreateTime())
     {
-        ret["create_time"]=getValueOfCreateTime();
+        ret["create_time"]=(Json::Int64)getValueOfCreateTime();
     }
     else
     {
@@ -445,7 +404,7 @@ Json::Value Threads::toMasqueradedJson(
         {
             if(getCreateTime())
             {
-                ret[pMasqueradingVector[2]]=getValueOfCreateTime();
+                ret[pMasqueradingVector[2]]=(Json::Int64)getValueOfCreateTime();
             }
             else
             {
@@ -473,7 +432,7 @@ Json::Value Threads::toMasqueradedJson(
     }
     if(getCreateTime())
     {
-        ret["create_time"]=getValueOfCreateTime();
+        ret["create_time"]=(Json::Int64)getValueOfCreateTime();
     }
     else
     {
@@ -656,7 +615,7 @@ bool Threads::validJsonOfField(size_t index,
             {
                 return true;
             }
-            if(!pJson.isString())
+            if(!pJson.isInt64())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

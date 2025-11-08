@@ -10,7 +10,8 @@ public:
         ADD_METHOD_TO(ThreadController::QueryThreadInfo, "/thread/info/query", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
 		ADD_METHOD_TO(ThreadController::AddThreadMember, "/thread/group/add-member", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
 		ADD_METHOD_TO(ThreadController::AddThreadMember, "/thread/group/join", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
-		ADD_METHOD_TO(ThreadController::GetAIContext, "/thread/ai-context", drogon::Get, "CORSMiddleware");
+		ADD_METHOD_TO(ThreadController::GetAIContext, "/thread/record/ai", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
+		ADD_METHOD_TO(ThreadController::GetChatRecords, "/thread/record/user", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
         
 	METHOD_LIST_END
 
@@ -30,6 +31,8 @@ private:
 
 
     void GetAIContext(const drogon::HttpRequestPtr& req,
+        std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+    void GetChatRecords(const drogon::HttpRequestPtr& req,
         std::function<void(const drogon::HttpResponsePtr&)>&& callback);
 
 };

@@ -12,15 +12,12 @@ using AiContext = drogon_model::sqlite3::AiContext;
 //检查的逻辑放在Service层，需要检查发送者是否在该thread中
 //返回值为message_id
 
-std::future<int64_t> SQLiteMessageRepository::RecordUserMessage(const ChatMessage& message)
+drogon::Task<int64_t> SQLiteMessageRepository::RecordUserMessage(const ChatMessage& message)
 {
-	auto promise = std::make_shared<std::promise<int64_t>>();
-
 	try
 	{
 		drogon_model::sqlite3::Messages db_message;
 
-		db_message.setThreadId(static_cast<int64_t>(message.getThreadId()));
 		//message_id is auto-incremented in the database, so do not set it
 
 		const auto& content = message.getContent();
@@ -36,54 +33,41 @@ std::future<int64_t> SQLiteMessageRepository::RecordUserMessage(const ChatMessag
 			db_message.setAttachment(attachmentStr);
 		}
 
+		if (attachment.empty() && content.empty())
+			throw std::invalid_argument("content and attachment are both empty");
+
 		db_message.setSenderUid(message.getSenderUid());
 		db_message.setSenderName(message.getSenderName());
 		db_message.setSenderAvatar(message.getSenderAvatar());
-		//lack of status
-		//db_message.setCreateTime(message.getCreateTime());
-		//db_message.setUpdateTime(message.getUpdateTime());
-		//message_id is auto-incremented in the database, so do not set it
+		db_message.setCreateTime(message.getCreateTime());
+		db_message.setUpdateTime(message.getUpdateTime());
 
-		Mapper<Messages> mapper(DbAccessor::GetDbClient());
-		mapper.insert(db_message,
-			[promise](const Messages& record)
-			{
-				promise->set_value(record.getValueOfMessageId());
-			},
-			[promise](const DrogonDbException& e)
-			{
-				LOG_ERROR << "exception: " << e.base().what();
-				promise->set_exception(std::make_exception_ptr(e.base()));
-			});
-	}catch (const std::exception& e)
+		CoroMapper<Messages> mapper(DbAccessor::GetDbClient());
+		const auto& coro_msg = co_await mapper.insert(db_message);
+		co_return coro_msg.getValueOfMessageId();
+	}
+	catch (const std::exception& e)
 	{
 		LOG_ERROR << "exception: " << e.what();
-		promise->set_exception(std::make_exception_ptr(e));
+		throw;
 	}
-
-	return promise->get_future();
 }
 
-std::future<bool> SQLiteMessageRepository::RecordAIMessage(const AIMessage& message)
-{
-	auto promise = std::make_shared<std::promise<bool>>();
 
+drogon::Task<> SQLiteMessageRepository::RecordAIMessage(const AIMessage& message)
+{
 	try
 	{
 		if (message.getMessageId().empty())
-		{
-			promise->set_value(false);
-			return promise->get_future();
-		}
+			throw std::invalid_argument("message id is empty");
+		
 		const auto& content = message.getContent();
 		const auto& attachment = message.getAttachment();
 		const auto& reasoning_content = message.getReasoningContent();
 
 		if (content.empty()&&reasoning_content.empty())
 		{
-			promise->set_value(false);
-			LOG_ERROR << "missing fields";
-			return promise->get_future();
+			throw std::invalid_argument("message id is empty");
 		}
 		drogon_model::sqlite3::AiContext db_message;
 		if (!content.empty())
@@ -102,91 +86,69 @@ std::future<bool> SQLiteMessageRepository::RecordAIMessage(const AIMessage& mess
 		db_message.setRole(AIMessage::RoleToString(message.getRole()));
 		db_message.setCreatedTime(message.getCreatedTime());
 
-		Mapper<AiContext> mapper(DbAccessor::GetDbClient());
-		mapper.insert(db_message,
-			[promise](const AiContext& record)
-			{
-				promise->set_value(true);
-			},
-			[promise](const DrogonDbException& e)
-			{
-				promise->set_exception(std::make_exception_ptr(e.base()));
-			});
+		CoroMapper<AiContext> mapper(DbAccessor::GetDbClient());
+		co_await mapper.insert(db_message);
 	}
 	catch (const std::exception& e)
 	{
-		promise->set_exception(std::make_exception_ptr(e));
+		LOG_ERROR << "exception: " << e.what();
+		throw;
 	}
-
-	return promise->get_future();
 }
 
-std::future<Json::Value> SQLiteMessageRepository::GetMessageRecords(int thread_id, int64_t existed_id)
+drogon::Task<Json::Value> SQLiteMessageRepository::GetMessageRecords(int thread_id, int64_t existed_id, int num)
 {
-	auto promise = std::make_shared<std::promise<Json::Value>>();
-	
-	Mapper<Messages> mapper(DbAccessor::GetDbClient());
+	try
+	{
+		CoroMapper<Messages> mapper(DbAccessor::GetDbClient());
 
-	Criteria criteria;
-	if (existed_id!=0)
-		criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id);
-	else
-		criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id)
+		Criteria criteria;
+		if (existed_id != 0)
+			criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id);
+		else
+			criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id)
 			&& Criteria(Messages::Cols::_message_id, CompareOperator::GT, existed_id);
 
-	mapper.limit(50).findBy(criteria,
-		[promise](const std::vector<Messages>& records)
-		{
-			Json::Value result(Json::arrayValue);
-			for (const auto& record:records)
-			{
-				result.append(record.toJson());
-			}
-			promise->set_value(result);
-		},
-		[promise](const DrogonDbException& e)
-		{
-			LOG_ERROR << "exception: " << e.base().what();
-			promise->set_exception(std::make_exception_ptr(e.base()));
-		});
+		const auto& records = co_await mapper.limit(num).findBy(criteria);
 
-	return promise->get_future();
+		Json::Value json_records;
+
+		for (const auto& record : records)
+			json_records.append(record.toJson());
+
+		co_return json_records;
+	}catch (const std::exception& e)
+	{
+		LOG_ERROR << "exception: " << e.what();
+		throw;
+	}
+	
 }
 
-std::future<Json::Value> SQLiteMessageRepository::GetAIContext(int thread_id, int64_t timestamp)
+drogon::Task<Json::Value> SQLiteMessageRepository::GetAIContext(int thread_id, int64_t timestamp)
 {
-	auto promise = std::make_shared<std::promise<Json::Value>>();
+	try
+	{
+		CoroMapper<AiContext> mapper(DbAccessor::GetDbClient());
 
-	Mapper<AiContext> mapper(DbAccessor::GetDbClient());
+		Criteria criteria(Criteria(AiContext::Cols::_thread_id, CompareOperator::EQ, thread_id)
+			&& Criteria(AiContext::Cols::_created_time, CompareOperator::GT, timestamp));
 
-	Criteria criteria(Criteria(AiContext::Cols::_thread_id,CompareOperator::EQ,thread_id)
-		&&Criteria(AiContext::Cols::_created_time,CompareOperator::GT,timestamp));
+		auto context = co_await mapper.limit(20).findBy(criteria);
 
-	//if (existed_id != 0)
-	//	criteria = Criteria(AiContext::Cols::_thread_id, CompareOperator::EQ, thread_id);
-	//else
-	//	criteria = Criteria(AiContext::Cols::_thread_id, CompareOperator::EQ, thread_id)
-	//	&& Criteria(AiContext::Cols::_message_id, CompareOperator::GT, existed_id);
+		Json::Value json_records;
 
-	mapper.limit(50).findBy(criteria,
-		[promise](const std::vector<AiContext>& records)
-		{
-			Json::Value result(Json::arrayValue);
-			for (const auto& record : records)
-			{
-				result.append(record.toJson());
-			}
-			promise->set_value(result);
-		},
-		[promise](const DrogonDbException& e)
-		{
-			LOG_ERROR << "exception: " << e.base().what();
-			promise->set_exception(std::make_exception_ptr(e.base()));
-		});
+		for (const auto& record : context)
+			json_records.append(record.toJson());
 
-	return promise->get_future();
-
-
+		co_return json_records;
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "exception: " << e.what();
+		throw;
+	}
+	
 }
 
 

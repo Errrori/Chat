@@ -25,9 +25,9 @@ ChatMessage ChatMessage::FromJson(const Json::Value& data)
 		if (data.isMember("sender_avatar"))
 			message._sender_avatar = data["sender_avatar"].asString();
 		if (data.isMember("status"))
-			message._status = data["status"].asInt();
+			message._status = data["status"].asInt64();
 		if (data.isMember("create_time"))
-			message._create_time = data["create_time"].asInt();
+			message._create_time = data["create_time"].asInt64();
 		else
 			message._create_time = now; 
 		if (data.isMember("update_time"))
@@ -80,13 +80,22 @@ std::optional<drogon_model::sqlite3::Messages> ChatMessage::ToDbMessage() const
 	
 	dbMessage.setStatus(static_cast<int64_t>(_status));
 	
-	//if (!_create_time.empty()) {
-	//	dbMessage.setCreateTime(_create_time);
-	//}
-	//
-	//if (!_update_time.empty()) {
-	//	dbMessage.setUpdateTime(_update_time);
-	//}
+	if (_create_time>0) {
+		dbMessage.setCreateTime(_create_time);
+	}
+	else
+	{
+		dbMessage.setCreateTime(Utils::GetCurrentTimeStamp());
+	}
+	
+	if (_update_time>0) {
+		dbMessage.setUpdateTime(_update_time);
+	}
+	else
+	{
+		dbMessage.setUpdateTime(Utils::GetCurrentTimeStamp());
+
+	}
 	return dbMessage;
 }
 

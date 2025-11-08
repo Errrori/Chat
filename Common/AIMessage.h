@@ -25,7 +25,7 @@ public:
 		const std::string& content,int64_t create_time,Role role = Role::unknown)
 		:_thread_id(thread_id), _message_id(message_id), _content(content), _created_time(create_time), _role(role){}
 
-	static AIMessage FromJson(const Json::Value& json_msg);
+	static AIMessage FromJson(const Json::Value& data);
 	static std::string RoleToString(Role role);
 	static Role StringToRole(const std::string& role_str);
 
