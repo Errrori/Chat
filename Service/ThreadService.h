@@ -16,14 +16,15 @@ public:
 	ThreadService(std::shared_ptr<IThreadRepository> ptr):_thread_repo(std::move(ptr)){}
 
 	// create / join / query
-	void CreateChatThread(const std::shared_ptr<ChatThread> chat, RespCallback&& callback) const;
-	void QueryThreadInfo(int thread_id, RespCallback&& callback) const;
-	void AddThreadMember(const MemberData& data, RespCallback&& callback, std::string operator_uid = "") const;
+	drogon::Task<int> CreateChatThread(const ChatThread& chat) const;
+	drogon::Task<Json::Value> QueryThreadInfo(int thread_id) const;
+	drogon::Task<bool> AddThreadMember(const MemberData& data) const;
 	drogon::Task<std::vector<std::string>> GetThreadMember(int thread_id) const;
 	drogon::Task<ChatThread::ThreadType> GetThreadType(int thread_id) const;
 
-
 	drogon::Task<bool> ValidateMember(int thread_id, const std::string& uid) const;
+
+
 private:  
 	// a repository pointer
 	std::shared_ptr<IThreadRepository> _thread_repo;

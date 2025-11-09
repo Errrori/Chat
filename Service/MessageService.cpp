@@ -179,6 +179,18 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 	);
 }
 
+drogon::Task<Json::Value> MessageService::GetChatOverviews(int64_t existing_id, const std::string& uid) const
+{
+	try
+	{
+		co_return co_await _msg_repo->GetChatOverviews(existing_id, uid);
+	}
+	catch (const std::exception& e)
+	{
+		throw;
+	}
+}
+
 
 MessageService::AIRequestProcessor::AIRequestProcessor()
 {

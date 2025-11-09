@@ -153,7 +153,7 @@ public:
 private:
 	std::string _content;
 	std::optional<Json::Value> _context;
-	std::string _request_id;
+	std::string _request_id;  
 	Role _role;
 	Model _model = Model::glm_flash;
 	bool _is_stream = false;

@@ -18,294 +18,255 @@ using GroupMembers = drogon_model::sqlite3::GroupMembers;
 using AIChats = drogon_model::sqlite3::AiChats;
 
 
-std::future<int> SQLiteThreadRepository::CreatePrivateThread(const std::shared_ptr<PrivateThread> info)
+drogon::Task<int> SQLiteThreadRepository::CreatePrivateThread(PrivateThread info)
 {
-	auto promise = std::make_shared<std::promise<int>>();
-	auto private_info = std::dynamic_pointer_cast<PrivateThread>(info);
-	if (private_info->IsDataValid())
+	try
 	{
-		DbAccessor::GetDbClient()->newTransactionAsync
-		([private_info, promise](const std::shared_ptr<Transaction>& trans)
-			{
-				try
-				{
-					if (trans == nullptr)
-					{
-						LOG_ERROR << "fail to create transaction";
-						promise->set_exception(std::make_exception_ptr("fail to create transaction"));
-						return;
-					}
-					Mapper<Threads> thread_mapper(trans);
-					thread_mapper.insert(private_info->ToDbThread().value(), [promise, trans, private_info](const Threads& record)
-						{
-							auto thread_id = record.getValueOfThreadId();
-							Mapper<PrivateChats> private_mapper(trans);
-							private_info->SetThreadId(static_cast<int>(thread_id));
-							private_mapper.insert(private_info->ToDbPrivateChat().value(), [promise, thread_id](const PrivateChats& record)
-								{
-									promise->set_value(static_cast<int>(thread_id));
-								}, [trans, promise](const DrogonDbException& e)
-									{
-										LOG_ERROR << "exception: " << e.base().what();
-										trans->rollback();
-										promise->set_value(-1);
-									});
-						},
-						[trans, promise](const DrogonDbException& e)
-						{
-							LOG_ERROR << "exception: " << e.base().what();
-							trans->rollback();
-							promise->set_value(-1);
-						});
-				}
-				catch (const std::exception& e)
-				{
-					LOG_ERROR << "exception: " << e.what();
-					trans->rollback();
-					promise->set_value(-1);
-				}
-			});
-	}
-	else
-	{
-		promise->set_value(-1);
-		LOG_INFO << "error: private thread data is not valid";
-	}
-	return promise->get_future();
-}
+		if (!info.IsDataValid())
+			throw std::invalid_argument("info is not valid");
 
-std::future<int> SQLiteThreadRepository::CreateGroupThread(const std::shared_ptr<GroupThread> info)
-{
-	auto promise = std::make_shared<std::promise<int>>();
-	auto group_info = std::dynamic_pointer_cast<GroupThread>(info);
-	if (group_info->IsDataValid())
-	{
-		DbAccessor::GetDbClient()->newTransactionAsync
-		([group_info, promise](const std::shared_ptr<drogon::orm::Transaction>& trans)
-			{
-				try
-				{
-					if (trans == nullptr)
-					{
-						LOG_ERROR << "fail to create transaction";
-						promise->set_exception(std::make_exception_ptr("fail to create transaction"));
-						return;
-					}
-					Mapper<Threads> thread_mapper(trans);
-					thread_mapper.insert(group_info->ToDbThread().value(), [trans, promise, group_info](const Threads& record)
-						{
-							group_info->SetThreadId(record.getValueOfThreadId());
-							Mapper<GroupChats> group_mapper(trans);
-							group_mapper.insert(group_info->ToDbGroupChat().value(), [promise, trans, group_info](const GroupChats& group_record)
-								{
-									Mapper<GroupMembers> members_mapper(trans);
-									LOG_INFO << group_info->ToDbOwner().value().toJson().toStyledString();
-									members_mapper.insert(group_info->ToDbOwner().value(), [promise](const GroupMembers& member_record)
-										{
-											promise->set_value(member_record.getValueOfThreadId());
-										},
-										[trans,promise](const DrogonDbException& e)
-										{
-											trans->rollback();
-											LOG_ERROR << "exception: " << e.base().what();
-											promise->set_value(-1);
-										});
+		DbAccessor::GetDbClient()->newTransaction();
 
-								}, [trans, promise](const DrogonDbException& e)
-									{
-										trans->rollback();
-										LOG_ERROR << "exception: " << e.base().what();
-										promise->set_value(-1);
-									});
-						}, [trans, promise](const DrogonDbException& e)
-							{
-								trans->rollback();
-								LOG_ERROR << "exception: " << e.base().what();
-								promise->set_value(-1);
-							});
-				}
-				catch (const std::exception& e)
-				{
-					trans->rollback();
-					LOG_ERROR << "exception: " << e.what();
-					promise->set_value(-1);
-				}
-			});
-	}
-	else
-	{
-		LOG_INFO << "error: group thread data is not valid";
-		promise->set_value(-1);
-	}
+		auto trans = co_await DbAccessor::GetDbClient()->newTransactionCoro();
+		if (trans == nullptr)
+			throw std::runtime_error("fail to create transaction");
 
-	return promise->get_future();
-}
+		auto db_thread = info.ToDbThread();
 
-std::future<int> SQLiteThreadRepository::CreateAIThread(const std::shared_ptr<AIThread> info)
-{
-	auto promise = std::make_shared<std::promise<int>>();
+		int thread_id = -1;
 
-	const auto& ai_info = std::dynamic_pointer_cast<AIThread>(info);
-	if (ai_info->IsDataValid())
-	{
-		DbAccessor::GetDbClient()->newTransactionAsync([ai_info, promise](const std::shared_ptr<Transaction>& trans)
-			{
-				try
-				{
-					if (trans==nullptr)
-					{
-						LOG_ERROR << "fail to create transaction";
-						promise->set_exception(std::make_exception_ptr("fail to create transaction"));
-						return;
-					}
-					Mapper<Threads> mapper(trans);
-					mapper.insert(ai_info->ToDbThread().value(), [trans, ai_info, promise](const Threads& record)
-						{
-							Mapper<AIChats> ai_mapper(trans);
-							ai_info->SetThreadId(record.getValueOfThreadId());
-							ai_mapper.insert(ai_info->ToDbAiChat().value(), [promise](const AIChats& ai_record)
-								{
-									promise->set_value(ai_record.getValueOfThreadId());
-								},
-								[promise, trans](const DrogonDbException& e)
-								{
-									trans->rollback();
-									promise->set_value(-1);
-									LOG_ERROR << "exception: " << e.base().what();
-								});
-						},
-						[trans, promise](const DrogonDbException& e)
-						{
-							trans->rollback();
-							promise->set_value(-1);
-							LOG_INFO << "exception: " << e.base().what();
-						});
-				}
-				catch (const std::exception& e)
-				{
-					trans->rollback();
-					LOG_ERROR << "exception: " << e.what();
-					promise->set_value(-1);
-				}
-			});
-	}
-	else
-	{
-		LOG_ERROR << "error: ai thread data is not valid";
-		promise->set_value(-1);
-	}
-	return promise->get_future();
-}
-
-std::future<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id) noexcept(false)
-{
-	auto promise = std::make_shared<std::promise<Json::Value>>();
-	Mapper<Threads> mapper(DbAccessor::GetDbClient());
-
-	mapper.limit(1).findBy(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id),
-		[thread_id, promise](const std::vector<Threads>& t)
+		CoroMapper<Threads> thread_mapper(trans);
+		try
 		{
-			switch (ThreadTypeConvert::ToType(t[0].getValueOfType()))
-			{
-			case ChatThread::ThreadType::PRIVATE:
-			{
-				Mapper<PrivateChats> private_mapper(DbAccessor::GetDbClient());
-				private_mapper.limit(1).findBy(Criteria(PrivateChats::Cols::_thread_id, CompareOperator::EQ, thread_id),
-					[promise](const std::vector<PrivateChats>& records)
-					{
-						Json::Value json_data = records[0].toJson();
-						json_data["type"] = TYPE_PRIVATE_CHAT;
-						promise->set_value(json_data);
-					},
-					[promise](const DrogonDbException& e)
-					{
-						promise->set_value(Json::nullValue);
-					});
-			}
-			break;
-			case ChatThread::ThreadType::GROUP:
-			{
-				Mapper<GroupChats> group_mapper(DbAccessor::GetDbClient());
-				group_mapper.limit(1).findBy(Criteria(GroupChats::Cols::_thread_id, CompareOperator::EQ, thread_id),
-					[promise](const std::vector<GroupChats>& records)
-					{
-						Json::Value json_data = records[0].toJson();
-						json_data["type"] = TYPE_GROUP_CHAT;
-						promise->set_value(json_data);
-					},
-					[promise](const DrogonDbException& e)
-					{
-						promise->set_value(Json::nullValue);
-					});
-			}
-			break;
-			case ChatThread::ThreadType::AI:
-			{
-				Mapper<AIChats> ai_mapper(DbAccessor::GetDbClient());
-				ai_mapper.limit(1).findBy(Criteria(AIChats::Cols::_thread_id, CompareOperator::EQ, thread_id),
-					[promise](const std::vector<AIChats>& records)
-					{
-						Json::Value json_data = records[0].toJson();
-						json_data["type"] = TYPE_AI_CHAT;
-						promise->set_value(json_data);
-					},
-					[promise](const DrogonDbException& e)
-					{
-						promise->set_value(Json::nullValue);
-					});
-			}
-			break;
-			default:
-				LOG_ERROR << "Unknown thread type";
-				promise->set_value(Json::nullValue);
-				break;
-			}
-		},
-		[promise](const DrogonDbException& e)
+			 auto result= co_await thread_mapper.insert(db_thread);
+			 thread_id = result.getValueOfThreadId();
+			 info.SetThreadId(thread_id);
+		}
+		catch (const std::exception& e){
+			trans->rollback();
+			throw;
+		}
+
+		auto private_info = info.ToDbPrivateChat();
+		if (!private_info.has_value())
 		{
-			promise->set_value(Json::nullValue);
-		});
-	return promise->get_future();
+			trans->rollback();
+			throw std::invalid_argument("can not get private thread info");
+		}
+
+		CoroMapper<PrivateChats> private_mapper(trans);
+		try
+		{
+			co_await private_mapper.insert(private_info.value());
+		}
+		catch (const std::exception& e) {
+			trans->rollback();
+			throw;
+		}
+		co_return thread_id;
+	}
+	catch (const std::exception& e)
+	{
+		throw;
+	}
 }
 
-std::future<bool> SQLiteThreadRepository::AddToThread(const MemberData& member)
+drogon::Task<int> SQLiteThreadRepository::CreateGroupThread(GroupThread info)
 {
-	auto promise = std::make_shared<std::promise<bool>>();
+	try
+	{
+		if (!info.IsDataValid())
+			throw std::invalid_argument("info is not valid");
+
+		DbAccessor::GetDbClient()->newTransaction();
+
+		auto trans = co_await DbAccessor::GetDbClient()->newTransactionCoro();
+		if (trans == nullptr)
+			throw std::runtime_error("fail to create transaction");
+
+		auto db_thread = info.ToDbThread();
+		auto db_member = info.ToDbOwner();
+		if (!db_member.has_value())
+			throw std::invalid_argument("lack of essential fields");
+
+		CoroMapper<Threads> thread_mapper(trans);
+		int thread_id = -1;
+
+		try
+		{
+			auto result = co_await thread_mapper.insert(db_thread);
+			thread_id = result.getValueOfThreadId();
+			info.SetThreadId(thread_id);
+		}catch (const std::exception& e)
+		{
+			trans->rollback();
+			throw;
+		}
+
+		auto group_info = info.ToDbGroupChat();
+		if (!group_info.has_value())
+		{
+			trans->rollback();
+			throw std::invalid_argument("can not get group thread info");
+		}
+
+		CoroMapper<GroupChats> group_mapper(trans);
+		try
+		{
+			co_await group_mapper.insert(group_info.value());
+		}
+		catch (const std::exception& e)
+		{
+			trans->rollback();
+			throw;
+		}
+
+		CoroMapper<GroupMembers> member_mapper(trans);
+		try
+		{
+			co_await member_mapper.insert(info.ToDbOwner().value());
+		}catch (const std::exception& e)
+		{
+			throw;
+		}
+
+		co_return thread_id;
+	}
+	catch (const std::exception& e)
+	{
+		throw;
+	}
+}
+
+drogon::Task<int> SQLiteThreadRepository::CreateAIThread(AIThread info)
+{
+	try
+	{
+		if (!info.IsDataValid())
+			throw std::invalid_argument("info is not valid");
+
+		DbAccessor::GetDbClient()->newTransaction();
+
+		auto trans = co_await DbAccessor::GetDbClient()->newTransactionCoro();
+		if (trans == nullptr)
+			throw std::runtime_error("fail to create transaction");
+
+		auto db_thread = info.ToDbThread();
+		int thread_id = -1;
+
+		CoroMapper<Threads> thread_mapper(trans);
+		try
+		{
+			auto result = co_await thread_mapper.insert(db_thread);
+			thread_id = result.getValueOfThreadId();
+			info.SetThreadId(thread_id);
+		}
+		catch (const std::exception& e) {
+			trans->rollback();
+			throw;
+		}
+
+		auto ai_info = info.ToDbAiChat();
+		if (!ai_info.has_value())
+		{
+			trans->rollback();
+			throw std::invalid_argument("can not get ai thread info");
+		}
+
+		CoroMapper<AIChats> private_mapper(trans);
+		try
+		{
+			co_await private_mapper.insert(ai_info.value());
+		}
+		catch (const std::exception& e) {
+			trans->rollback();
+			throw;
+		}
+		co_return thread_id;
+	}
+	catch (const std::exception& e)
+	{
+		throw;
+	}
+}
+
+drogon::Task<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id)
+{
+	CoroMapper<Threads> mapper(DbAccessor::GetDbClient());
+
+	auto type = co_await mapper.limit(1).
+		findBy(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id));
+
+	if (type.empty())
+		co_return Json::nullValue;
+
+	switch (ThreadTypeConvert::ToType(type[0].getValueOfType()))
+	{
+	case ChatThread::ThreadType::PRIVATE:
+	{
+		CoroMapper<PrivateChats> private_mapper(DbAccessor::GetDbClient());
+		auto info = co_await private_mapper.limit(1).
+			findBy(Criteria(PrivateChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
+		if (!info.empty()) {
+			Json::Value json_info{ info[0].toJson() };
+			json_info["type"] = TYPE_PRIVATE_CHAT;
+		}
+	}
+	break;
+	case ChatThread::ThreadType::GROUP:
+	{
+		CoroMapper<GroupChats> group_mapper(DbAccessor::GetDbClient());
+		auto info = co_await group_mapper.limit(1).
+			findBy(Criteria(GroupChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
+		if (!info.empty()) {
+			Json::Value json_info{ info[0].toJson() };
+			json_info["type"] = TYPE_GROUP_CHAT;
+		}
+	}
+	break;
+	case ChatThread::ThreadType::AI:
+	{
+		CoroMapper<AIChats> ai_mapper(DbAccessor::GetDbClient());
+		auto info = co_await ai_mapper.limit(1).
+			findBy(Criteria(AIChats::Cols::_thread_id, CompareOperator::EQ, thread_id));
+		if (!info.empty()) {
+			Json::Value json_info{ info[0].toJson() };
+			json_info["type"] = TYPE_AI_CHAT;
+		}
+	}
+	break;
+	default:
+		LOG_ERROR << "Unknown thread type";
+		throw std::invalid_argument("unknown thread type");
+	}
+	co_return Json::nullValue;
+}
+
+drogon::Task<bool> SQLiteThreadRepository::AddToGroup(const MemberData& member)
+{
 	if (!member.IsValid())
 	{
 		LOG_ERROR << "error: member data is not valid";
-		promise->set_value(false);
-		return promise->get_future();
+		throw std::invalid_argument("member data is not valid");
 	}
 
 	try
 	{
-		Mapper<GroupMembers> mapper(DbAccessor::GetDbClient());
-		const auto& member_data = member.ToDbGroupMember();
-		mapper.insert(member_data.value(), [promise](const GroupMembers& member)
-			{
-				promise->set_value(true);
-			},
-			[promise](const DrogonDbException& e)	
-			{
-				LOG_ERROR << "exception: " << e.base().what();
-				promise->set_value(false);
-			});
+		CoroMapper<GroupMembers> mapper(DbAccessor::GetDbClient());
+		auto member_data = member.ToDbGroupMember();
+		co_await mapper.insert(member_data.value());
 	}catch (const std::exception& e)
 	{
-		LOG_ERROR << "exception: " << e.what();
-		promise->set_value(false);
+		throw;
 	}
-
-	return promise->get_future();
 
 }
 
-bool SQLiteThreadRepository::IsThreadMember(int thread_id, const std::string& uid)
+drogon::Task<bool> SQLiteThreadRepository::IsThreadMember(int thread_id, const std::string& uid)
 {
-	Mapper<Threads> mapper(DbAccessor::GetDbClient());
-	const auto& members = GetThreadMember(thread_id).get();
-	return std::find(members.begin(), members.end(), uid) != members.end();
+	CoroMapper<Threads> mapper(DbAccessor::GetDbClient());
+	auto members = co_await GetThreadMember(thread_id);
+	co_return std::find(members.begin(), members.end(), uid) != members.end();
 }
 
 drogon::Task<std::vector<std::string>> SQLiteThreadRepository::GetThreadMember(

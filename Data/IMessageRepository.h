@@ -11,5 +11,6 @@ public:
 	virtual drogon::Task<> RecordAIMessage(const AIMessage& message) = 0;
 	virtual drogon::Task<Json::Value> GetMessageRecords(int thread_id, int64_t existed_id = 0, int num = 50) = 0;
 	virtual drogon::Task<Json::Value> GetAIContext(int thread_id, int64_t timestamp = 0) = 0;
+	virtual drogon::Task<Json::Value> GetChatOverviews(int64_t, const std::string& uid) = 0;
 };
 

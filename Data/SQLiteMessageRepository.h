@@ -17,5 +17,5 @@ class SQLiteMessageRepository :public IMessageRepository
 	drogon::Task<Json::Value> GetMessageRecords(int thread_id, int64_t existed_id, int num = 50) override;
 	drogon::Task<Json::Value> GetAIContext(int thread_id, int64_t timestamp) override;
 
-	drogon::Task<int64_t> RecordMessage(const ChatMessage& message);
+	drogon::Task<Json::Value> GetChatOverviews(int64_t existing_id,const std::string& uid) override;
 };

@@ -10,23 +10,6 @@
 #include "models/Threads.h"
 
 
-std::shared_ptr<ChatThread> ChatThread::FromJson(const Json::Value& json) {
-    if (!json.isMember("type")) {
-        return nullptr;
-    }
-    
-    auto type = static_cast<ThreadType>(json["type"].asInt());
-    switch (type) {
-        case ThreadType::PRIVATE:
-            return PrivateThread::FromJson(json);
-        case ThreadType::GROUP:
-            return GroupThread::FromJson(json);
-        case ThreadType::AI:
-            return AIThread::FromJson(json);
-        default:
-            return nullptr;
-    }
-}
 
 std::unique_ptr<ChatThread> ChatThread::FromThreadId(int thread_id) {
     // 这里需要从数据库查询thread类型，然后调用对应的构造方法
@@ -60,10 +43,7 @@ Json::Value PrivateThread::ToJson() const {
     return json;
 }
 
-std::optional<drogon_model::sqlite3::Threads> PrivateThread::ToDbThread() const {
-    if (!IsDataValid()) {
-        return std::nullopt;
-    }
+drogon_model::sqlite3::Threads PrivateThread::ToDbThread() const {
     
     drogon_model::sqlite3::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
@@ -110,11 +90,11 @@ std::optional<drogon_model::sqlite3::PrivateChats> PrivateThread::ToDbPrivateCha
     return privateChat;
 }
 
-std::shared_ptr<PrivateThread> PrivateThread::FromJson(const Json::Value& json) {
-    auto chat = std::make_shared<PrivateThread>();
-    chat->SetThreadId(json.get("thread_id", -1).asInt());
-    chat->SetFirstUid(json.get("uid1", "").asString());
-    chat->SetSecondUid(json.get("uid2", "").asString());
+PrivateThread PrivateThread::FromJson(const Json::Value& json) {
+    PrivateThread chat;
+    chat.SetThreadId(json.get("thread_id", -1).asInt());
+    chat.SetFirstUid(json.get("uid1", "").asString());
+    chat.SetSecondUid(json.get("uid2", "").asString());
     return chat;
 }
 
@@ -149,7 +129,8 @@ Json::Value GroupThread::ToJson() const {
     return json;
 }
 
-std::optional<drogon_model::sqlite3::Threads> GroupThread::ToDbThread() const {
+drogon_model::sqlite3::Threads GroupThread::ToDbThread() const {
+
     drogon_model::sqlite3::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
     thread.setCreateTime(Utils::GetCurrentTimeStamp());
@@ -196,13 +177,13 @@ std::optional<drogon_model::sqlite3::GroupMembers> GroupThread::ToDbOwner() cons
     return members;
 }
 
-std::shared_ptr<GroupThread> GroupThread::FromJson(const Json::Value& json) {
-    auto chat = std::make_shared<GroupThread>();
-    chat->SetThreadId(json.get("thread_id", -1).asInt());
-    chat->SetName(json.get("name", "").asString());
-    chat->SetDescription(json.get("description", "").asString());
-    chat->SetAvatar(json.get("avatar", "").asString());
-    chat->SetOwnerUid(json.get("uid", "").asString());
+GroupThread GroupThread::FromJson(const Json::Value& json) {
+    GroupThread chat;
+    chat.SetThreadId(json.get("thread_id", -1).asInt());
+    chat.SetName(json.get("name", "").asString());
+    chat.SetDescription(json.get("description", "").asString());
+    chat.SetAvatar(json.get("avatar", "").asString());
+    chat.SetOwnerUid(json.get("uid", "").asString());
     return chat;
 }
 
@@ -231,7 +212,7 @@ Json::Value AIThread::ToJson() const {
     return json;
 }
 
-std::optional<drogon_model::sqlite3::Threads> AIThread::ToDbThread() const {
+drogon_model::sqlite3::Threads AIThread::ToDbThread() const {
     drogon_model::sqlite3::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
     thread.setCreateTime(Utils::GetCurrentTimeStamp());
@@ -261,13 +242,13 @@ std::optional<drogon_model::sqlite3::AiChats> AIThread::ToDbAiChat() const {
     return aiChat;
 }
 
-std::shared_ptr<AIThread> AIThread::FromJson(const Json::Value& json) {
-    auto chat = std::make_shared<AIThread>();
-    chat->SetThreadId(json.get("thread_id", -1).asInt());
-    chat->SetName(json.get("name", "").asString());
-    chat->SetCreatorUid(json.get("creator_uid", "").asString());
-    chat->SetInitSetting(json.get("init_settings", "").asString());
-    chat->SetAvatar(json.get("avatar", "").asString());
+AIThread AIThread::FromJson(const Json::Value& json) {
+    AIThread chat;
+    chat.SetThreadId(json.get("thread_id", -1).asInt());
+    chat.SetName(json.get("name", "").asString());
+    chat.SetCreatorUid(json.get("creator_uid", "").asString());
+    chat.SetInitSetting(json.get("init_settings", "").asString());
+    chat.SetAvatar(json.get("avatar", "").asString());
     return chat;
 }
 

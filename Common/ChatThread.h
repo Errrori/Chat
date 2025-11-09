@@ -41,7 +41,7 @@ public:
     virtual bool IsDbValid() const = 0;
     virtual bool IsDataValid() const = 0;
     virtual Json::Value ToJson() const = 0;
-    virtual std::optional<drogon_model::sqlite3::Threads> ToDbThread() const = 0;
+    virtual drogon_model::sqlite3::Threads ToDbThread() const = 0;
     
     virtual std::string GetDisplayName(const std::string& current_uid = "") const = 0;
     virtual std::string GetAvatar() const { return ""; }
@@ -49,8 +49,7 @@ public:
     
     void SetThreadId(int thread_id) { thread_id_ = thread_id; }
     int GetThreadId() const { return thread_id_; }
-    
-    static std::shared_ptr<ChatThread> FromJson(const Json::Value& json);
+
     static std::unique_ptr<ChatThread> FromThreadId(int thread_id);
 
 protected:
@@ -65,7 +64,7 @@ public:
     bool IsDbValid() const override;
     bool IsDataValid() const override;
     Json::Value ToJson() const override;
-    std::optional<drogon_model::sqlite3::Threads> ToDbThread() const override;
+    drogon_model::sqlite3::Threads ToDbThread() const override;
     
     std::string GetDisplayName(const std::string& current_uid = "") const override;
     
@@ -90,7 +89,7 @@ public:
     
     std::optional<drogon_model::sqlite3::PrivateChats> ToDbPrivateChat() const;
 
-    static std::shared_ptr<PrivateThread> FromJson(const Json::Value& json);
+    static PrivateThread FromJson(const Json::Value& json);
 
 private:
     std::string _first_uid;
@@ -106,7 +105,7 @@ public:
     bool IsDbValid() const override;
     bool IsDataValid() const override; 
     Json::Value ToJson() const override;
-    std::optional<drogon_model::sqlite3::Threads> ToDbThread() const override;
+    drogon_model::sqlite3::Threads ToDbThread() const override;
 
     std::string GetDisplayName(const std::string& current_uid = "") const override;
     std::string GetDescription() const override;
@@ -122,7 +121,7 @@ public:
     std::optional<drogon_model::sqlite3::GroupChats> ToDbGroupChat() const;
     std::optional<drogon_model::sqlite3::GroupMembers> ToDbOwner() const;
     
-    static std::shared_ptr<GroupThread> FromJson(const Json::Value& json);
+    static GroupThread FromJson(const Json::Value& json);
 
 private:
     std::string _description;
@@ -138,7 +137,7 @@ public:
     bool IsDbValid() const override;
     bool IsDataValid() const override;  // 添加这一行
     Json::Value ToJson() const override;
-    std::optional<drogon_model::sqlite3::Threads> ToDbThread() const override;
+    drogon_model::sqlite3::Threads ToDbThread() const override;
     
     std::string GetDisplayName(const std::string& current_uid = "") const override;
     std::string GetAvatar() const override;
@@ -153,7 +152,7 @@ public:
     
     std::optional<drogon_model::sqlite3::AiChats> ToDbAiChat() const;
     
-    static std::shared_ptr<AIThread> FromJson(const Json::Value& json);
+    static AIThread FromJson(const Json::Value& json);
 
 private:
     std::string _name;

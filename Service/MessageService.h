@@ -30,6 +30,8 @@ public:
 	void ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const;
 	void ProcessAIRequest(Json::Value msg, drogon::WebSocketConnectionPtr conn) const;
 
+	drogon::Task<Json::Value> GetChatOverviews(int64_t existing_id, const std::string& uid) const;
+
 private:
 	class AIRequestProcessor
 	{
