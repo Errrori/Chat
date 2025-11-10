@@ -6,6 +6,7 @@
 #include "Container.h"
 #include "Common/ChatMessage.h"
 #include "Service/MessageService.h"
+#include "Common/User.h"
 
 //Message types:
 //Image,Text,ErrorMessage,Relationship
@@ -48,9 +49,9 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 
         auto message = ChatMessage::FromJson(msg_data);
 
-        message.setSenderUid(conn_info->uid);
-        message.setSenderName(conn_info->username);
-        message.setSenderAvatar(conn_info->avatar);
+        message.setSenderUid(conn_info->getUid());
+        message.setSenderName(conn_info->getUsername());
+        message.setSenderAvatar(conn_info->getAvatar());
         GET_MESSAGE_SERVICE->ProcessUserMsg(std::move(message), [conn](const Json::Value& error)
             {
                 if (conn && conn->connected())
@@ -88,7 +89,7 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
         token = req->getParameter("token");
     }
 
-    Utils::UsersInfo info;
+    UserInfo info;
     if (!Utils::Authentication::VerifyJWT(token, info))
     {
         conn->send("Failed to verify token");
@@ -96,12 +97,10 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
         return;
     }
 
-    ConnectionService::ConnInfo conn_info{ info.uid,info.account,info.username,info.avatar };
-
     //after verify,write user info
     const auto& conn_service = GET_CONN_SERVICE;
 
-    if (!conn_service->AddConnection(conn,std::move(conn_info)))
+    if (!conn_service->AddConnection(conn,std::move(info)))
     {
         conn->sendJson(Utils::GenErrorResponse("can not add connection",ChatCode::FailAddConn));
         conn->shutdown();
@@ -115,8 +114,8 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
 
 void ChatController::handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn)
 {
-    const auto& info_ptr = conn->getContext<Utils::UsersInfo>();
+    const auto& info_ptr = conn->getContext<UserInfo>();
     if (info_ptr) {
-		LOG_INFO << "username: " << info_ptr->username << "  connection close";
+		LOG_INFO << "username: " << info_ptr->getUsername() << "  connection close";
     }
 }

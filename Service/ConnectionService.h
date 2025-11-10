@@ -8,25 +8,17 @@ class ConnectionService
 {
 	friend class Container;
 public:
-	struct ConnInfo
-	{
-		std::string uid;
-		std::string account;
-		std::string username;
-		std::string avatar;
-	};
 
 	ConnectionService(const ConnectionService& manager) = delete;
 	ConnectionService& operator=(const ConnectionService& manager) = delete;
 	ConnectionService(ConnectionService&& manager) = delete;
 	ConnectionService& operator=(ConnectionService&& manager) = delete;
 
-	bool AddConnection(const drogon::WebSocketConnectionPtr& conn,ConnInfo info);
+	bool AddConnection(const drogon::WebSocketConnectionPtr& conn,UserInfo info);
 	bool RemoveConnection(const std::string& uid);
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
-	void WriteConnInfo(const Utils::UsersInfo& info, const drogon::WebSocketConnectionPtr& conn);
 
-	std::shared_ptr<ConnInfo> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
+	std::shared_ptr<UserInfo> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
 
 	void Broadcast(const std::vector<std::string>& targets, const Json::Value& message);
 

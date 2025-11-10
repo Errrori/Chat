@@ -49,6 +49,7 @@ drogon::Task<int64_t> SQLiteMessageRepository::RecordUserMessage(const ChatMessa
 		db_message.setSenderAvatar(message.getSenderAvatar());
 		db_message.setCreateTime(message.getCreateTime());
 		db_message.setUpdateTime(message.getUpdateTime());
+		db_message.setThreadId(message.getThreadId());
 
 		CoroMapper<Messages> mapper(DbAccessor::GetDbClient());
 		const auto& coro_msg = co_await mapper.insert(db_message);
@@ -112,10 +113,10 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetMessageRecords(int thread_
 
 		Criteria criteria;
 		if (existed_id != 0)
-			criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id);
-		else
 			criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id)
 			&& Criteria(Messages::Cols::_message_id, CompareOperator::GT, existed_id);
+		else
+			criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id);
 
 		const auto& records = co_await mapper.limit(num).findBy(criteria);
 

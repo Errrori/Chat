@@ -6,6 +6,7 @@
 #include "ThreadService.h"
 #include "Common/AIMessage.h"
 #include "Common/AIRequestMsg.h"
+#include "Common/User.h"
 
 
 drogon::Task<Json::Value> MessageService::GetChatRecords(int thread_id, int num, int64_t existed_id)
@@ -107,14 +108,14 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnectionPtr conn) const
 {
 
-	drogon::async_func([msg = std::move(msg),conn = std::move(conn),this]()->drogon::Task<>
+	drogon::async_run([msg = std::move(msg),conn = std::move(conn),this]()->drogon::Task<>
 	{
 		try
 		{
 			AIMessage ai_msg = AIMessage::FromJson(msg);
 
 			bool result = co_await _thread_service->ValidateMember(ai_msg.getThreadId(),
-				conn->getContext<Utils::UsersInfo>()->uid);
+				conn->getContext<UserInfo>()->getUid());
 
 			if (!result)
 			{

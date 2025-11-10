@@ -161,7 +161,7 @@ namespace Utils {
             return token;
         }
 
-        bool VerifyJWT(const std::string& token, UsersInfo& info)
+        bool VerifyJWT(const std::string& token, UserInfo& info)
         {
             try
             {
@@ -178,10 +178,10 @@ namespace Utils {
                     return false;
                 }
 
-                info.username = data.get_payload_claim("username").as_string();
-                info.uid = data.get_payload_claim("uid").as_string();
-                info.avatar = data.get_payload_claim("avatar").as_string();
-                info.account = data.get_payload_claim("account").as_string();
+                info.setUsername(data.get_payload_claim("username").as_string());
+                info.setUid(data.get_payload_claim("uid").as_string());
+                info.setAvatar(data.get_payload_claim("avatar").as_string());
+                info.setAccount(data.get_payload_claim("account").as_string());
                 return true;
             }
             catch (const std::exception& e)

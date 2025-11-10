@@ -165,7 +165,7 @@ std::optional<drogon_model::sqlite3::GroupChats> GroupThread::ToDbGroupChat() co
 
 std::optional<drogon_model::sqlite3::GroupMembers> GroupThread::ToDbOwner() const
 {
-    if (!IsDbValid())
+    if (_owner_uid.empty()||thread_id_<=0)
     {
         return std::nullopt;
     }

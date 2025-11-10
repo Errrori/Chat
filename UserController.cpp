@@ -3,6 +3,7 @@
 
 #include "Data/DbAccessor.h"
 #include "models/Users.h"
+#include "Common/User.h"
 
 using namespace drogon;
 
@@ -100,7 +101,7 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
     }
 
     // 日志保持一致
-    auto json_data = Utils::UsersInfo::FromJson(*json_body);
+    auto json_data = UserInfo::FromJson(*json_body);
     LOG_INFO << json_data.ToString();
 
 

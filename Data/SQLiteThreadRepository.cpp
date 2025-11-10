@@ -33,14 +33,13 @@ drogon::Task<int> SQLiteThreadRepository::CreatePrivateThread(PrivateThread info
 
 		auto db_thread = info.ToDbThread();
 
-		int thread_id = -1;
-
 		CoroMapper<Threads> thread_mapper(trans);
 		try
 		{
 			 auto result= co_await thread_mapper.insert(db_thread);
-			 thread_id = result.getValueOfThreadId();
+			 auto thread_id = result.getValueOfThreadId();
 			 info.SetThreadId(thread_id);
+			 LOG_INFO << "thread id: " << thread_id;
 		}
 		catch (const std::exception& e){
 			trans->rollback();
@@ -63,7 +62,7 @@ drogon::Task<int> SQLiteThreadRepository::CreatePrivateThread(PrivateThread info
 			trans->rollback();
 			throw;
 		}
-		co_return thread_id;
+		co_return info.GetThreadId();
 	}
 	catch (const std::exception& e)
 	{
@@ -85,9 +84,7 @@ drogon::Task<int> SQLiteThreadRepository::CreateGroupThread(GroupThread info)
 			throw std::runtime_error("fail to create transaction");
 
 		auto db_thread = info.ToDbThread();
-		auto db_member = info.ToDbOwner();
-		if (!db_member.has_value())
-			throw std::invalid_argument("lack of essential fields");
+
 
 		CoroMapper<Threads> thread_mapper(trans);
 		int thread_id = -1;
@@ -121,10 +118,14 @@ drogon::Task<int> SQLiteThreadRepository::CreateGroupThread(GroupThread info)
 			throw;
 		}
 
+		auto db_member = info.ToDbOwner();
+		if (!db_member.has_value())
+			throw std::invalid_argument("lack of essential fields");
+
 		CoroMapper<GroupMembers> member_mapper(trans);
 		try
 		{
-			co_await member_mapper.insert(info.ToDbOwner().value());
+			co_await member_mapper.insert(db_member.value());
 		}catch (const std::exception& e)
 		{
 			throw;
@@ -198,7 +199,10 @@ drogon::Task<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id)
 		findBy(Criteria(Threads::Cols::_thread_id, CompareOperator::EQ, thread_id));
 
 	if (type.empty())
+	{
+		LOG_INFO << "error thread type";
 		co_return Json::nullValue;
+	}
 
 	switch (ThreadTypeConvert::ToType(type[0].getValueOfType()))
 	{
@@ -210,6 +214,7 @@ drogon::Task<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id)
 		if (!info.empty()) {
 			Json::Value json_info{ info[0].toJson() };
 			json_info["type"] = TYPE_PRIVATE_CHAT;
+			co_return json_info;
 		}
 	}
 	break;
@@ -221,6 +226,7 @@ drogon::Task<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id)
 		if (!info.empty()) {
 			Json::Value json_info{ info[0].toJson() };
 			json_info["type"] = TYPE_GROUP_CHAT;
+			co_return json_info;
 		}
 	}
 	break;
@@ -232,6 +238,7 @@ drogon::Task<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id)
 		if (!info.empty()) {
 			Json::Value json_info{ info[0].toJson() };
 			json_info["type"] = TYPE_AI_CHAT;
+			co_return json_info;
 		}
 	}
 	break;
@@ -239,6 +246,7 @@ drogon::Task<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id)
 		LOG_ERROR << "Unknown thread type";
 		throw std::invalid_argument("unknown thread type");
 	}
+	LOG_INFO << "can not find thread info";
 	co_return Json::nullValue;
 }
 
