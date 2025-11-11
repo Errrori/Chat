@@ -58,22 +58,10 @@ void AddOptionHandle()
 		{ drogon::Options });
 
 	// User routes
-	drogon::app().registerHandler("/user/get_user",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/user/modify/username",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/user/modify/password",
+	drogon::app().registerHandler("/user/get-user",
 		&HandleOptions,
 		{ drogon::Options });
 	drogon::app().registerHandler("/user/modify/info",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/user/modify/avatar",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/user/cancel",
 		&HandleOptions,
 		{ drogon::Options });
 
@@ -83,37 +71,7 @@ void AddOptionHandle()
 		{ drogon::Options });
 
 	// Thread routes
-	drogon::app().registerHandler("/thread/create/private",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/create/group",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/create/ai",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/group/join",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/group/invite",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/group/info",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/user/get_id",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/record/overview",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/record/get",
-		&HandleOptions,
-		{ drogon::Options });
-	drogon::app().registerHandler("/thread/info",
-		&HandleOptions,
-		{ drogon::Options });
-
+	// Create thread
 	drogon::app().registerHandler("/thread/create/private-chat",
 		&HandleOptions,
 		{ drogon::Options });
@@ -121,6 +79,27 @@ void AddOptionHandle()
 		&HandleOptions,
 		{ drogon::Options });
 	drogon::app().registerHandler("/thread/create/ai-chat",
+		&HandleOptions,
+		{ drogon::Options });
+	// Group member operations
+	drogon::app().registerHandler("/thread/group/add-member",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/group/join",
+		&HandleOptions,
+		{ drogon::Options });
+	// Query thread info
+	drogon::app().registerHandler("/thread/info/query",
+		&HandleOptions,
+		{ drogon::Options });
+	// Records
+	drogon::app().registerHandler("/thread/record/overview",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/record/user",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/thread/record/ai",
 		&HandleOptions,
 		{ drogon::Options });
 	

@@ -8,8 +8,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # 安装必要的构建工具和依赖
 RUN apt-get update && apt-get install -y \
     git \
-    gcc \
-    g++ \
+    software-properties-common \
     cmake \
     libjsoncpp-dev \
     uuid-dev \
@@ -19,6 +18,10 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     libsqlite3-dev \
     libcurl4-openssl-dev \
+    && add-apt-repository -y ppa:ubuntu-toolchain-r/test \
+    && apt-get update && apt-get install -y gcc-11 g++-11 \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100 \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100 \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装Drogon框架
@@ -27,14 +30,14 @@ RUN git clone https://github.com/drogonframework/drogon \
     && git submodule update --init \
     && mkdir build \
     && cd build \
-    && cmake .. \
+    && cmake .. -DCMAKE_CXX_STANDARD=20 \
     && make -j $(nproc) \
     && make install
 
 RUN git clone --depth=1 https://github.com/Thalhammer/jwt-cpp.git third_party/jwt-cpp \
     && mkdir -p third_party/jwt-cpp/build \
     && cd third_party/jwt-cpp/build \
-    && cmake .. \
+    && cmake .. -DCMAKE_CXX_STANDARD=20 \
     && make -j $(nproc) \
     && make install
 
@@ -54,7 +57,7 @@ RUN sed -i 's/std::string Utils::GenerateUid()/std::string GenerateUid()/g' util
 # 构建项目
 RUN mkdir -p build \
     && cd build \
-    && cmake .. \
+    && cmake .. -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_FLAGS="-fcoroutines" \
     && make -j $(nproc)
 
 # 使用更小的镜像作为最终镜像
