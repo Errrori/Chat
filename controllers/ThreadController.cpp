@@ -139,7 +139,7 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::AddThreadMember(drogon::
         const auto& visitor_info = req->getAttributes()->get<UserInfo>("visitor_info");
         auto member_data = MemberData::FromJson(json_data);
 
-		auto result = co_await GET_THREAD_SERVICE->ValidateMember(member_data.GetThreadId(), visitor_info.getUid());
+		auto result = co_await GET_THREAD_SERVICE->ValidateMemberCoro(member_data.GetThreadId(), visitor_info.getUid());
 
         if (!result)
 			co_return Utils::CreateErrorResponse(400, 400, "not access to operate");
@@ -198,7 +198,7 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetAIContext(drogon::Htt
         if (!thread_id.has_value()||!existed_time.has_value())
             co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
 
-        if (! co_await GET_THREAD_SERVICE->ValidateMember(thread_id.value(), user_info.getUid()))
+        if (! co_await GET_THREAD_SERVICE->ValidateMemberCoro(thread_id.value(), user_info.getUid()))
             co_return Utils::CreateErrorResponse(400, 400, "not in thread");
     
         const auto& records = co_await GET_MESSAGE_SERVICE->GetAIRecords(thread_id.value(),existed_time.value());
@@ -227,7 +227,7 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetChatRecords(drogon::H
         if (num.has_value() && num.value() <= 0)
             co_return Utils::CreateErrorResponse(400, 400, "invalid parameter value");
 
-        if (!co_await GET_THREAD_SERVICE->ValidateMember(thread_id.value(), user_info.getUid()))
+        if (!co_await GET_THREAD_SERVICE->ValidateMemberCoro(thread_id.value(), user_info.getUid()))
         {
             LOG_ERROR << "user is not in thread: " << thread_id.value();
             co_return Utils::CreateErrorResponse(400, 400, "not in thread");

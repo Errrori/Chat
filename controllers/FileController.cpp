@@ -25,6 +25,7 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 		return;
 	}
 	auto file_extension = std::string(file.getFileExtension());
+	std::transform(file_extension.begin(), file_extension.end(), file_extension.begin(), ::tolower);
 	bool is_supported = false;
 	for (const auto& type : UploadsFile::UploadImageType)
 	{

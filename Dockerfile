@@ -51,8 +51,7 @@ COPY config.json /app/
 # 确保所有头文件都在正确的位置
 RUN mkdir -p manager controllers middleware models
 
-# 修复utils.cpp中的GenerateUid函数定义问题
-RUN sed -i 's/std::string Utils::GenerateUid()/std::string GenerateUid()/g' utils.cpp
+
 
 # 构建项目
 RUN mkdir -p build \

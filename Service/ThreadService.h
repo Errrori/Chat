@@ -22,7 +22,9 @@ public:
 	drogon::Task<std::vector<std::string>> GetThreadMember(int thread_id) const;
 	drogon::Task<ChatThread::ThreadType> GetThreadType(int thread_id) const;
 
-	drogon::Task<bool> ValidateMember(int thread_id, const std::string& uid) const;
+	drogon::Task<bool> ValidateMemberCoro(int thread_id, const std::string& uid) const;
+
+	bool ValidateMember(int thread_id, const std::string& uid) const;
 
 
 private:  

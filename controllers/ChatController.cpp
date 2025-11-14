@@ -7,6 +7,7 @@
 #include "Common/ChatMessage.h"
 #include "Service/MessageService.h"
 #include "Common/User.h"
+#include "Service/ThreadService.h"
 
 //Message types:
 //Image,Text,ErrorMessage,Relationship
@@ -41,6 +42,14 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 
         const auto& conn_info = GET_CONN_SERVICE->GetConnInfo(conn);
 
+        if (!GET_THREAD_SERVICE->
+            ValidateMember(msg_data["thread_id"].asInt(), conn_info->getUid()))
+        {
+            LOG_ERROR << "user: " << conn_info->getUid() << " is not in thread: " << msg_data["thread_id"].asInt();
+            conn->sendJson(Utils::GenErrorResponse("user not in thread",ChatCode::NotPermission));
+        	return;
+        }
+
         if (msg_data.isMember("request_data"))
         {
             GET_MESSAGE_SERVICE->ProcessAIRequest(std::move(msg_data), conn);
@@ -68,26 +77,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
 	const drogon::WebSocketConnectionPtr& conn)
 {
-    std::string token;
-    //1.find token in authorization
-    std::string authHeader = req->getHeader("Authorization");
-    if (!authHeader.empty()) {
-        if (authHeader.substr(0, 4) == "JWT ") {
-            token = authHeader.substr(4);
-        }
-        else {
-            token = authHeader;
-        }
-    }
-    // 2.find token in Json
-    else if (auto jsonObj = req->getJsonObject(); jsonObj && jsonObj->isMember("token")) {
-        token = (*jsonObj)["token"].asString();
-    }
-
-    // 3.find token in parameter
-    else if (!req->getParameter("token").empty()) {
-        token = req->getParameter("token");
-    }
+    auto token = Utils::Authentication::GetToken(req);
 
     UserInfo info;
     if (!Utils::Authentication::VerifyJWT(token, info))

@@ -47,7 +47,7 @@ namespace Utils {
 #else
         // Linux implementation
 #include <uuid/uuid.h>
-        std::string GenerateUid() {  // Removed Utils:: qualifier
+        std::string GenerateUid() {
             uuid_t uuid;
             uuid_generate(uuid);
 
@@ -88,27 +88,29 @@ namespace Utils {
         {
             std::string secret;
 
-            std::ifstream file("jwt_secret.json");
+            std::ifstream file(file_path);
             if (!file.is_open())
             {
-                std::ofstream ofile("jwt_secret.json");
-                if (!ofile.is_open())
-                {
-                    LOG_ERROR << "fail to generateSecret";
-                    return {};
-                }
+                // 文件不存在则生成新秘钥并写入
                 secret = GenerateSecret();
-
                 Json::Value data;
                 data["jwt_secret"] = secret;
-                ofile << data;
+
+                std::ofstream ofile(file_path);
+                if (!ofile.is_open())
+                {
+                    LOG_ERROR << "fail to generate secret file";
+                    return {};
+                }
+                Json::StreamWriterBuilder builder;
+                builder["indentation"] = "";
+                ofile << Json::writeString(builder, data);
                 ofile.close();
             }
             else
             {
                 Json::Value root;
                 file >> root;
-
                 if (root.isMember("jwt_secret"))
                 {
                     secret = root["jwt_secret"].asString();
@@ -124,16 +126,14 @@ namespace Utils {
 
         std::string GetJwtSecret()
         {
-            static std::string secret = LoadJwtSecret();
+            static std::string secret = LoadJwtSecret(SecretFilePath);
             if (secret.empty())
             {
                 LOG_ERROR << "fail to get secret";
                 return {};
             }
-
             return secret;
         }
-
     	//before use this function,make sure the user information is correct
         std::string GenerateJWT(const UserInfo& info)
         {

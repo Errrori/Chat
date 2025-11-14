@@ -147,6 +147,7 @@ namespace ChatCode
 		FailAddConn = 107,
 		UnMatchedType = 108,//thread type is not matched to thread_id
 		LoginKicked = 109,//logged in from another device
+		InvalidArg = 110
 	};
 }
 

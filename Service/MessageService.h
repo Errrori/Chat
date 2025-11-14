@@ -29,6 +29,8 @@ public:
 
 	void ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const;
 	void ProcessAIRequest(Json::Value msg, drogon::WebSocketConnectionPtr conn) const;
+	void ProcessRequest(const std::string& url, const std::string& token, int thread_id,
+	                    const RequestMsg& req_msg, drogon::WebSocketConnectionPtr conn) const;
 
 	drogon::Task<Json::Value> GetChatOverviews(int64_t existing_id, const std::string& uid) const;
 
@@ -42,8 +44,6 @@ private:
 
 		drogon::Task<AIMessage> operator()(const std::string& url, const std::string& token,int thread_id,
 			const RequestMsg& req, const SendCallback& send_cb);
-
-
 	private:
 		static size_t SyncWriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 		static size_t StreamWriteCallback(void* contents, size_t size, size_t nmemb, void* userp);

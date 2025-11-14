@@ -6,7 +6,6 @@
 #include "ThreadService.h"
 #include "Common/AIMessage.h"
 #include "Common/AIRequestMsg.h"
-#include "Common/User.h"
 
 
 drogon::Task<Json::Value> MessageService::GetChatRecords(int thread_id, int num, int64_t existed_id)
@@ -54,7 +53,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 		{
 			try
 			{
-				bool result = co_await _thread_service->ValidateMember(msg.getThreadId(),
+				bool result = co_await _thread_service->ValidateMemberCoro(msg.getThreadId(),
 					msg.getSenderUid());
 
 				if (!result)
@@ -69,7 +68,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 				if (!msg.IsValid())
 				{
 					LOG_ERROR << "message to delivered is not valid";
-					cb("message to delivered is not valid");
+					cb(Utils::GenErrorResponse("message data is not valid", ChatCode::InvalidArg));
 					co_return;
 				}
 				auto members = co_await _thread_service->GetThreadMember(msg.getThreadId());
@@ -114,16 +113,6 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 		{
 			AIMessage ai_msg = AIMessage::FromJson(msg);
 
-			bool result = co_await _thread_service->ValidateMember(ai_msg.getThreadId(),
-				conn->getContext<UserInfo>()->getUid());
-
-			if (!result)
-			{
-				LOG_ERROR << "user is not in the thread!";
-				conn->sendJson(Utils::GenErrorResponse("user is not in thread", ChatCode::NotPermission));
-				co_return;
-			}
-
 			auto type = co_await _thread_service->GetThreadType(ai_msg.getThreadId());
 			if (type != ChatThread::AI)
 			{
@@ -158,9 +147,13 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 			const auto& req_data = msg["request_data"];
 			if (req_data.isMember("is_stream") && req_data["is_stream"].isBool())
 				req_msg.SetStream(req_data["is_stream"].asBool());
+			if (req_data.isMember("is_thinking")&&req_data["is_thinking"].isBool())
+				req_msg.SetThinking(req_data["is_thinking"].asBool());
+			
 			req_msg.SetContext(json_context);
 
 			conn->sendJson(req_msg.ToJsonReq());
+
 
 			auto response = co_await AIRequestProcessor()
 				("https://open.bigmodel.cn/api/paas/v4/chat/completions", "45664786303e46ca9caa8dc3d82ce7c4.VzuV8oSl4Nb2H3GU"
@@ -168,7 +161,6 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 					{
 						conn->sendJson(resp);
 					});
-
 			co_await _msg_repo->RecordAIMessage(response);
 		}
 		catch (const std::exception& e)
@@ -178,6 +170,43 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 		}
 	}
 	);
+}
+
+void MessageService::ProcessRequest(const std::string& url, const std::string& token, int thread_id,
+                                    const RequestMsg& req_data, drogon::WebSocketConnectionPtr conn) const
+{
+	try
+	{
+		// 从完整 URL 提取出基址和路径
+		const auto scheme_pos = url.find("://");
+		const auto host_start = (scheme_pos == std::string::npos) ? 0 : scheme_pos + 3;
+		const auto path_pos = url.find('/', host_start);
+		const std::string base = (path_pos == std::string::npos) ? url : url.substr(0, path_pos);
+		const std::string path = (path_pos == std::string::npos) ? "/" : url.substr(path_pos);
+
+		// 构造客户端仅使用基址（如 https://open.bigmodel.cn）
+		auto client = drogon::HttpClient::newHttpClient(base);
+
+		// 构造 POST JSON 请求并设置路径与头部
+		auto req = drogon::HttpRequest::newHttpJsonRequest(req_data.ToJsonReq());
+		req->setMethod(drogon::Post);
+		req->setPath(path); // 如 /api/paas/v4/chat/completions
+		req->addHeader("Content-Type", "application/json");
+		req->addHeader("Authorization", "Bearer " + token);
+		req->addHeader("Accept", "application/json"); // 可选
+
+		auto is_stream = req_data.IsStream();
+
+		client->sendRequest(req, [is_stream,conn](drogon::ReqResult ret, const drogon::HttpResponsePtr& resp)
+			{
+				conn->send(resp->getBody());
+			});
+
+
+	}catch (const std::exception& e)
+	{
+		throw;
+	}
 }
 
 drogon::Task<Json::Value> MessageService::GetChatOverviews(int64_t existing_id, const std::string& uid) const

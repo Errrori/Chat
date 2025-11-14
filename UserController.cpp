@@ -13,7 +13,6 @@ drogon::Task<HttpResponsePtr> UserController::GetUser(HttpRequestPtr req)
 
     try
     {
-        // 参数获取与校验（与原函数一致）
         auto uidOpt = req->getOptionalParameter<std::string>("uid");
         auto accountOpt = req->getOptionalParameter<std::string>("account");
 
@@ -23,7 +22,6 @@ drogon::Task<HttpResponsePtr> UserController::GetUser(HttpRequestPtr req)
         if (uidOpt.has_value() && accountOpt.has_value())
             co_return Utils::CreateErrorResponse(400, 400, "can not query user in two parameters");
 
-        // 查询
         auto client = DbAccessor::GetDbClient();
         drogon::orm::Result result;
 
@@ -62,10 +60,9 @@ drogon::Task<HttpResponsePtr> UserController::GetUser(HttpRequestPtr req)
         };
         Json::Value userInfo = user.toMasqueradedJson(mask);
 
-        // 响应（与原函数一致）
         Json::Value response;
         response["code"] = 200;
-        response["message"] = "Success";
+        response["message"] = "success to get user info";
         response["data"] = userInfo;
 
         auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
@@ -179,8 +176,7 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
         co_return drogon::HttpResponse::newHttpJsonResponse(response);
     }
     catch (const std::exception& e) {
-        // 原实现未专门分支处理系统错误，此处与失败分支保持一致返回 400
-        LOG_ERROR << "ModifyUserInfo exception: " << e.what();
+    	LOG_ERROR << "ModifyUserInfo exception: " << e.what();
         response["code"] = 400;
         response["message"] = "fail to modify user's info ";
         co_return drogon::HttpResponse::newHttpJsonResponse(response);

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(Test CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -79,6 +79,11 @@ find_package(CURL REQUIRED)
 
 # 添加jwt-cpp的包含路径
 include_directories(third_party/jwt-cpp/include)
+
+# 对 GCC 启用协程支持
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${PROJECT_NAME} PRIVATE -fcoroutines)
+endif()
 
 # 链接 Drogon 库和 CURL 库
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon CURL::libcurl pch)

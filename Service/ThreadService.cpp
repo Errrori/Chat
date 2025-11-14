@@ -111,7 +111,7 @@ drogon::Task<ChatThread::ThreadType> ThreadService::GetThreadType(int thread_id)
 	}
 }
 
-drogon::Task<bool> ThreadService::ValidateMember(int thread_id, const std::string& uid) const
+drogon::Task<bool> ThreadService::ValidateMemberCoro(int thread_id, const std::string& uid) const
 {
 	try
 	{
@@ -126,6 +126,11 @@ drogon::Task<bool> ThreadService::ValidateMember(int thread_id, const std::strin
 		throw;
 	}
 	
+}
+
+bool ThreadService::ValidateMember(int thread_id, const std::string& uid) const
+{
+	return drogon::sync_wait(ValidateMemberCoro(thread_id, uid));
 }
 
 

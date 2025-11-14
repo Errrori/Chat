@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "AIRequestMsg.h"
 
-
 std::string RequestMsg::RoleToString(Role role)
 {
 	switch (role)
@@ -48,6 +47,12 @@ Json::Value RequestMsg::ToJsonReq() const
 		{
 			for (const auto& record : _context.value())
 				message.append(record);
+		}
+		if (!_is_thinking)
+		{
+			Json::Value thinking;
+			thinking["type"] = "disabled";
+			req["thinking"] = thinking;
 		}
 		Json::Value msg;
 		msg["role"] = RoleToString(_role);

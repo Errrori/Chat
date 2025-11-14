@@ -122,12 +122,13 @@ public:
 		glm
 	};
 
-	RequestMsg(const std::string& content, const std::string& request_id,
-		Role role = Role::Unknown, Model model = Model::glm_flash , 
-		bool is_stream = false, bool do_sample = true,int max_token = 1024) :
-		_content(content), _request_id(request_id),_role(role),_model(model),
-		_is_stream(is_stream), _do_sample(do_sample), _max_tokens(max_token)
-	{}
+	RequestMsg(const std::string& request_id,const std::string& content,Role role = Role::Unknown,
+		Model model = Model::glm_flash , bool is_stream = false, bool is_thinking = true , 
+		bool do_sample = true,int max_token = 1024) :
+		_request_id(request_id),_content(content), _role(role),
+		_model(model),_is_stream(is_stream),_do_sample(do_sample),
+		_is_thinking(is_thinking), _max_tokens(max_token) {}
+
 
 	static std::string RoleToString(Role role);
 	static std::string ModelToString(Model model);
@@ -148,17 +149,25 @@ public:
 	void SetRequestId(const std::string& id) { _request_id = id; }
 	std::string GetRequestId() const { return _request_id; }
 
+	void SetThinking(bool flag) { _is_thinking = flag; }
+	bool GetThinking() const { return _is_thinking; }
+
 	bool IsValid() const;
 
 private:
+	std::string _url;
+	std::string _token;
+	std::string _request_id; 
 	std::string _content;
 	std::optional<Json::Value> _context;
-	std::string _request_id;  
 	Role _role;
 	Model _model = Model::glm_flash;
 	bool _is_stream = false;
 	bool _do_sample = true;
+	bool _is_thinking = true;
 	int _max_tokens = 1024;
+
+
 	//model name/temperature/top_p
 };
 
