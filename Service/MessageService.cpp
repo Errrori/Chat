@@ -117,7 +117,7 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 			if (type != ChatThread::AI)
 			{
 				LOG_ERROR << "thread id is not corresponding to an AI thread";
-				conn->sendJson(Utils::GenErrorResponse("unmatched type", ChatCode::UnMatchedType));
+                Utils::SendJson(conn, Utils::GenErrorResponse("unmatched type", ChatCode::UnMatchedType));
 				co_return;
 			}
 
@@ -130,7 +130,7 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 			if (!ai_msg.IsValid())
 			{
 				LOG_ERROR << "AI message is not valid";
-				conn->sendJson(Utils::GenErrorResponse("invalid AI message", ChatCode::MissingField));
+                Utils::SendJson(conn, Utils::GenErrorResponse("invalid AI message", ChatCode::MissingField));
 				co_return;//handle
 			}
 
@@ -152,21 +152,21 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 			
 			req_msg.SetContext(json_context);
 
-			conn->sendJson(req_msg.ToJsonReq());
+            Utils::SendJson(conn, req_msg.ToJsonReq());
 
 
 			auto response = co_await AIRequestProcessor()
 				("https://open.bigmodel.cn/api/paas/v4/chat/completions", "45664786303e46ca9caa8dc3d82ce7c4.VzuV8oSl4Nb2H3GU"
 					, ai_msg.getThreadId(), req_msg, [conn](const Json::Value& resp)
 					{
-						conn->sendJson(resp);
+                        Utils::SendJson(conn, resp);
 					});
 			co_await _msg_repo->RecordAIMessage(response);
 		}
 		catch (const std::exception& e)
 		{
 			LOG_ERROR << "exception: " << e.what();
-			conn->sendJson(Utils::GenErrorResponse("server exception: "+std::string(e.what()),ChatCode::SystemException));
+            Utils::SendJson(conn, Utils::GenErrorResponse("server exception: "+std::string(e.what()),ChatCode::SystemException));
 		}
 	}
 	);
@@ -177,30 +177,30 @@ void MessageService::ProcessRequest(const std::string& url, const std::string& t
 {
 	try
 	{
-		// ´ÓÍêÕû URL ÌáÈ¡³ö»ùÖ·ºÍÂ·¾¶
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ URL ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Â·ï¿½ï¿½
 		const auto scheme_pos = url.find("://");
 		const auto host_start = (scheme_pos == std::string::npos) ? 0 : scheme_pos + 3;
 		const auto path_pos = url.find('/', host_start);
 		const std::string base = (path_pos == std::string::npos) ? url : url.substr(0, path_pos);
 		const std::string path = (path_pos == std::string::npos) ? "/" : url.substr(path_pos);
 
-		// ¹¹Ôì¿Í»§¶Ë½öÊ¹ÓÃ»ùÖ·£¨Èç https://open.bigmodel.cn£©
+		// ï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½Ë½ï¿½Ê¹ï¿½Ã»ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ https://open.bigmodel.cnï¿½ï¿½
 		auto client = drogon::HttpClient::newHttpClient(base);
 
-		// ¹¹Ôì POST JSON ÇëÇó²¢ÉèÖÃÂ·¾¶ÓëÍ·²¿
+		// ï¿½ï¿½ï¿½ï¿½ POST JSON ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½
 		auto req = drogon::HttpRequest::newHttpJsonRequest(req_data.ToJsonReq());
 		req->setMethod(drogon::Post);
-		req->setPath(path); // Èç /api/paas/v4/chat/completions
+		req->setPath(path); // ï¿½ï¿½ /api/paas/v4/chat/completions
 		req->addHeader("Content-Type", "application/json");
 		req->addHeader("Authorization", "Bearer " + token);
-		req->addHeader("Accept", "application/json"); // ¿ÉÑ¡
+		req->addHeader("Accept", "application/json"); // ï¿½ï¿½Ñ¡
 
 		auto is_stream = req_data.IsStream();
 
-		client->sendRequest(req, [is_stream,conn](drogon::ReqResult ret, const drogon::HttpResponsePtr& resp)
-			{
-				conn->send(resp->getBody());
-			});
+        client->sendRequest(req, [is_stream,conn](drogon::ReqResult ret, const drogon::HttpResponsePtr& resp)
+            {
+                conn->send(std::string(resp->getBody()), drogon::WebSocketMessageType::Text);
+            });
 
 
 	}catch (const std::exception& e)

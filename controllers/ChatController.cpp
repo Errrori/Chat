@@ -28,7 +28,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         if (!reader.parse(msg, msg_data))
         {
             LOG_ERROR << "can not parse message";
-            conn->sendJson(Utils::GenErrorResponse("fail to parse message",ChatCode::InValidJson));
+            Utils::SendJson(conn, Utils::GenErrorResponse("fail to parse message",ChatCode::InValidJson));
             return;
         }
 
@@ -36,7 +36,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             || !msg_data.isMember("thread_id"))
         {
             LOG_ERROR << "lack of essential field";
-			conn->sendJson(Utils::GenErrorResponse("lack of essential field", ChatCode::MissingField));
+			Utils::SendJson(conn, Utils::GenErrorResponse("lack of essential field", ChatCode::MissingField));
             return;
         }
 
@@ -46,7 +46,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             ValidateMember(msg_data["thread_id"].asInt(), conn_info->getUid()))
         {
             LOG_ERROR << "user: " << conn_info->getUid() << " is not in thread: " << msg_data["thread_id"].asInt();
-            conn->sendJson(Utils::GenErrorResponse("user not in thread",ChatCode::NotPermission));
+            Utils::SendJson(conn, Utils::GenErrorResponse("user not in thread",ChatCode::NotPermission));
         	return;
         }
 
@@ -64,12 +64,12 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         GET_MESSAGE_SERVICE->ProcessUserMsg(std::move(message), [conn](const Json::Value& error)
             {
                 if (conn && conn->connected())
-                    conn->sendJson(error);
+                    Utils::SendJson(conn, error);
                 LOG_ERROR << "process message error: " << error.toStyledString();
             });
     }catch (const std::exception& e)
     {
-        conn->sendJson(Utils::GenErrorResponse(std::string("system exception: ")+e.what(),ChatCode::SystemException));
+        Utils::SendJson(conn, Utils::GenErrorResponse(std::string("system exception: ")+e.what(),ChatCode::SystemException));
     }
 
 }
@@ -92,7 +92,7 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
 
     if (!conn_service->AddConnection(conn,std::move(info)))
     {
-        conn->sendJson(Utils::GenErrorResponse("can not add connection",ChatCode::FailAddConn));
+        Utils::SendJson(conn, Utils::GenErrorResponse("can not add connection",ChatCode::FailAddConn));
         conn->shutdown();
         LOG_ERROR << "can not add connection!";
     }

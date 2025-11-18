@@ -4,7 +4,7 @@
   "dbname": "",
   "user": "",
   "passwd": "",
-  "tables": ["threads","group_members","messages","users"],
+  "tables": ["relationship_event","notifications","friendships","block","friend_requests"],
   "relationships": {
     "enabled": false,
     "items": []

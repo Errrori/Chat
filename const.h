@@ -97,14 +97,58 @@ namespace DataBase
 		"following INTEGER DEFAULT 0 "
 		");";
 
-	const static std::string RelationshipEvent = "CREATE TABLE IF NOT EXISTS relationship_event("
+	const static std::string RELATIONSHIP_EVENT = "CREATE TABLE IF NOT EXISTS relationship_event("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"actor_uid TEXT NOT NULL,"
 		"reactor_uid TEXT NOT NULL,"
-		"type INTEGER NOT NULL,"
-		"created_time INTEGER DEFAULT (strftime('%s','now'))"
+		"type TEXT NOT NULL CHECK (type IN ('RequestSent','RequestAccepted','RequestRefused','UserBlocked')),"
+		"created_time INTEGER DEFAULT (strftime('%s','now')),"
+		"FOREIGN KEY (actor_uid) REFERENCES users(uid) ON DELETE CASCADE,"
+		"FOREIGN KEY (reactor_uid) REFERENCES users(uid) ON DELETE CASCADE"
 		");";
 
+	const static std::string NOTIFICATION = "CREATE TABLE IF NOT EXISTS notifications("
+		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+		"event_id NOT NULL,"
+		"type TEXT NOT NULL CHECK (type IN ('RequestReceive','RequestAccepted','RequestRefused','FriendRemoved')),"
+		"sender_uid TEXT NOT NULL,"
+		"recipient_uid TEXT NOT NULL,"
+		"payload TEXT,"
+		"is_read INTEGER CHECK (is_read IN (0,1)) DEFAULT 0,"
+		"created_time INTEGER DEFAULT (strftime('%s','now')),"
+		"FOREIGN KEY (event_id) REFERENCES relationship_event(id) ON DELETE CASCADE,"
+		"FOREIGN KEY (sender_uid) REFERENCES users(uid) ON DELETE CASCADE,"
+		"FOREIGN KEY (recipient_uid) REFERENCES users(uid) ON DELETE CASCADE"
+		");";
+
+	const static std::string FRIENDSHIP = "CREATE TABLE IF NOT EXISTS friendships("
+		"uid1 TEXT NOT NULL,"
+		"uid2 TEXT NOT NULL,"
+		"created_time INTEGER DEFAULT (strftime('%s','now')),"
+		"UNIQUE (uid1,uid2),"
+		"CHECK (uid1<uid2),"
+		"FOREIGN KEY (uid1) REFERENCES users(uid) ON DELETE CASCADE,"
+		"FOREIGN KEY (uid2) REFERENCES users(uid) ON DELETE CASCADE"
+		");";
+
+	const static std::string BLOCK = "CREATE TABLE IF NOT EXISTS block("
+		"operator_uid TEXT NOT NULL,"
+		"blocked_uid TEXT NOT NULL,"
+		"created_time INTEGER DEFAULT (strftime('%s','now')),"
+		"FOREIGN KEY (operator_uid) REFERENCES users(uid) ON DELETE CASCADE,"
+		"FOREIGN KEY (blocked_uid) REFERENCES users(uid) ON DELETE CASCADE"
+		");";
+
+	const static std::string FRIEND_REQUEST = "CREATE TABLE IF NOT EXISTS friend_requests("
+		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+		"requester_uid TEXT NOT NULL,"
+		"target_uid TEXT NOT NULL,"
+		"status TEXT NOT NULL CHECK (status IN ('pending','accepted','refused')),"
+		"created_time INTEGER DEFAULT (strftime('%s','now')),"
+		"updated_time INTEGER DEFAULT (strftime('%s','now')),"
+		"FOREIGN KEY (requester_uid) REFERENCES users(uid) ON DELETE CASCADE,"
+		"FOREIGN KEY (target_uid) REFERENCES users(uid) ON DELETE CASCADE"
+		");";
 
 
 	const static std::vector<std::string> db_table_list = {
@@ -115,7 +159,12 @@ namespace DataBase
 		GROUP_MEMBER_TABLE,
 		MESSAGE_TABLE,
 		USER_TABLE,
-		AI_MESSAGE_TABLE
+		AI_MESSAGE_TABLE,
+		NOTIFICATION,
+		RELATIONSHIP_EVENT,
+		FRIENDSHIP,
+		FRIEND_REQUEST,
+		BLOCK
 	};
 
 

@@ -75,10 +75,10 @@ void ConnectionService::Broadcast(const std::vector<std::string>& targets, const
 		auto it = _conn_to_id_map.find(uid);
 		if (it != _conn_to_id_map.end())
 		{
-			if (it->second && it->second->connected())
-				it->second->sendJson(message);
-			else
-				_conn_to_id_map.erase(it);
+            if (it->second && it->second->connected())
+                Utils::SendJson(it->second, message);
+            else
+                _conn_to_id_map.erase(it);
 		}
 	}
 }

@@ -76,6 +76,9 @@ find_package(Drogon REQUIRED)
 
 # 查找 CURL 包
 find_package(CURL REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+# 查找 UUID 包
 
 # 添加jwt-cpp的包含路径
 include_directories(third_party/jwt-cpp/include)
@@ -83,4 +86,4 @@ include_directories(third_party/jwt-cpp/include)
 # 使用 C++20，协程无需额外编译选项
 
 # 链接 Drogon 库和 CURL 库
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon CURL::libcurl pch)
+target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon CURL::libcurl OpenSSL::SSL OpenSSL::Crypto uuid pch)

@@ -266,6 +266,15 @@ namespace Utils {
         return resp;
     }
 
+    void SendJson(const drogon::WebSocketConnectionPtr& conn, const Json::Value& data)
+    {
+        if (!conn || !conn->connected()) return;
+        Json::StreamWriterBuilder builder;
+        builder["indentation"] = "";
+        auto payload = Json::writeString(builder, data);
+        conn->send(payload, drogon::WebSocketMessageType::Text);
+    }
+
     std::string GetCurrentTimeStr()
     {
         return trantor::Date::now().toDbString();

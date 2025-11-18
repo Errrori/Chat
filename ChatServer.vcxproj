@@ -100,6 +100,11 @@
     <ClCompile Include="Common\AIRequestMsg.cpp" />
     <ClCompile Include="controllers\Authentication.cpp" />
     <ClCompile Include="controllers\FileController.cpp" />
+    <ClCompile Include="models\Block.cc" />
+    <ClCompile Include="models\FriendRequests.cc" />
+    <ClCompile Include="models\Friendships.cc" />
+    <ClCompile Include="models\Notifications.cc" />
+    <ClCompile Include="models\RelationshipEvent.cc" />
     <ClCompile Include="Service\MessageService.cpp" />
     <ClCompile Include="Service\FileService.cpp" />
     <ClCompile Include="Service\ConnectionService.cpp" />
@@ -145,6 +150,11 @@
     <ClInclude Include="Data\IUserRepository.h" />
     <ClInclude Include="Data\IMessageRepository.h" />
     <ClInclude Include="Data\IThreadRepository.h" />
+    <ClInclude Include="models\Block.h" />
+    <ClInclude Include="models\FriendRequests.h" />
+    <ClInclude Include="models\Friendships.h" />
+    <ClInclude Include="models\Notifications.h" />
+    <ClInclude Include="models\RelationshipEvent.h" />
     <ClInclude Include="Service\MessageService.h" />
     <ClInclude Include="Service\FileService.h" />
     <ClInclude Include="Service\ConnectionService.h" />

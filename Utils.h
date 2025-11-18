@@ -15,6 +15,8 @@ namespace Utils
     Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code);
     Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code, const std::string& message_id);
 
+    void SendJson(const drogon::WebSocketConnectionPtr& conn, const Json::Value& data);
+
     std::string GetCurrentTimeStr();
     int64_t GetCurrentTimeStamp();
 
