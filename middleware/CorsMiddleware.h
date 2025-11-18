@@ -5,7 +5,7 @@
 class CORSMiddleware : public drogon::HttpMiddleware<CORSMiddleware>
 {
 public:
-    CORSMiddleware() {};
+    CORSMiddleware() {}
 
     void invoke(const drogon::HttpRequestPtr& req,
         drogon::MiddlewareNextCallback&& nextCb,

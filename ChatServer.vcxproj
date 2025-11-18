@@ -124,13 +124,14 @@
     <ClCompile Include="Service\UserService.cpp" />
     <ClCompile Include="Data\SQLiteThreadRepository.cpp" />
     <ClCompile Include="Data\SQLiteMessageRepository.cpp" />
-    <ClCompile Include="UserController.cpp" />
+    <ClCompile Include="controllers\UserController.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\AIMessage.h" />
     <ClInclude Include="HttpClient.h" />
     <ClInclude Include="middleware\CORSMiddleware.h" />
+    <ClInclude Include="middleware\cors.h" />
     <ClInclude Include="models\AiContext.h" />
     <ClInclude Include="Common\ChatMessage.h" />
     <ClInclude Include="Common\ChatThread.h" />
@@ -164,7 +165,7 @@
     <ClInclude Include="Service\UserService.h" />
     <ClInclude Include="Data\SQLiteThreadRepository.h" />
     <ClInclude Include="Data\SQLiteMessageRepository.h" />
-    <ClInclude Include="UserController.h" />
+    <ClInclude Include="controllers\UserController.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>

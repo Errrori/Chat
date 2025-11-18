@@ -12,11 +12,14 @@ public:
 
 private:
 	static bool InitDb(){
+
 		for (const auto& table:DataBase::db_table_list)
 		{
 			try
 			{
-				drogon::app().getDbClient()->execSqlSync(table);
+				auto conn = drogon::app().getDbClient();
+				conn->execSqlSync(DataBase::OPEN_FK);
+				conn->execSqlSync(table);
 			}
 			catch (const std::exception& e)
 			{

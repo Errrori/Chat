@@ -2,6 +2,8 @@
 #define CONST_H_
 namespace DataBase
 {
+	const static std::string OPEN_FK = "PRAGMA foreign_keys = ON;";
+
 	const static std::string THREAD_TABLE = "CREATE TABLE IF NOT EXISTS threads("
 		"thread_id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"type INTEGER NOT NULL," // 0=group, 1=private,2=ai
@@ -94,6 +96,16 @@ namespace DataBase
 		"followers INTEGER DEFAULT 0,"
 		"following INTEGER DEFAULT 0 "
 		");";
+
+	const static std::string RelationshipEvent = "CREATE TABLE IF NOT EXISTS relationship_event("
+		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
+		"actor_uid TEXT NOT NULL,"
+		"reactor_uid TEXT NOT NULL,"
+		"type INTEGER NOT NULL,"
+		"created_time INTEGER DEFAULT (strftime('%s','now'))"
+		");";
+
+
 
 	const static std::vector<std::string> db_table_list = {
 		THREAD_TABLE,

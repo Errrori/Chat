@@ -10,20 +10,18 @@ void CORSMiddleware::invoke(const drogon::HttpRequestPtr& req,
     //LOG_DEBUG << "CORSMiddleware: Invoked for path [" << req->getPath() << "] with method [" << req->getMethodString() << "]";
 
     // Handle OPTIONS preflight requests
-    if (req->getMethod() == drogon::HttpMethod::Options)
-    {
-        LOG_DEBUG << "CORSMiddleware: Handling OPTIONS request for path [" << req->getPath() << "]";
+    //if (req->getMethod() == drogon::HttpMethod::Options)
+    //{
+        LOG_INFO << "get into cors handler";
         auto resp = drogon::HttpResponse::newHttpResponse();
         resp->addHeader("Access-Control-Allow-Origin", "*"); // Allow all origins, specify specific origins in production
         resp->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        // Postman request's Access-Control-Request-Headers is "Content-Type"
-        // Our middleware allows "Content-Type, Authorization", which is compatible
         resp->addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
         resp->addHeader("Access-Control-Max-Age", "3600"); // Preflight request cache time
         resp->setStatusCode(drogon::k204NoContent); // OPTIONS requests usually return 204
-        mcb(resp); // Return directly, don't enter inner layer
-        return;
-    }
+    //    mcb(resp); // Return directly, don't enter inner layer
+	//   return;
+    //}
 
     // For non-OPTIONS requests, enter inner layer processing
     // Capture request path for logging

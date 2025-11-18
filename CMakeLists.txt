@@ -80,10 +80,7 @@ find_package(CURL REQUIRED)
 # 添加jwt-cpp的包含路径
 include_directories(third_party/jwt-cpp/include)
 
-# 对 GCC 启用协程支持
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${PROJECT_NAME} PRIVATE -fcoroutines)
-endif()
+# 使用 C++20，协程无需额外编译选项
 
 # 链接 Drogon 库和 CURL 库
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon CURL::libcurl pch)

@@ -8,3 +8,6 @@ x64
 README.md
 build
 *.db
+uploads/
+chat.7z
+chat.tar

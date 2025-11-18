@@ -33,7 +33,7 @@
     <ClCompile Include="models\AiContext.cc" />
     <ClCompile Include="Common\AIMessage.cpp" />
     <ClCompile Include="HttpClient.cpp" />
-    <ClCompile Include="UserController.cpp" />
+    <ClCompile Include="controllers\UserController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="middleware\CORSMiddleware.h" />
@@ -73,7 +73,8 @@
     <ClInclude Include="models\AiContext.h" />
     <ClInclude Include="Common\AIMessage.h" />
     <ClInclude Include="HttpClient.h" />
-    <ClInclude Include="UserController.h" />
+    <ClInclude Include="controllers\UserController.h" />
+    <ClInclude Include="middleware\cors.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="models\model.json" />

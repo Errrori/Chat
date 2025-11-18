@@ -4,6 +4,7 @@
 #include "Data/DbAccessor.h"
 #include "models/Users.h"
 #include "Common/User.h"
+#include "models/PrivateChats.h"
 
 using namespace drogon;
 
@@ -182,4 +183,33 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
         co_return drogon::HttpResponse::newHttpJsonResponse(response);
     }
 }
+
+drogon::Task<drogon::HttpResponsePtr> UserController::TestFK(drogon::HttpRequestPtr req)
+{
+    try
+    {
+        drogon_model::sqlite3::PrivateChats pc;
+        pc.setThreadId(10086);
+        pc.setUid1("user3");
+        pc.setUid2("user4");
+        orm::CoroMapper<drogon_model::sqlite3::PrivateChats> mapper(DbAccessor::GetDbClient());
+        co_await mapper.insert(pc);
+
+        const auto& records = co_await mapper.findAll();
+
+        for (const auto& record:records)
+        {
+            std::cout << record.toJson().toStyledString()<<"\n";
+        }
+
+        co_return Utils::CreateSuccessJsonResp(200, 200, "success",Json::nullValue);
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "exception: " << e.what();
+        co_return Utils::CreateErrorResponse(400,400,"error");
+    }
+}
+
+
 // ... existing code ...
