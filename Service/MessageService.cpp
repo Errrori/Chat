@@ -139,7 +139,7 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 			//push message to database
 			co_await _msg_repo->RecordAIMessage(ai_msg);
 
-			RequestMsg req_msg(msg["content"].asString(), Utils::Authentication::GenerateUid(), RequestMsg::Role::User);
+			RequestMsg req_msg(Utils::Authentication::GenerateUid(),msg["content"].asString(),RequestMsg::Role::User);
 			//build request msg , if has context ,append
 			//here need to check request data fields
 			//.....

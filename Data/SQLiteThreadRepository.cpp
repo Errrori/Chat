@@ -252,21 +252,22 @@ drogon::Task<Json::Value> SQLiteThreadRepository::GetThreadInfo(int thread_id)
 
 drogon::Task<bool> SQLiteThreadRepository::AddToGroup(const MemberData& member)
 {
-	if (!member.IsValid())
-	{
-		LOG_ERROR << "error: member data is not valid";
-		throw std::invalid_argument("member data is not valid");
-	}
+    if (!member.IsValid())
+    {
+        LOG_ERROR << "error: member data is not valid";
+        throw std::invalid_argument("member data is not valid");
+    }
 
-	try
-	{
-		CoroMapper<GroupMembers> mapper(DbAccessor::GetDbClient());
-		auto member_data = member.ToDbGroupMember();
-		co_await mapper.insert(member_data.value());
-	}catch (const std::exception& e)
-	{
-		throw;
-	}
+    try
+    {
+        CoroMapper<GroupMembers> mapper(DbAccessor::GetDbClient());
+        auto member_data = member.ToDbGroupMember();
+        co_await mapper.insert(member_data.value());
+        co_return true;
+    }catch (const std::exception& e)
+    {
+        throw;
+    }
 
 }
 

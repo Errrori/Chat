@@ -105,6 +105,7 @@
     <ClCompile Include="models\Friendships.cc" />
     <ClCompile Include="models\Notifications.cc" />
     <ClCompile Include="models\RelationshipEvent.cc" />
+    <ClCompile Include="RelationshipController.cpp" />
     <ClCompile Include="Service\MessageService.cpp" />
     <ClCompile Include="Service\FileService.cpp" />
     <ClCompile Include="Service\ConnectionService.cpp" />
@@ -134,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\AIMessage.h" />
+    <ClInclude Include="Data\IRelationshipRepository.h" />
     <ClInclude Include="HttpClient.h" />
     <ClInclude Include="middleware\CORSMiddleware.h" />
     <ClInclude Include="middleware\cors.h" />
@@ -155,6 +157,7 @@
     <ClInclude Include="models\Friendships.h" />
     <ClInclude Include="models\Notifications.h" />
     <ClInclude Include="models\RelationshipEvent.h" />
+    <ClInclude Include="RelationshipController.h" />
     <ClInclude Include="Service\MessageService.h" />
     <ClInclude Include="Service\FileService.h" />
     <ClInclude Include="Service\ConnectionService.h" />

@@ -47,7 +47,7 @@ namespace DataBase
 		"user_uid TEXT NOT NULL,"
 		"role INTEGER NOT NULL DEFAULT 0," //(CHECK(role IN (0, 1, 2)) 0=member, 1=admin, 2=owner
 		"join_time INTEGER DEFAULT (strftime('%s','now')),"
-		"FOREIGN KEY (thread_id) REFERENCES group_chats(thread_id) ON DELETE CASCADE,"
+		"FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE,"
 		"FOREIGN KEY (user_uid) REFERENCES users(uid) ON DELETE CASCADE,"
 		"PRIMARY KEY (thread_id,user_uid),"
 		"UNIQUE (thread_id, user_uid)" // 防止重复加入群聊

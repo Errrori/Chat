@@ -39,6 +39,7 @@
     <ClCompile Include="models\Friendships.cc" />
     <ClCompile Include="models\Notifications.cc" />
     <ClCompile Include="models\RelationshipEvent.cc" />
+    <ClCompile Include="RelationshipController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="middleware\CORSMiddleware.h" />
@@ -85,6 +86,8 @@
     <ClInclude Include="models\Friendships.h" />
     <ClInclude Include="models\Notifications.h" />
     <ClInclude Include="models\RelationshipEvent.h" />
+    <ClInclude Include="RelationshipController.h" />
+    <ClInclude Include="Data\IRelationshipRepository.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="models\model.json" />

@@ -8,6 +8,7 @@
 #include "models/PrivateChats.h"
 #include "models/GroupChats.h"
 #include "models/GroupMembers.h"
+#include "Common/AIMessage.h"
 
 using namespace drogon::orm;
 using Messages = drogon_model::sqlite3::Messages;

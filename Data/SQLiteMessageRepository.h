@@ -1,6 +1,5 @@
 #pragma once
 #include "IMessageRepository.h"
-#include "Common/AIMessage.h"
 
 namespace drogon_model::sqlite3
 {

@@ -174,7 +174,10 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::JoinThread(drogon::HttpR
 
         const auto& user_info = req->getAttributes()->get<UserInfo>("visitor_info");
 
-        auto result = co_await GET_THREAD_SERVICE->AddThreadMember(MemberData::FromJson(json_data));
+        auto member_data = MemberData::FromJson(json_data);
+        member_data.SetUserUid(user_info.getUid());
+
+        auto result = co_await GET_THREAD_SERVICE->AddThreadMember(member_data);
         if (result)
 			co_return Utils::CreateSuccessResp(200, 200, "success join thread");
 		co_return Utils::CreateErrorResponse(400, 400, "can not join thread");
@@ -218,7 +221,11 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetChatRecords(drogon::H
         auto thread_id = req->getOptionalParameter<int>("thread_id");
         auto existed_time = req->getOptionalParameter<int64_t>("existing_id");
 		auto num = req->getOptionalParameter<int>("num");
-        const auto& user_info = req->getAttributes()->get<UserInfo>("visitor_info");
+        auto user_info = req->getAttributes()->get<UserInfo>("visitor_info");
+
+        LOG_INFO << "GetChatRecords params: thread_id=" << (thread_id.has_value() ? thread_id.value() : -1)
+                 << ", existing_id=" << (existed_time.has_value() ? existed_time.value() : -1)
+                 << ", num=" << (num.has_value() ? num.value() : -1);
 
         if (!thread_id.has_value() || !existed_time.has_value())
            co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
@@ -239,7 +246,7 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetChatRecords(drogon::H
     }
     catch (const std::exception& e)
     {
-        LOG_ERROR << "exception in GetAIContext: " << e.what();
+        LOG_ERROR << "exception in GetChatRecords: " << e.what();
         co_return Utils::CreateErrorResponse(400, 400, "exception to get records");
     }
 }

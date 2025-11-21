@@ -1,15 +1,15 @@
 #pragma once
 
-#include <drogon/HttpMiddleware.h>
+#include <drogon/HttpFilter.h>
 
-class CORSMiddleware : public drogon::HttpMiddleware<CORSMiddleware>
+class CORSMiddleware : public drogon::HttpFilter<CORSMiddleware>
 {
 public:
     CORSMiddleware() {}
 
-    void invoke(const drogon::HttpRequestPtr& req,
-        drogon::MiddlewareNextCallback&& nextCb,
-        drogon::MiddlewareCallback&& mcb) override;
+    void doFilter(const drogon::HttpRequestPtr& req,
+        drogon::FilterCallback&& fcb,
+        drogon::FilterChainCallback&& fccb) override;
 };
 
 

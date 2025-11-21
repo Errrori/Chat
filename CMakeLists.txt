@@ -35,9 +35,11 @@ set(SOURCES
     controllers/ThreadController.cpp
     controllers/ChatController.cpp
     controllers/FileController.cpp
+    controllers/UserController.cpp
     
     # Filters
     filter/TokenVerifyFilter.cpp
+    middleware/CORSMiddleware.cpp
     
     # Common layer
     Common/User.cpp

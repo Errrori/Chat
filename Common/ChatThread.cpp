@@ -256,10 +256,6 @@ AIThread AIThread::FromJson(const Json::Value& json) {
 
 // 静态工厂方法实现
 MemberData MemberData::FromJson(const Json::Value& json_data) {
-    if (!json_data.isMember("thread_id") || !json_data.isMember("user_uid")) {
-        return MemberData{};
-    }
-
     MemberData member;
     member.SetThreadId(json_data.get("thread_id", -1).asInt());
     member.SetUserUid(json_data.get("user_uid", "").asString());

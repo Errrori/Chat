@@ -78,7 +78,13 @@ RUN set -eux; \
     libsqlite3-0 \
     libcurl4 \
     libtrantor1 \
+    ca-certificates \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*  # 清理缓存
+
+# 显式指定证书路径，避免运行时库找不到系统 CA 文件
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
 # 创建工作目录
 WORKDIR /app

@@ -17,36 +17,39 @@ drogon::Task<HttpResponsePtr> UserController::GetUser(HttpRequestPtr req)
         auto uidOpt = req->getOptionalParameter<std::string>("uid");
         auto accountOpt = req->getOptionalParameter<std::string>("account");
 
-        if (!uidOpt.has_value() && !accountOpt.has_value())
+        const bool hasUid = uidOpt.has_value() && !uidOpt->empty();
+        const bool hasAccount = accountOpt.has_value() && !accountOpt->empty();
+
+        if (!hasUid && !hasAccount)
             co_return Utils::CreateErrorResponse(400, 400, "User ID or account can not be empty");
 
-        if (uidOpt.has_value() && accountOpt.has_value())
+        if (hasUid && hasAccount)
             co_return Utils::CreateErrorResponse(400, 400, "can not query user in two parameters");
 
         auto client = DbAccessor::GetDbClient();
-        drogon::orm::Result result;
 
-        if (uidOpt.has_value())
-        {
-            result = co_await client->execSqlCoro(
-                "SELECT * FROM users WHERE uid = ? LIMIT 1", uidOpt.value());
+        const char* sql = nullptr;
+        std::string key;
+        if (hasUid) {
+            sql = "SELECT * FROM users WHERE uid = ? LIMIT 1";
+            key = *uidOpt;
+        } else {
+            sql = "SELECT * FROM users WHERE account = ? LIMIT 1";
+            key = *accountOpt;
         }
-        else
-        {
-            result = co_await client->execSqlCoro(
-                "SELECT * FROM users WHERE account = ? LIMIT 1", accountOpt.value());
-        }
+
+        auto result = co_await client->execSqlCoro(sql, key);
 
         if (result.size() == 0)
             co_return Utils::CreateErrorResponse(404, 404, "User is not found");
 
         drogon_model::sqlite3::Users user(result[0], -1);
-        // ¹¹ÔìÊý¾Ý²¢¹ýÂËÃô¸Ð×Ö¶Î£¨²»·µ»Ø password£©
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ passwordï¿½ï¿½
         static const std::vector<std::string> mask = {
-            "",             // id£¨²»·µ»Ø£©
+            "",             // idï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø£ï¿½
             "username",
             "account",
-            "",             // password£¨²»·µ»Ø£©
+            "",             // passwordï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø£ï¿½
             "uid",
             "avatar",
             "create_time",
@@ -81,7 +84,7 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
 {
     Json::Value response;
 
-    // ±£³ÖÓëÔ­ÊµÏÖÒ»ÖÂµÄÐ£ÑéÓë·µ»Ø
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­Êµï¿½ï¿½Ò»ï¿½Âµï¿½Ð£ï¿½ï¿½ï¿½ë·µï¿½ï¿½
     auto json_body = req->getJsonObject();
     if (!json_body) {
         response["code"] = 400;
@@ -89,7 +92,7 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
         co_return drogon::HttpResponse::newHttpJsonResponse(response);
     }
 
-    // ÖÁÉÙÌá¹© uid »ò account£¨ÓëÔ­Âß¼­Ò»ÖÂ£©
+    // ï¿½ï¿½ï¿½ï¿½ï¿½á¹© uid ï¿½ï¿½ accountï¿½ï¿½ï¿½ï¿½Ô­ï¿½ß¼ï¿½Ò»ï¿½Â£ï¿½
     if (!json_body->isMember("account") && !json_body->isMember("uid")) {
         response["code"] = 400;
         response["message"] = "Invalid request data";
@@ -98,15 +101,15 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
         co_return resp;
     }
 
-    // ÈÕÖ¾±£³ÖÒ»ÖÂ
+    // ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
     auto json_data = UserInfo::FromJson(*json_body);
     LOG_INFO << json_data.ToString();
 
 
 
 
-    // Ð­³Ì¸üÐÂ£º½ö¸üÐÂÇëÇóÖÐ³öÏÖµÄ×Ö¶Î£¨username/avatar/email/signature£©
-    // Î´³öÏÖµÄ×Ö¶ÎÊ¹ÓÃ COALESCE(?, col) + ´« nullptr ´ïµ½¡°²»¸üÐÂ¡±µÄÐ§¹û
+    // Ð­ï¿½Ì¸ï¿½ï¿½Â£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð³ï¿½ï¿½Öµï¿½ï¿½Ö¶Î£ï¿½username/avatar/email/signatureï¿½ï¿½
+    // Î´ï¿½ï¿½ï¿½Öµï¿½ï¿½Ö¶ï¿½Ê¹ï¿½ï¿½ COALESCE(?, col) + ï¿½ï¿½ nullptr ï¿½ïµ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½Ð§ï¿½ï¿½
     const char* kSqlUpdateByUid =
         "UPDATE users SET "
         "username = COALESCE(?, username), "
@@ -130,7 +133,7 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
     const bool hasEmail = json_body->isMember("email") && !(*json_body)["email"].isNull();
     const bool hasSignature = json_body->isMember("signature") && !(*json_body)["signature"].isNull();
 
-    // µ±Ã»ÓÐÈÎºÎ¿É¸üÐÂ×Ö¶ÎÊ±£¬±£³ÖÓëÔ­ÊµÏÖÒ»ÖÂ£ºÅÐ¶¨ÎªÐÞ¸ÄÊ§°Ü
+    // ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ÎºÎ¿É¸ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­Êµï¿½ï¿½Ò»ï¿½Â£ï¿½ï¿½Ð¶ï¿½Îªï¿½Þ¸ï¿½Ê§ï¿½ï¿½
     if (!hasUsername && !hasAvatar && !hasEmail && !hasSignature) {
         response["code"] = 400;
         response["message"] = "fail to modify user's info ";
@@ -138,11 +141,11 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
     }
 
     try {
-        drogon::orm::Result r;
+        bool ok = false;
 
         if (json_body->isMember("uid")) {
             const auto uid = (*json_body)["uid"].asString();
-            r = co_await client->execSqlCoro(
+            auto r = co_await client->execSqlCoro(
                 kSqlUpdateByUid,
                 hasUsername ? (*json_body)["username"].asString() : nullptr,
                 hasAvatar ? (*json_body)["avatar"].asString() : nullptr,
@@ -150,10 +153,11 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
                 hasSignature ? (*json_body)["signature"].asString() : nullptr,
                 uid
             );
+            ok = (r.affectedRows() > 0);
         }
         else {
             const auto account = (*json_body)["account"].asString();
-            r = co_await client->execSqlCoro(
+            auto r = co_await client->execSqlCoro(
                 kSqlUpdateByAccount,
                 hasUsername ? (*json_body)["username"].asString() : nullptr,
                 hasAvatar ? (*json_body)["avatar"].asString() : nullptr,
@@ -161,11 +165,10 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
                 hasSignature ? (*json_body)["signature"].asString() : nullptr,
                 account
             );
+            ok = (r.affectedRows() > 0);
         }
 
-        const bool result = (r.affectedRows() > 0);
-
-        if (!result) {
+        if (!ok) {
             response["code"] = 400;
             response["message"] = "fail to modify user's info ";
             co_return drogon::HttpResponse::newHttpJsonResponse(response);
@@ -181,33 +184,6 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
         response["code"] = 400;
         response["message"] = "fail to modify user's info ";
         co_return drogon::HttpResponse::newHttpJsonResponse(response);
-    }
-}
-
-drogon::Task<drogon::HttpResponsePtr> UserController::TestFK(drogon::HttpRequestPtr req)
-{
-    try
-    {
-        drogon_model::sqlite3::PrivateChats pc;
-        pc.setThreadId(10086);
-        pc.setUid1("user3");
-        pc.setUid2("user4");
-        orm::CoroMapper<drogon_model::sqlite3::PrivateChats> mapper(DbAccessor::GetDbClient());
-        co_await mapper.insert(pc);
-
-        const auto& records = co_await mapper.findAll();
-
-        for (const auto& record:records)
-        {
-            std::cout << record.toJson().toStyledString()<<"\n";
-        }
-
-        co_return Utils::CreateSuccessJsonResp(200, 200, "success",Json::nullValue);
-    }
-    catch (const std::exception& e)
-    {
-        LOG_ERROR << "exception: " << e.what();
-        co_return Utils::CreateErrorResponse(400,400,"error");
     }
 }
 
