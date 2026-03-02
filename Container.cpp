@@ -4,13 +4,13 @@
 #include "Data/SQLiteMessageRepository.h"
 #include "Data/SQLiteThreadRepository.h"
 #include "Data/SQLiteUserRepository.h"
+#include "Data/SQLiteRelationshipRepository.h"
 #include "Service/ThreadService.h"
 #include "Service/UserService.h"
 #include "Service/MessageService.h"
 #include "Service/ConnectionService.h"
-#include "controllers/Authentication.h"
+#include "Service/RelationshipService.h"
 #include "controllers/ChatController.h"
-#include "controllers/ThreadController.h"
 
 Container& Container::GetInstance()
 {
@@ -27,4 +27,7 @@ Container::Container()
 	_message_repo = std::make_shared<SQLiteMessageRepository>();
 	_conn_service = std::make_shared<ConnectionService>();
 	_message_service = std::make_shared<MessageService>(_message_repo,_conn_service,_thread_service);
+	
+	_relationship_repo = std::make_shared<SQLiteRelationshipRepository>();
+	_relationship_service = std::make_shared<RelationshipService>(_relationship_repo, _conn_service);
 }

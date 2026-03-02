@@ -39,7 +39,10 @@
     <ClCompile Include="models\Friendships.cc" />
     <ClCompile Include="models\Notifications.cc" />
     <ClCompile Include="models\RelationshipEvent.cc" />
-    <ClCompile Include="RelationshipController.cpp" />
+    <ClCompile Include="controllers\RelationshipController.cpp" />
+    <ClCompile Include="Data\SQLiteRelationshipRepository.cpp" />
+    <ClCompile Include="Service\RelationshipService.cpp" />
+    <ClCompile Include="Common\Notice.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="middleware\CORSMiddleware.h" />
@@ -86,8 +89,11 @@
     <ClInclude Include="models\Friendships.h" />
     <ClInclude Include="models\Notifications.h" />
     <ClInclude Include="models\RelationshipEvent.h" />
-    <ClInclude Include="RelationshipController.h" />
+    <ClInclude Include="controllers\RelationshipController.h" />
     <ClInclude Include="Data\IRelationshipRepository.h" />
+    <ClInclude Include="Data\SQLiteRelationshipRepository.h" />
+    <ClInclude Include="Service\RelationshipService.h" />
+    <ClInclude Include="Common\Notice.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="models\model.json" />

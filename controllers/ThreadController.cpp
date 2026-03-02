@@ -278,3 +278,42 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetChatOverviews(drogon:
         co_return Utils::CreateErrorResponse(500, 500, "Server error");
     }
 }
+
+drogon::Task<drogon::HttpResponsePtr> ThreadController::GetUserChatRecords(drogon::HttpRequestPtr req)
+{
+    try
+    {
+        auto thread_id = req->getOptionalParameter<int>("thread_id");
+        auto existed_id = req->getOptionalParameter<int64_t>("existing_id");
+        auto num = req->getOptionalParameter<int>("num");
+        const auto& user_info = req->getAttributes()->get<UserInfo>("visitor_info");
+
+        if (!thread_id.has_value() || !existed_id.has_value())
+            co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
+        if ((num.has_value() && num.value() <= 0)||
+            (existed_id.has_value()&&existed_id < 0))
+            co_return Utils::CreateErrorResponse(400, 400, "invalid argument");
+
+        if (!co_await GET_THREAD_SERVICE->ValidateMemberCoro(thread_id.value(), user_info.getUid()))
+            co_return Utils::CreateErrorResponse(400, 400, "not in thread");
+
+        auto records = co_await GET_MESSAGE_SERVICE
+    		->GetChatRecords(thread_id.value(),num.value_or(50),existed_id.value_or(0));
+
+        if (records == Json::nullValue)
+            LOG_ERROR << "can not find records";
+
+        co_return drogon::HttpResponse::newHttpJsonResponse(records);
+
+    }catch (const std::exception& e)
+    {
+        LOG_ERROR << "exception: " << e.what();
+        co_return Utils::CreateErrorResponse(500, 500, e.what());
+    }
+    catch (const drogon::orm::DrogonDbException& e)
+    {
+        LOG_ERROR << "exception: " << e.base().what();
+        co_return Utils::CreateErrorResponse(500, 500, e.base().what());
+    }
+
+}

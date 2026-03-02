@@ -20,6 +20,7 @@ public:
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
 
 	std::shared_ptr<UserInfo> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
+	void PostNotice(const std::string& receiver_uid, const Json::Value& notice);
 	void Broadcast(const std::vector<std::string>& targets, const Json::Value& message);
 
 	ConnectionService() = default;

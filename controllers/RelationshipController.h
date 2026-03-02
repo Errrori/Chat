@@ -4,8 +4,10 @@ class RelationshipController:public drogon::HttpController<RelationshipControlle
 public:
     METHOD_LIST_BEGIN
         ADD_METHOD_TO(SendFriendRequest, "/relation/send-friend-request", drogon::Post, "CORSMiddleware","TokenVerifyFilter");
+        ADD_METHOD_TO(ProcessFriendRequest, "/relation/process-friend-request", drogon::Post, "CORSMiddleware","TokenVerifyFilter");
     METHOD_LIST_END
 
 	drogon::Task<drogon::HttpResponsePtr> SendFriendRequest(drogon::HttpRequestPtr req);
+	drogon::Task<drogon::HttpResponsePtr> ProcessFriendRequest(drogon::HttpRequestPtr req);
 }; 
 

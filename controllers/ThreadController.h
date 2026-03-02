@@ -11,7 +11,7 @@ public:
 		ADD_METHOD_TO(ThreadController::AddThreadMember, "/thread/group/add-member", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
 		ADD_METHOD_TO(ThreadController::JoinThread, "/thread/group/join", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
 		ADD_METHOD_TO(ThreadController::GetAIContext, "/thread/record/ai", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
-		ADD_METHOD_TO(ThreadController::GetChatRecords, "/thread/record/user", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
+		ADD_METHOD_TO(ThreadController::GetUserChatRecords, "/thread/record/user", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
         ADD_METHOD_TO(ThreadController::GetChatOverviews,"/thread/record/overview",drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
 
 	METHOD_LIST_END
@@ -28,6 +28,8 @@ private:
     drogon::Task<drogon::HttpResponsePtr> GetAIContext(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr> GetChatRecords(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr> GetChatOverviews(drogon::HttpRequestPtr req);
+
+    drogon::Task<drogon::HttpResponsePtr> GetUserChatRecords(drogon::HttpRequestPtr req);
 
 };
 

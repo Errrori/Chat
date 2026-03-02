@@ -5,7 +5,7 @@ namespace DataBase
 	const static std::string OPEN_FK = "PRAGMA foreign_keys = ON;";
 
 	const static std::string THREAD_TABLE = "CREATE TABLE IF NOT EXISTS threads("
-		"thread_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+	"thread_id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"type INTEGER NOT NULL," // 0=group, 1=private,2=ai
 		"create_time INTEGER DEFAULT (strftime('%s','now'))"
 		");";
@@ -19,8 +19,7 @@ namespace DataBase
 		"FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE,"
 		"FOREIGN KEY (creator_uid) REFERENCES users(uid) ON DELETE CASCADE"
 		");";
-
-	// 私聊表 - 成为好友后生成对应的会话
+	
 	const static std::string PRIVATE_TABLE = "CREATE TABLE IF NOT EXISTS private_chats("
 		"thread_id INTEGER NOT NULL,"
 		"uid1 TEXT NOT NULL,"
@@ -28,12 +27,10 @@ namespace DataBase
 		"FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE,"
 		"FOREIGN KEY (uid1) REFERENCES users(uid) ON DELETE CASCADE,"
 		"FOREIGN KEY (uid2) REFERENCES users(uid) ON DELETE CASCADE,"
-		"UNIQUE (uid1, uid2)" // 防止重复的私聊会话
+		"UNIQUE (uid1, uid2)"
 		");";
-	//		"CHECK (uid1 < uid2)," // 确保uid1总是小于uid2，避免重复
 
-	// 群聊表
-	const static std::string GROUP_TABLE = "CREATE TABLE IF NOT EXISTS group_chats("
+	const static std::string GROUP_CHATS_TABLE = "CREATE TABLE IF NOT EXISTS group_chats("
 		"thread_id INTEGER NOT NULL,"
 		"name TEXT NOT NULL,"
 		"avatar TEXT DEFAULT 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',"
@@ -41,7 +38,6 @@ namespace DataBase
 		"FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE"
 		");";
 
-	// 群成员表
 	const static std::string GROUP_MEMBER_TABLE = "CREATE TABLE IF NOT EXISTS group_members("
 		"thread_id INTEGER NOT NULL,"
 		"user_uid TEXT NOT NULL,"
@@ -110,7 +106,7 @@ namespace DataBase
 	const static std::string NOTIFICATION = "CREATE TABLE IF NOT EXISTS notifications("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"event_id NOT NULL,"
-		"type TEXT NOT NULL CHECK (type IN ('RequestReceive','RequestAccepted','RequestRefused','FriendRemoved')),"
+		"type INTEGER NOT NULL CHECK (type IN (0,1,2)),"//0 = RequestReceived , 1 = RequestAccepted, 2 = RequestRejected
 		"sender_uid TEXT NOT NULL,"
 		"recipient_uid TEXT NOT NULL,"
 		"payload TEXT,"
@@ -143,7 +139,7 @@ namespace DataBase
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"requester_uid TEXT NOT NULL,"
 		"target_uid TEXT NOT NULL,"
-		"status TEXT NOT NULL CHECK (status IN ('pending','accepted','refused')),"
+		"status INTEGER NOT NULL CHECK (status IN (0,1,2)),"//0=pending,1=accepted,2=refused
 		"created_time INTEGER DEFAULT (strftime('%s','now')),"
 		"updated_time INTEGER DEFAULT (strftime('%s','now')),"
 		"FOREIGN KEY (requester_uid) REFERENCES users(uid) ON DELETE CASCADE,"
@@ -155,7 +151,7 @@ namespace DataBase
 		THREAD_TABLE,
 		AI_TABLE,
 		PRIVATE_TABLE,
-		GROUP_TABLE,
+		GROUP_CHATS_TABLE,
 		GROUP_MEMBER_TABLE,
 		MESSAGE_TABLE,
 		USER_TABLE,

@@ -111,15 +111,14 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetMessageRecords(int thread_
 	try
 	{
 		CoroMapper<Messages> mapper(DbAccessor::GetDbClient());
-
 		Criteria criteria;
-		if (existed_id != 0)
+		if (existed_id!=0)
 			criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id)
 			&& Criteria(Messages::Cols::_message_id, CompareOperator::GT, existed_id);
 		else
 			criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id);
 
-		const auto& records = co_await mapper.limit(num).findBy(criteria);
+		auto records = co_await mapper.limit(num).findBy(criteria);
 
 		Json::Value json_records;
 
@@ -127,13 +126,18 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetMessageRecords(int thread_
 			json_records.append(record.toJson());
 
 		co_return json_records;
-	}catch (const std::exception& e)
+	}
+	catch (const std::exception& e)
 	{
 		LOG_ERROR << "exception: " << e.what();
 		throw;
+	}catch (const drogon::orm::DrogonDbException& e)
+	{
+		LOG_ERROR << "exception :" << e.base().what();
+		throw;
 	}
-	
 }
+
 
 drogon::Task<Json::Value> SQLiteMessageRepository::GetAIContext(int thread_id, int64_t timestamp)
 {

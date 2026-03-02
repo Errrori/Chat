@@ -12,7 +12,7 @@ drogon::Task<Json::Value> MessageService::GetChatRecords(int thread_id, int num,
 {
 	try
 	{
-		if (thread_id <= 0 || num <= 0||existed_id<0)
+		if (thread_id <= 0 || num <= 0 || existed_id < 0)
 		{
 			LOG_ERROR << "invalid parameters";
 			co_return Json::nullValue;

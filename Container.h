@@ -9,12 +9,15 @@ class ConnectionService;
 class AuthenticationController;
 class ChatController;
 class ThreadController;
+class RelationshipService;
+class IRelationshipRepository;
 
 class Container
 {
 	friend class ChatController;
 	friend class ThreadController;
 	friend class AuthController;
+	friend class RelationshipController; 
 public:
 	//register std::unique_ptr for repository and service
 	~Container() = default;
@@ -39,6 +42,8 @@ private:
 	std::shared_ptr<IMessageRepository> _message_repo;
 	std::shared_ptr<MessageService> _message_service;
 	std::shared_ptr<ConnectionService> _conn_service;
+	std::shared_ptr<IRelationshipRepository> _relationship_repo;
+	std::shared_ptr<RelationshipService> _relationship_service;
 };
 
 #define UsingService(T) Container::GetInstance().GetService<T>()
@@ -47,6 +52,7 @@ private:
 #define GET_CONN_SERVICE UsingService(ConnectionService)
 #define GET_MESSAGE_SERVICE UsingService(MessageService)
 #define GET_THREAD_SERVICE UsingService(ThreadService)
+#define GET_RELATIONSHIP_SERVICE UsingService(RelationshipService)
 
 template<>
 inline std::shared_ptr<UserService> Container::GetService() const { return _user_service; }
@@ -59,3 +65,6 @@ inline std::shared_ptr<MessageService> Container::GetService() const { return _m
 
 template<>
 inline std::shared_ptr<ConnectionService> Container::GetService() const { return _conn_service; }
+
+template<>
+inline std::shared_ptr<RelationshipService> Container::GetService() const { return _relationship_service; }

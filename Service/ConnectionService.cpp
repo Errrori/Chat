@@ -61,6 +61,21 @@ std::shared_ptr<UserInfo> ConnectionService::GetConnInfo(const drogon::WebSocket
 	return nullptr;
 }
 
+void ConnectionService::PostNotice(const std::string& receiver_uid, const Json::Value& notice)
+{
+	std::lock_guard lock(_mutex);
+
+	auto it = _conn_to_id_map.find(receiver_uid);
+	if (it != _conn_to_id_map.end())
+	{
+		if (it->second && it->second->connected())
+			Utils::SendJson(it->second, notice);
+		else
+			_conn_to_id_map.erase(it);
+	}
+	
+}
+
 void ConnectionService::Broadcast(const std::vector<std::string>& targets, const Json::Value& message)
 {
 	if (targets.empty())
