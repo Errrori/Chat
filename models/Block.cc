@@ -14,11 +14,17 @@ using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
+const std::string Block::Cols::_operator_uid = "operator_uid";
+const std::string Block::Cols::_blocked_uid = "blocked_uid";
+const std::string Block::Cols::_created_time = "created_time";
 const std::string Block::primaryKeyName = "";
 const bool Block::hasPrimaryKey = false;
 const std::string Block::tableName = "block";
 
 const std::vector<typename Block::MetaData> Block::metaData_={
+{"operator_uid","std::string","text",0,0,0,1},
+{"blocked_uid","std::string","text",0,0,0,1},
+{"created_time","int64_t","integer",8,0,0,0}
 };
 const std::string &Block::getColumnName(size_t index) noexcept(false)
 {
@@ -29,45 +35,234 @@ Block::Block(const Row &r, const ssize_t indexOffset) noexcept
 {
     if(indexOffset < 0)
     {
+        if(!r["operator_uid"].isNull())
+        {
+            operatorUid_=std::make_shared<std::string>(r["operator_uid"].as<std::string>());
+        }
+        if(!r["blocked_uid"].isNull())
+        {
+            blockedUid_=std::make_shared<std::string>(r["blocked_uid"].as<std::string>());
+        }
+        if(!r["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r["created_time"].as<int64_t>());
+        }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 0 > r.size())
+        if(offset + 3 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
         }
         size_t index;
+        index = offset + 0;
+        if(!r[index].isNull())
+        {
+            operatorUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 1;
+        if(!r[index].isNull())
+        {
+            blockedUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 2;
+        if(!r[index].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
     }
 
 }
 
 Block::Block(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 3)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            operatorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[0]].asString());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            blockedUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
+        }
     }
 }
 
 Block::Block(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("operator_uid"))
+    {
+        dirtyFlag_[0]=true;
+        if(!pJson["operator_uid"].isNull())
+        {
+            operatorUid_=std::make_shared<std::string>(pJson["operator_uid"].asString());
+        }
+    }
+    if(pJson.isMember("blocked_uid"))
+    {
+        dirtyFlag_[1]=true;
+        if(!pJson["blocked_uid"].isNull())
+        {
+            blockedUid_=std::make_shared<std::string>(pJson["blocked_uid"].asString());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[2]=true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
 }
 
 void Block::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 3)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            operatorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[0]].asString());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            blockedUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
+        }
     }
 }
 
 void Block::updateByJson(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("operator_uid"))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson["operator_uid"].isNull())
+        {
+            operatorUid_=std::make_shared<std::string>(pJson["operator_uid"].asString());
+        }
+    }
+    if(pJson.isMember("blocked_uid"))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson["blocked_uid"].isNull())
+        {
+            blockedUid_=std::make_shared<std::string>(pJson["blocked_uid"].asString());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
+}
+
+const std::string &Block::getValueOfOperatorUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(operatorUid_)
+        return *operatorUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Block::getOperatorUid() const noexcept
+{
+    return operatorUid_;
+}
+void Block::setOperatorUid(const std::string &pOperatorUid) noexcept
+{
+    operatorUid_ = std::make_shared<std::string>(pOperatorUid);
+    dirtyFlag_[0] = true;
+}
+void Block::setOperatorUid(std::string &&pOperatorUid) noexcept
+{
+    operatorUid_ = std::make_shared<std::string>(std::move(pOperatorUid));
+    dirtyFlag_[0] = true;
+}
+
+const std::string &Block::getValueOfBlockedUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(blockedUid_)
+        return *blockedUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Block::getBlockedUid() const noexcept
+{
+    return blockedUid_;
+}
+void Block::setBlockedUid(const std::string &pBlockedUid) noexcept
+{
+    blockedUid_ = std::make_shared<std::string>(pBlockedUid);
+    dirtyFlag_[1] = true;
+}
+void Block::setBlockedUid(std::string &&pBlockedUid) noexcept
+{
+    blockedUid_ = std::make_shared<std::string>(std::move(pBlockedUid));
+    dirtyFlag_[1] = true;
+}
+
+const int64_t &Block::getValueOfCreatedTime() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(createdTime_)
+        return *createdTime_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Block::getCreatedTime() const noexcept
+{
+    return createdTime_;
+}
+void Block::setCreatedTime(const int64_t &pCreatedTime) noexcept
+{
+    createdTime_ = std::make_shared<int64_t>(pCreatedTime);
+    dirtyFlag_[2] = true;
+}
+void Block::setCreatedTimeToNull() noexcept
+{
+    createdTime_.reset();
+    dirtyFlag_[2] = true;
 }
 
 void Block::updateId(const uint64_t id)
@@ -77,26 +272,131 @@ void Block::updateId(const uint64_t id)
 const std::vector<std::string> &Block::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
+        "operator_uid",
+        "blocked_uid",
+        "created_time"
     };
     return inCols;
 }
 
 void Block::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[0])
+    {
+        if(getOperatorUid())
+        {
+            binder << getValueOfOperatorUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[1])
+    {
+        if(getBlockedUid())
+        {
+            binder << getValueOfBlockedUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 
 const std::vector<std::string> Block::updateColumns() const
 {
     std::vector<std::string> ret;
+    if(dirtyFlag_[0])
+    {
+        ret.push_back(getColumnName(0));
+    }
+    if(dirtyFlag_[1])
+    {
+        ret.push_back(getColumnName(1));
+    }
+    if(dirtyFlag_[2])
+    {
+        ret.push_back(getColumnName(2));
+    }
     return ret;
 }
 
 void Block::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[0])
+    {
+        if(getOperatorUid())
+        {
+            binder << getValueOfOperatorUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[1])
+    {
+        if(getBlockedUid())
+        {
+            binder << getValueOfBlockedUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 Json::Value Block::toJson() const
 {
     Json::Value ret;
+    if(getOperatorUid())
+    {
+        ret["operator_uid"]=getValueOfOperatorUid();
+    }
+    else
+    {
+        ret["operator_uid"]=Json::Value();
+    }
+    if(getBlockedUid())
+    {
+        ret["blocked_uid"]=getValueOfBlockedUid();
+    }
+    else
+    {
+        ret["blocked_uid"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
     return ret;
 }
 
@@ -104,28 +404,144 @@ Json::Value Block::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 0)
+    if(pMasqueradingVector.size() == 3)
     {
+        if(!pMasqueradingVector[0].empty())
+        {
+            if(getOperatorUid())
+            {
+                ret[pMasqueradingVector[0]]=getValueOfOperatorUid();
+            }
+            else
+            {
+                ret[pMasqueradingVector[0]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[1].empty())
+        {
+            if(getBlockedUid())
+            {
+                ret[pMasqueradingVector[1]]=getValueOfBlockedUid();
+            }
+            else
+            {
+                ret[pMasqueradingVector[1]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[2].empty())
+        {
+            if(getCreatedTime())
+            {
+                ret[pMasqueradingVector[2]]=(Json::Int64)getValueOfCreatedTime();
+            }
+            else
+            {
+                ret[pMasqueradingVector[2]]=Json::Value();
+            }
+        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
+    if(getOperatorUid())
+    {
+        ret["operator_uid"]=getValueOfOperatorUid();
+    }
+    else
+    {
+        ret["operator_uid"]=Json::Value();
+    }
+    if(getBlockedUid())
+    {
+        ret["blocked_uid"]=getValueOfBlockedUid();
+    }
+    else
+    {
+        ret["blocked_uid"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
     return ret;
 }
 
 bool Block::validateJsonForCreation(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("operator_uid"))
+    {
+        if(!validJsonOfField(0, "operator_uid", pJson["operator_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The operator_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("blocked_uid"))
+    {
+        if(!validJsonOfField(1, "blocked_uid", pJson["blocked_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The blocked_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(2, "created_time", pJson["created_time"], err, true))
+            return false;
+    }
     return true;
 }
 bool Block::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                const std::vector<std::string> &pMasqueradingVector,
                                                std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 3)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[0]))
+          {
+              if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[0] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[1].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[1]))
+          {
+              if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[1] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[2].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[2]))
+          {
+              if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, true))
+                  return false;
+          }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -136,18 +552,48 @@ bool Block::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 }
 bool Block::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("operator_uid"))
+    {
+        if(!validJsonOfField(0, "operator_uid", pJson["operator_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("blocked_uid"))
+    {
+        if(!validJsonOfField(1, "blocked_uid", pJson["blocked_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(2, "created_time", pJson["created_time"], err, false))
+            return false;
+    }
     return true;
 }
 bool Block::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                              const std::vector<std::string> &pMasqueradingVector,
                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 3)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+      {
+          if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+      {
+          if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+      {
+          if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, false))
+              return false;
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -164,6 +610,41 @@ bool Block::validJsonOfField(size_t index,
 {
     switch(index)
     {
+        case 0:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 1:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 2:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
         default:
             err="Internal error in the server";
             return false;

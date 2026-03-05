@@ -5,7 +5,6 @@
  *
  */
 #include "pch.h"
-
 #include "Notifications.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
@@ -14,11 +13,25 @@ using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
-const std::string Notifications::primaryKeyName = "";
-const bool Notifications::hasPrimaryKey = false;
+const std::string Notifications::Cols::_id = "id";
+const std::string Notifications::Cols::_type = "type";
+const std::string Notifications::Cols::_sender_uid = "sender_uid";
+const std::string Notifications::Cols::_recipient_uid = "recipient_uid";
+const std::string Notifications::Cols::_payload = "payload";
+const std::string Notifications::Cols::_is_read = "is_read";
+const std::string Notifications::Cols::_created_time = "created_time";
+const std::string Notifications::primaryKeyName = "id";
+const bool Notifications::hasPrimaryKey = true;
 const std::string Notifications::tableName = "notifications";
 
 const std::vector<typename Notifications::MetaData> Notifications::metaData_={
+{"id","int64_t","integer",8,1,1,0},
+{"type","int64_t","integer",8,0,0,1},
+{"sender_uid","std::string","text",0,0,0,1},
+{"recipient_uid","std::string","text",0,0,0,1},
+{"payload","std::string","text",0,0,0,0},
+{"is_read","int64_t","integer",8,0,0,0},
+{"created_time","int64_t","integer",8,0,0,0}
 };
 const std::string &Notifications::getColumnName(size_t index) noexcept(false)
 {
@@ -29,74 +42,737 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
 {
     if(indexOffset < 0)
     {
+        if(!r["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>(r["id"].as<int64_t>());
+        }
+        if(!r["type"].isNull())
+        {
+            type_=std::make_shared<int64_t>(r["type"].as<int64_t>());
+        }
+        if(!r["sender_uid"].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(r["sender_uid"].as<std::string>());
+        }
+        if(!r["recipient_uid"].isNull())
+        {
+            recipientUid_=std::make_shared<std::string>(r["recipient_uid"].as<std::string>());
+        }
+        if(!r["payload"].isNull())
+        {
+            payload_=std::make_shared<std::string>(r["payload"].as<std::string>());
+        }
+        if(!r["is_read"].isNull())
+        {
+            isRead_=std::make_shared<int64_t>(r["is_read"].as<int64_t>());
+        }
+        if(!r["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r["created_time"].as<int64_t>());
+        }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 0 > r.size())
+        if(offset + 7 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
         }
         size_t index;
+        index = offset + 0;
+        if(!r[index].isNull())
+        {
+            id_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 1;
+        if(!r[index].isNull())
+        {
+            type_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 2;
+        if(!r[index].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 3;
+        if(!r[index].isNull())
+        {
+            recipientUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 4;
+        if(!r[index].isNull())
+        {
+            payload_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 5;
+        if(!r[index].isNull())
+        {
+            isRead_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 6;
+        if(!r[index].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
     }
 
 }
 
 Notifications::Notifications(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 7)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            type_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[1]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+        }
+    }
+    if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson[pMasqueradingVector[3]].isNull())
+        {
+            recipientUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+        }
+    }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            payload_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+        }
+    }
+    if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson[pMasqueradingVector[5]].isNull())
+        {
+            isRead_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[5]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson[pMasqueradingVector[6]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[6]].asInt64());
+        }
     }
 }
 
 Notifications::Notifications(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("id"))
+    {
+        dirtyFlag_[0]=true;
+        if(!pJson["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+        }
+    }
+    if(pJson.isMember("type"))
+    {
+        dirtyFlag_[1]=true;
+        if(!pJson["type"].isNull())
+        {
+            type_=std::make_shared<int64_t>((int64_t)pJson["type"].asInt64());
+        }
+    }
+    if(pJson.isMember("sender_uid"))
+    {
+        dirtyFlag_[2]=true;
+        if(!pJson["sender_uid"].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(pJson["sender_uid"].asString());
+        }
+    }
+    if(pJson.isMember("recipient_uid"))
+    {
+        dirtyFlag_[3]=true;
+        if(!pJson["recipient_uid"].isNull())
+        {
+            recipientUid_=std::make_shared<std::string>(pJson["recipient_uid"].asString());
+        }
+    }
+    if(pJson.isMember("payload"))
+    {
+        dirtyFlag_[4]=true;
+        if(!pJson["payload"].isNull())
+        {
+            payload_=std::make_shared<std::string>(pJson["payload"].asString());
+        }
+    }
+    if(pJson.isMember("is_read"))
+    {
+        dirtyFlag_[5]=true;
+        if(!pJson["is_read"].isNull())
+        {
+            isRead_=std::make_shared<int64_t>((int64_t)pJson["is_read"].asInt64());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[6]=true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
 }
 
 void Notifications::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 7)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            type_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[1]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+        }
+    }
+    if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson[pMasqueradingVector[3]].isNull())
+        {
+            recipientUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[3]].asString());
+        }
+    }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            payload_=std::make_shared<std::string>(pJson[pMasqueradingVector[4]].asString());
+        }
+    }
+    if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson[pMasqueradingVector[5]].isNull())
+        {
+            isRead_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[5]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson[pMasqueradingVector[6]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[6]].asInt64());
+        }
     }
 }
 
 void Notifications::updateByJson(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!pJson["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+        }
+    }
+    if(pJson.isMember("type"))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson["type"].isNull())
+        {
+            type_=std::make_shared<int64_t>((int64_t)pJson["type"].asInt64());
+        }
+    }
+    if(pJson.isMember("sender_uid"))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson["sender_uid"].isNull())
+        {
+            senderUid_=std::make_shared<std::string>(pJson["sender_uid"].asString());
+        }
+    }
+    if(pJson.isMember("recipient_uid"))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson["recipient_uid"].isNull())
+        {
+            recipientUid_=std::make_shared<std::string>(pJson["recipient_uid"].asString());
+        }
+    }
+    if(pJson.isMember("payload"))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson["payload"].isNull())
+        {
+            payload_=std::make_shared<std::string>(pJson["payload"].asString());
+        }
+    }
+    if(pJson.isMember("is_read"))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson["is_read"].isNull())
+        {
+            isRead_=std::make_shared<int64_t>((int64_t)pJson["is_read"].asInt64());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
+}
+
+const int64_t &Notifications::getValueOfId() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(id_)
+        return *id_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Notifications::getId() const noexcept
+{
+    return id_;
+}
+void Notifications::setId(const int64_t &pId) noexcept
+{
+    id_ = std::make_shared<int64_t>(pId);
+    dirtyFlag_[0] = true;
+}
+void Notifications::setIdToNull() noexcept
+{
+    id_.reset();
+    dirtyFlag_[0] = true;
+}
+const typename Notifications::PrimaryKeyType & Notifications::getPrimaryKey() const
+{
+    assert(id_);
+    return *id_;
+}
+
+const int64_t &Notifications::getValueOfType() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(type_)
+        return *type_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Notifications::getType() const noexcept
+{
+    return type_;
+}
+void Notifications::setType(const int64_t &pType) noexcept
+{
+    type_ = std::make_shared<int64_t>(pType);
+    dirtyFlag_[1] = true;
+}
+
+const std::string &Notifications::getValueOfSenderUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(senderUid_)
+        return *senderUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Notifications::getSenderUid() const noexcept
+{
+    return senderUid_;
+}
+void Notifications::setSenderUid(const std::string &pSenderUid) noexcept
+{
+    senderUid_ = std::make_shared<std::string>(pSenderUid);
+    dirtyFlag_[2] = true;
+}
+void Notifications::setSenderUid(std::string &&pSenderUid) noexcept
+{
+    senderUid_ = std::make_shared<std::string>(std::move(pSenderUid));
+    dirtyFlag_[2] = true;
+}
+
+const std::string &Notifications::getValueOfRecipientUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(recipientUid_)
+        return *recipientUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Notifications::getRecipientUid() const noexcept
+{
+    return recipientUid_;
+}
+void Notifications::setRecipientUid(const std::string &pRecipientUid) noexcept
+{
+    recipientUid_ = std::make_shared<std::string>(pRecipientUid);
+    dirtyFlag_[3] = true;
+}
+void Notifications::setRecipientUid(std::string &&pRecipientUid) noexcept
+{
+    recipientUid_ = std::make_shared<std::string>(std::move(pRecipientUid));
+    dirtyFlag_[3] = true;
+}
+
+const std::string &Notifications::getValueOfPayload() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(payload_)
+        return *payload_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Notifications::getPayload() const noexcept
+{
+    return payload_;
+}
+void Notifications::setPayload(const std::string &pPayload) noexcept
+{
+    payload_ = std::make_shared<std::string>(pPayload);
+    dirtyFlag_[4] = true;
+}
+void Notifications::setPayload(std::string &&pPayload) noexcept
+{
+    payload_ = std::make_shared<std::string>(std::move(pPayload));
+    dirtyFlag_[4] = true;
+}
+void Notifications::setPayloadToNull() noexcept
+{
+    payload_.reset();
+    dirtyFlag_[4] = true;
+}
+
+const int64_t &Notifications::getValueOfIsRead() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(isRead_)
+        return *isRead_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Notifications::getIsRead() const noexcept
+{
+    return isRead_;
+}
+void Notifications::setIsRead(const int64_t &pIsRead) noexcept
+{
+    isRead_ = std::make_shared<int64_t>(pIsRead);
+    dirtyFlag_[5] = true;
+}
+void Notifications::setIsReadToNull() noexcept
+{
+    isRead_.reset();
+    dirtyFlag_[5] = true;
+}
+
+const int64_t &Notifications::getValueOfCreatedTime() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(createdTime_)
+        return *createdTime_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Notifications::getCreatedTime() const noexcept
+{
+    return createdTime_;
+}
+void Notifications::setCreatedTime(const int64_t &pCreatedTime) noexcept
+{
+    createdTime_ = std::make_shared<int64_t>(pCreatedTime);
+    dirtyFlag_[6] = true;
+}
+void Notifications::setCreatedTimeToNull() noexcept
+{
+    createdTime_.reset();
+    dirtyFlag_[6] = true;
 }
 
 void Notifications::updateId(const uint64_t id)
 {
+    id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &Notifications::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
+        "type",
+        "sender_uid",
+        "recipient_uid",
+        "payload",
+        "is_read",
+        "created_time"
     };
     return inCols;
 }
 
 void Notifications::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[1])
+    {
+        if(getType())
+        {
+            binder << getValueOfType();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getSenderUid())
+        {
+            binder << getValueOfSenderUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[3])
+    {
+        if(getRecipientUid())
+        {
+            binder << getValueOfRecipientUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getPayload())
+        {
+            binder << getValueOfPayload();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
+        if(getIsRead())
+        {
+            binder << getValueOfIsRead();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[6])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 
 const std::vector<std::string> Notifications::updateColumns() const
 {
     std::vector<std::string> ret;
+    if(dirtyFlag_[1])
+    {
+        ret.push_back(getColumnName(1));
+    }
+    if(dirtyFlag_[2])
+    {
+        ret.push_back(getColumnName(2));
+    }
+    if(dirtyFlag_[3])
+    {
+        ret.push_back(getColumnName(3));
+    }
+    if(dirtyFlag_[4])
+    {
+        ret.push_back(getColumnName(4));
+    }
+    if(dirtyFlag_[5])
+    {
+        ret.push_back(getColumnName(5));
+    }
+    if(dirtyFlag_[6])
+    {
+        ret.push_back(getColumnName(6));
+    }
     return ret;
 }
 
 void Notifications::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[1])
+    {
+        if(getType())
+        {
+            binder << getValueOfType();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getSenderUid())
+        {
+            binder << getValueOfSenderUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[3])
+    {
+        if(getRecipientUid())
+        {
+            binder << getValueOfRecipientUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getPayload())
+        {
+            binder << getValueOfPayload();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
+        if(getIsRead())
+        {
+            binder << getValueOfIsRead();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[6])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 Json::Value Notifications::toJson() const
 {
     Json::Value ret;
+    if(getId())
+    {
+        ret["id"]=(Json::Int64)getValueOfId();
+    }
+    else
+    {
+        ret["id"]=Json::Value();
+    }
+    if(getType())
+    {
+        ret["type"]=(Json::Int64)getValueOfType();
+    }
+    else
+    {
+        ret["type"]=Json::Value();
+    }
+    if(getSenderUid())
+    {
+        ret["sender_uid"]=getValueOfSenderUid();
+    }
+    else
+    {
+        ret["sender_uid"]=Json::Value();
+    }
+    if(getRecipientUid())
+    {
+        ret["recipient_uid"]=getValueOfRecipientUid();
+    }
+    else
+    {
+        ret["recipient_uid"]=Json::Value();
+    }
+    if(getPayload())
+    {
+        ret["payload"]=getValueOfPayload();
+    }
+    else
+    {
+        ret["payload"]=Json::Value();
+    }
+    if(getIsRead())
+    {
+        ret["is_read"]=(Json::Int64)getValueOfIsRead();
+    }
+    else
+    {
+        ret["is_read"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
     return ret;
 }
 
@@ -104,28 +780,282 @@ Json::Value Notifications::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 0)
+    if(pMasqueradingVector.size() == 7)
     {
+        if(!pMasqueradingVector[0].empty())
+        {
+            if(getId())
+            {
+                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfId();
+            }
+            else
+            {
+                ret[pMasqueradingVector[0]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[1].empty())
+        {
+            if(getType())
+            {
+                ret[pMasqueradingVector[1]]=(Json::Int64)getValueOfType();
+            }
+            else
+            {
+                ret[pMasqueradingVector[1]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[2].empty())
+        {
+            if(getSenderUid())
+            {
+                ret[pMasqueradingVector[2]]=getValueOfSenderUid();
+            }
+            else
+            {
+                ret[pMasqueradingVector[2]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[3].empty())
+        {
+            if(getRecipientUid())
+            {
+                ret[pMasqueradingVector[3]]=getValueOfRecipientUid();
+            }
+            else
+            {
+                ret[pMasqueradingVector[3]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[4].empty())
+        {
+            if(getPayload())
+            {
+                ret[pMasqueradingVector[4]]=getValueOfPayload();
+            }
+            else
+            {
+                ret[pMasqueradingVector[4]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[5].empty())
+        {
+            if(getIsRead())
+            {
+                ret[pMasqueradingVector[5]]=(Json::Int64)getValueOfIsRead();
+            }
+            else
+            {
+                ret[pMasqueradingVector[5]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[6].empty())
+        {
+            if(getCreatedTime())
+            {
+                ret[pMasqueradingVector[6]]=(Json::Int64)getValueOfCreatedTime();
+            }
+            else
+            {
+                ret[pMasqueradingVector[6]]=Json::Value();
+            }
+        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
+    if(getId())
+    {
+        ret["id"]=(Json::Int64)getValueOfId();
+    }
+    else
+    {
+        ret["id"]=Json::Value();
+    }
+    if(getType())
+    {
+        ret["type"]=(Json::Int64)getValueOfType();
+    }
+    else
+    {
+        ret["type"]=Json::Value();
+    }
+    if(getSenderUid())
+    {
+        ret["sender_uid"]=getValueOfSenderUid();
+    }
+    else
+    {
+        ret["sender_uid"]=Json::Value();
+    }
+    if(getRecipientUid())
+    {
+        ret["recipient_uid"]=getValueOfRecipientUid();
+    }
+    else
+    {
+        ret["recipient_uid"]=Json::Value();
+    }
+    if(getPayload())
+    {
+        ret["payload"]=getValueOfPayload();
+    }
+    else
+    {
+        ret["payload"]=Json::Value();
+    }
+    if(getIsRead())
+    {
+        ret["is_read"]=(Json::Int64)getValueOfIsRead();
+    }
+    else
+    {
+        ret["is_read"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
     return ret;
 }
 
 bool Notifications::validateJsonForCreation(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!validJsonOfField(0, "id", pJson["id"], err, true))
+            return false;
+    }
+    if(pJson.isMember("type"))
+    {
+        if(!validJsonOfField(1, "type", pJson["type"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The type column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("sender_uid"))
+    {
+        if(!validJsonOfField(2, "sender_uid", pJson["sender_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The sender_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("recipient_uid"))
+    {
+        if(!validJsonOfField(3, "recipient_uid", pJson["recipient_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The recipient_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("payload"))
+    {
+        if(!validJsonOfField(4, "payload", pJson["payload"], err, true))
+            return false;
+    }
+    if(pJson.isMember("is_read"))
+    {
+        if(!validJsonOfField(5, "is_read", pJson["is_read"], err, true))
+            return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(6, "created_time", pJson["created_time"], err, true))
+            return false;
+    }
     return true;
 }
 bool Notifications::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                        const std::vector<std::string> &pMasqueradingVector,
                                                        std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 7)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[0]))
+          {
+              if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[1].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[1]))
+          {
+              if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[1] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[2].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[2]))
+          {
+              if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[2] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[3].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[3]))
+          {
+              if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[3] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[4].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[4]))
+          {
+              if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[5].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[5]))
+          {
+              if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[6].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[6]))
+          {
+              if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, true))
+                  return false;
+          }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -136,18 +1066,98 @@ bool Notifications::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 }
 bool Notifications::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!validJsonOfField(0, "id", pJson["id"], err, false))
+            return false;
+    }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
+    if(pJson.isMember("type"))
+    {
+        if(!validJsonOfField(1, "type", pJson["type"], err, false))
+            return false;
+    }
+    if(pJson.isMember("sender_uid"))
+    {
+        if(!validJsonOfField(2, "sender_uid", pJson["sender_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("recipient_uid"))
+    {
+        if(!validJsonOfField(3, "recipient_uid", pJson["recipient_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("payload"))
+    {
+        if(!validJsonOfField(4, "payload", pJson["payload"], err, false))
+            return false;
+    }
+    if(pJson.isMember("is_read"))
+    {
+        if(!validJsonOfField(5, "is_read", pJson["is_read"], err, false))
+            return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(6, "created_time", pJson["created_time"], err, false))
+            return false;
+    }
     return true;
 }
 bool Notifications::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                      const std::vector<std::string> &pMasqueradingVector,
                                                      std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 7)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+      {
+          if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, false))
+              return false;
+      }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
+      if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+      {
+          if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+      {
+          if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+      {
+          if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+      {
+          if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+      {
+          if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+      {
+          if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, false))
+              return false;
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -164,6 +1174,91 @@ bool Notifications::validJsonOfField(size_t index,
 {
     switch(index)
     {
+        case 0:
+            if(isForCreation)
+            {
+                err="The automatic primary key cannot be set";
+                return false;
+            }
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 1: // type, NOT NULL int64
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 2: // sender_uid, NOT NULL text
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 3: // recipient_uid, NOT NULL text
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 4: // payload, nullable text
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 5: // is_read, nullable int64
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 6: // created_time, nullable int64
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
         default:
             err="Internal error in the server";
             return false;

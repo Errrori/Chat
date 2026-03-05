@@ -99,6 +99,30 @@ std::optional<drogon_model::sqlite3::Messages> ChatMessage::ToDbMessage() const
 	return dbMessage;
 }
 
+std::optional<Json::Value> ChatMessage::ToMessage() const
+{
+	if (!IsValid()) {
+		LOG_ERROR << "invalid message data";
+		return std::nullopt;
+	}
+	Json::Value msg_data;
+	msg_data["thread_id"] = _thread_id;
+	msg_data["message_id"] = (Json::Value::Int64)_message_id;
+	msg_data["content"] = _content;
+	msg_data["attachment"] = _attachment;
+	msg_data["sender_uid"] = _sender_uid;
+	msg_data["sender_name"] = _sender_name;
+	msg_data["sender_avatar"] = _sender_avatar;
+	msg_data["status"] = _status;
+	msg_data["create_time"] = (Json::Value::Int64)_create_time;
+	msg_data["update_time"] = (Json::Value::Int64)_update_time;
+
+	Json::Value msg;
+	msg["type"] = 1;
+	msg["data"] = msg_data;
+	return msg;
+}
+
 bool ChatMessage::IsValid() const
 {
 	return _thread_id > 0 && (!_content.empty() || !_attachment.empty()) && !_sender_uid.empty();

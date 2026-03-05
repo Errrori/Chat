@@ -73,17 +73,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 				}
 				auto members = co_await _thread_service->GetThreadMember(msg.getThreadId());
 
-				Json::Value json_msg;
-				json_msg["thread_id"] = msg.getThreadId();
-				json_msg["msg_id"] = (Json::Value::Int64)msg.getMessageId();
-				json_msg["content"] = msg.getContent();
-				json_msg["attachment"] = msg.getAttachment();
-				json_msg["sender_uid"] = msg.getSenderUid();
-				json_msg["sender_name"] = msg.getSenderName();
-				json_msg["sender_avatar"] = msg.getSenderAvatar();
-				json_msg["status"] = msg.getStatus();
-				json_msg["create_time"] = (Json::Value::Int64)msg.getCreateTime();
-				json_msg["update_time"] = (Json::Value::Int64)msg.getUpdateTime();
+				const auto json_msg = msg.ToMessage().value();
 
 				LOG_INFO << "send message: " << json_msg.toStyledString();
 

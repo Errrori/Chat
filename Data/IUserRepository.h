@@ -1,6 +1,7 @@
 #pragma once
 
-class UserInfo;
+#include "Common/User.h"
+#include <drogon/HttpController.h>
 
 class IUserRepository
 {
@@ -11,6 +12,7 @@ public:
 	virtual std::future<bool> DeleteUser(const std::string& uid) = 0;
 	virtual std::future<Json::Value> GetUserInfoByUid(const std::string& uid) const = 0;
 	virtual std::future<Json::Value> GetUserInfoByAccount(const std::string& account) const = 0;
+	virtual drogon::Task<UserInfo> GetUserInfo(const std::string& uid) = 0;
 	//static bool GetUserInfoByUid(const std::string& uid, Json::Value& data);
 	//static bool GetUserInfoByAccount(const std::string& account, Json::Value& data);
 	//static bool GetUserQueryInfoByAccount(const std::string& account, Json::Value& data);

@@ -44,6 +44,9 @@ class Friendships
   public:
     struct Cols
     {
+        static const std::string _uid1;
+        static const std::string _uid2;
+        static const std::string _created_time;
     };
 
     static const int primaryKeyNumber;
@@ -95,8 +98,35 @@ class Friendships
                           std::string &err,
                           bool isForCreation);
 
+    /**  For column uid1  */
+    ///Get the value of the column uid1, returns the default value if the column is null
+    const std::string &getValueOfUid1() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getUid1() const noexcept;
+    ///Set the value of the column uid1
+    void setUid1(const std::string &pUid1) noexcept;
+    void setUid1(std::string &&pUid1) noexcept;
 
-    static size_t getColumnNumber() noexcept {  return 0;  }
+    /**  For column uid2  */
+    ///Get the value of the column uid2, returns the default value if the column is null
+    const std::string &getValueOfUid2() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getUid2() const noexcept;
+    ///Set the value of the column uid2
+    void setUid2(const std::string &pUid2) noexcept;
+    void setUid2(std::string &&pUid2) noexcept;
+
+    /**  For column created_time  */
+    ///Get the value of the column created_time, returns the default value if the column is null
+    const int64_t &getValueOfCreatedTime() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getCreatedTime() const noexcept;
+    ///Set the value of the column created_time
+    void setCreatedTime(const int64_t &pCreatedTime) noexcept;
+    void setCreatedTimeToNull() noexcept;
+
+
+    static size_t getColumnNumber() noexcept {  return 3;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -117,6 +147,9 @@ class Friendships
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
+    std::shared_ptr<std::string> uid1_;
+    std::shared_ptr<std::string> uid2_;
+    std::shared_ptr<int64_t> createdTime_;
     struct MetaData
     {
         const std::string colName_;
@@ -128,7 +161,7 @@ class Friendships
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[0]={ false };
+    bool dirtyFlag_[3]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -146,6 +179,21 @@ class Friendships
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+        if(dirtyFlag_[0])
+        {
+            sql += "uid1,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[1])
+        {
+            sql += "uid2,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[2])
+        {
+            sql += "created_time,";
+            ++parametersCount;
+        }
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -154,6 +202,21 @@ class Friendships
         else
             sql += ") values (";
 
+        if(dirtyFlag_[0])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[1])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[2])
+        {
+            sql.append("?,");
+
+        }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);

@@ -5,7 +5,6 @@
  *
  */
 #include "pch.h"
-
 #include "FriendRequests.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
@@ -14,11 +13,25 @@ using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
-const std::string FriendRequests::primaryKeyName = "";
-const bool FriendRequests::hasPrimaryKey = false;
+const std::string FriendRequests::Cols::_id = "id";
+const std::string FriendRequests::Cols::_requester_uid = "requester_uid";
+const std::string FriendRequests::Cols::_target_uid = "target_uid";
+const std::string FriendRequests::Cols::_status = "status";
+const std::string FriendRequests::Cols::_created_time = "created_time";
+const std::string FriendRequests::Cols::_updated_time = "updated_time";
+const std::string FriendRequests::Cols::_payload = "payload";
+const std::string FriendRequests::primaryKeyName = "id";
+const bool FriendRequests::hasPrimaryKey = true;
 const std::string FriendRequests::tableName = "friend_requests";
 
 const std::vector<typename FriendRequests::MetaData> FriendRequests::metaData_={
+{"id","int64_t","integer",8,1,1,0},
+{"requester_uid","std::string","text",0,0,0,1},
+{"target_uid","std::string","text",0,0,0,1},
+{"status","int64_t","integer",8,0,0,1},
+{"created_time","int64_t","integer",8,0,0,0},
+{"updated_time","int64_t","integer",8,0,0,0},
+{"payload","std::string","text",0,0,0,0}
 };
 const std::string &FriendRequests::getColumnName(size_t index) noexcept(false)
 {
@@ -29,74 +42,737 @@ FriendRequests::FriendRequests(const Row &r, const ssize_t indexOffset) noexcept
 {
     if(indexOffset < 0)
     {
+        if(!r["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>(r["id"].as<int64_t>());
+        }
+        if(!r["requester_uid"].isNull())
+        {
+            requesterUid_=std::make_shared<std::string>(r["requester_uid"].as<std::string>());
+        }
+        if(!r["target_uid"].isNull())
+        {
+            targetUid_=std::make_shared<std::string>(r["target_uid"].as<std::string>());
+        }
+        if(!r["status"].isNull())
+        {
+            status_=std::make_shared<int64_t>(r["status"].as<int64_t>());
+        }
+        if(!r["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r["created_time"].as<int64_t>());
+        }
+        if(!r["updated_time"].isNull())
+        {
+            updatedTime_=std::make_shared<int64_t>(r["updated_time"].as<int64_t>());
+        }
+        if(!r["payload"].isNull())
+        {
+            payload_=std::make_shared<std::string>(r["payload"].as<std::string>());
+        }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 0 > r.size())
+        if(offset + 7 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
         }
         size_t index;
+        index = offset + 0;
+        if(!r[index].isNull())
+        {
+            id_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 1;
+        if(!r[index].isNull())
+        {
+            requesterUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 2;
+        if(!r[index].isNull())
+        {
+            targetUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 3;
+        if(!r[index].isNull())
+        {
+            status_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 4;
+        if(!r[index].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 5;
+        if(!r[index].isNull())
+        {
+            updatedTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 6;
+        if(!r[index].isNull())
+        {
+            payload_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
     }
 
 }
 
 FriendRequests::FriendRequests(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 7)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            requesterUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            targetUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+        }
+    }
+    if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson[pMasqueradingVector[3]].isNull())
+        {
+            status_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[3]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[4]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson[pMasqueradingVector[5]].isNull())
+        {
+            updatedTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[5]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson[pMasqueradingVector[6]].isNull())
+        {
+            payload_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+        }
     }
 }
 
 FriendRequests::FriendRequests(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("id"))
+    {
+        dirtyFlag_[0]=true;
+        if(!pJson["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+        }
+    }
+    if(pJson.isMember("requester_uid"))
+    {
+        dirtyFlag_[1]=true;
+        if(!pJson["requester_uid"].isNull())
+        {
+            requesterUid_=std::make_shared<std::string>(pJson["requester_uid"].asString());
+        }
+    }
+    if(pJson.isMember("target_uid"))
+    {
+        dirtyFlag_[2]=true;
+        if(!pJson["target_uid"].isNull())
+        {
+            targetUid_=std::make_shared<std::string>(pJson["target_uid"].asString());
+        }
+    }
+    if(pJson.isMember("status"))
+    {
+        dirtyFlag_[3]=true;
+        if(!pJson["status"].isNull())
+        {
+            status_=std::make_shared<int64_t>((int64_t)pJson["status"].asInt64());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[4]=true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
+    if(pJson.isMember("updated_time"))
+    {
+        dirtyFlag_[5]=true;
+        if(!pJson["updated_time"].isNull())
+        {
+            updatedTime_=std::make_shared<int64_t>((int64_t)pJson["updated_time"].asInt64());
+        }
+    }
+    if(pJson.isMember("payload"))
+    {
+        dirtyFlag_[6]=true;
+        if(!pJson["payload"].isNull())
+        {
+            payload_=std::make_shared<std::string>(pJson["payload"].asString());
+        }
+    }
 }
 
 void FriendRequests::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 7)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            requesterUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            targetUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+        }
+    }
+    if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson[pMasqueradingVector[3]].isNull())
+        {
+            status_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[3]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[4]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson[pMasqueradingVector[5]].isNull())
+        {
+            updatedTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[5]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson[pMasqueradingVector[6]].isNull())
+        {
+            payload_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
+        }
     }
 }
 
 void FriendRequests::updateByJson(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!pJson["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+        }
+    }
+    if(pJson.isMember("requester_uid"))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson["requester_uid"].isNull())
+        {
+            requesterUid_=std::make_shared<std::string>(pJson["requester_uid"].asString());
+        }
+    }
+    if(pJson.isMember("target_uid"))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson["target_uid"].isNull())
+        {
+            targetUid_=std::make_shared<std::string>(pJson["target_uid"].asString());
+        }
+    }
+    if(pJson.isMember("status"))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson["status"].isNull())
+        {
+            status_=std::make_shared<int64_t>((int64_t)pJson["status"].asInt64());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
+    if(pJson.isMember("updated_time"))
+    {
+        dirtyFlag_[5] = true;
+        if(!pJson["updated_time"].isNull())
+        {
+            updatedTime_=std::make_shared<int64_t>((int64_t)pJson["updated_time"].asInt64());
+        }
+    }
+    if(pJson.isMember("payload"))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson["payload"].isNull())
+        {
+            payload_=std::make_shared<std::string>(pJson["payload"].asString());
+        }
+    }
+}
+
+const int64_t &FriendRequests::getValueOfId() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(id_)
+        return *id_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &FriendRequests::getId() const noexcept
+{
+    return id_;
+}
+void FriendRequests::setId(const int64_t &pId) noexcept
+{
+    id_ = std::make_shared<int64_t>(pId);
+    dirtyFlag_[0] = true;
+}
+void FriendRequests::setIdToNull() noexcept
+{
+    id_.reset();
+    dirtyFlag_[0] = true;
+}
+const typename FriendRequests::PrimaryKeyType & FriendRequests::getPrimaryKey() const
+{
+    assert(id_);
+    return *id_;
+}
+
+const std::string &FriendRequests::getValueOfRequesterUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(requesterUid_)
+        return *requesterUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &FriendRequests::getRequesterUid() const noexcept
+{
+    return requesterUid_;
+}
+void FriendRequests::setRequesterUid(const std::string &pRequesterUid) noexcept
+{
+    requesterUid_ = std::make_shared<std::string>(pRequesterUid);
+    dirtyFlag_[1] = true;
+}
+void FriendRequests::setRequesterUid(std::string &&pRequesterUid) noexcept
+{
+    requesterUid_ = std::make_shared<std::string>(std::move(pRequesterUid));
+    dirtyFlag_[1] = true;
+}
+
+const std::string &FriendRequests::getValueOfTargetUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(targetUid_)
+        return *targetUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &FriendRequests::getTargetUid() const noexcept
+{
+    return targetUid_;
+}
+void FriendRequests::setTargetUid(const std::string &pTargetUid) noexcept
+{
+    targetUid_ = std::make_shared<std::string>(pTargetUid);
+    dirtyFlag_[2] = true;
+}
+void FriendRequests::setTargetUid(std::string &&pTargetUid) noexcept
+{
+    targetUid_ = std::make_shared<std::string>(std::move(pTargetUid));
+    dirtyFlag_[2] = true;
+}
+
+const int64_t &FriendRequests::getValueOfStatus() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(status_)
+        return *status_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &FriendRequests::getStatus() const noexcept
+{
+    return status_;
+}
+void FriendRequests::setStatus(const int64_t &pStatus) noexcept
+{
+    status_ = std::make_shared<int64_t>(pStatus);
+    dirtyFlag_[3] = true;
+}
+
+const int64_t &FriendRequests::getValueOfCreatedTime() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(createdTime_)
+        return *createdTime_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &FriendRequests::getCreatedTime() const noexcept
+{
+    return createdTime_;
+}
+void FriendRequests::setCreatedTime(const int64_t &pCreatedTime) noexcept
+{
+    createdTime_ = std::make_shared<int64_t>(pCreatedTime);
+    dirtyFlag_[4] = true;
+}
+void FriendRequests::setCreatedTimeToNull() noexcept
+{
+    createdTime_.reset();
+    dirtyFlag_[4] = true;
+}
+
+const int64_t &FriendRequests::getValueOfUpdatedTime() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(updatedTime_)
+        return *updatedTime_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &FriendRequests::getUpdatedTime() const noexcept
+{
+    return updatedTime_;
+}
+void FriendRequests::setUpdatedTime(const int64_t &pUpdatedTime) noexcept
+{
+    updatedTime_ = std::make_shared<int64_t>(pUpdatedTime);
+    dirtyFlag_[5] = true;
+}
+void FriendRequests::setUpdatedTimeToNull() noexcept
+{
+    updatedTime_.reset();
+    dirtyFlag_[5] = true;
+}
+
+const std::string &FriendRequests::getValueOfPayload() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(payload_)
+        return *payload_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &FriendRequests::getPayload() const noexcept
+{
+    return payload_;
+}
+void FriendRequests::setPayload(const std::string &pPayload) noexcept
+{
+    payload_ = std::make_shared<std::string>(pPayload);
+    dirtyFlag_[6] = true;
+}
+void FriendRequests::setPayload(std::string &&pPayload) noexcept
+{
+    payload_ = std::make_shared<std::string>(std::move(pPayload));
+    dirtyFlag_[6] = true;
+}
+void FriendRequests::setPayloadToNull() noexcept
+{
+    payload_.reset();
+    dirtyFlag_[6] = true;
 }
 
 void FriendRequests::updateId(const uint64_t id)
 {
+    id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &FriendRequests::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
+        "requester_uid",
+        "target_uid",
+        "status",
+        "created_time",
+        "updated_time",
+        "payload"
     };
     return inCols;
 }
 
 void FriendRequests::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[1])
+    {
+        if(getRequesterUid())
+        {
+            binder << getValueOfRequesterUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getTargetUid())
+        {
+            binder << getValueOfTargetUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[3])
+    {
+        if(getStatus())
+        {
+            binder << getValueOfStatus();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
+        if(getUpdatedTime())
+        {
+            binder << getValueOfUpdatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[6])
+    {
+        if(getPayload())
+        {
+            binder << getValueOfPayload();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 
 const std::vector<std::string> FriendRequests::updateColumns() const
 {
     std::vector<std::string> ret;
+    if(dirtyFlag_[1])
+    {
+        ret.push_back(getColumnName(1));
+    }
+    if(dirtyFlag_[2])
+    {
+        ret.push_back(getColumnName(2));
+    }
+    if(dirtyFlag_[3])
+    {
+        ret.push_back(getColumnName(3));
+    }
+    if(dirtyFlag_[4])
+    {
+        ret.push_back(getColumnName(4));
+    }
+    if(dirtyFlag_[5])
+    {
+        ret.push_back(getColumnName(5));
+    }
+    if(dirtyFlag_[6])
+    {
+        ret.push_back(getColumnName(6));
+    }
     return ret;
 }
 
 void FriendRequests::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[1])
+    {
+        if(getRequesterUid())
+        {
+            binder << getValueOfRequesterUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getTargetUid())
+        {
+            binder << getValueOfTargetUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[3])
+    {
+        if(getStatus())
+        {
+            binder << getValueOfStatus();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
+        if(getUpdatedTime())
+        {
+            binder << getValueOfUpdatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[6])
+    {
+        if(getPayload())
+        {
+            binder << getValueOfPayload();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 Json::Value FriendRequests::toJson() const
 {
     Json::Value ret;
+    if(getId())
+    {
+        ret["id"]=(Json::Int64)getValueOfId();
+    }
+    else
+    {
+        ret["id"]=Json::Value();
+    }
+    if(getRequesterUid())
+    {
+        ret["requester_uid"]=getValueOfRequesterUid();
+    }
+    else
+    {
+        ret["requester_uid"]=Json::Value();
+    }
+    if(getTargetUid())
+    {
+        ret["target_uid"]=getValueOfTargetUid();
+    }
+    else
+    {
+        ret["target_uid"]=Json::Value();
+    }
+    if(getStatus())
+    {
+        ret["status"]=(Json::Int64)getValueOfStatus();
+    }
+    else
+    {
+        ret["status"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
+    if(getUpdatedTime())
+    {
+        ret["updated_time"]=(Json::Int64)getValueOfUpdatedTime();
+    }
+    else
+    {
+        ret["updated_time"]=Json::Value();
+    }
+    if(getPayload())
+    {
+        ret["payload"]=getValueOfPayload();
+    }
+    else
+    {
+        ret["payload"]=Json::Value();
+    }
     return ret;
 }
 
@@ -104,28 +780,282 @@ Json::Value FriendRequests::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 0)
+    if(pMasqueradingVector.size() == 7)
     {
+        if(!pMasqueradingVector[0].empty())
+        {
+            if(getId())
+            {
+                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfId();
+            }
+            else
+            {
+                ret[pMasqueradingVector[0]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[1].empty())
+        {
+            if(getRequesterUid())
+            {
+                ret[pMasqueradingVector[1]]=getValueOfRequesterUid();
+            }
+            else
+            {
+                ret[pMasqueradingVector[1]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[2].empty())
+        {
+            if(getTargetUid())
+            {
+                ret[pMasqueradingVector[2]]=getValueOfTargetUid();
+            }
+            else
+            {
+                ret[pMasqueradingVector[2]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[3].empty())
+        {
+            if(getStatus())
+            {
+                ret[pMasqueradingVector[3]]=(Json::Int64)getValueOfStatus();
+            }
+            else
+            {
+                ret[pMasqueradingVector[3]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[4].empty())
+        {
+            if(getCreatedTime())
+            {
+                ret[pMasqueradingVector[4]]=(Json::Int64)getValueOfCreatedTime();
+            }
+            else
+            {
+                ret[pMasqueradingVector[4]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[5].empty())
+        {
+            if(getUpdatedTime())
+            {
+                ret[pMasqueradingVector[5]]=(Json::Int64)getValueOfUpdatedTime();
+            }
+            else
+            {
+                ret[pMasqueradingVector[5]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[6].empty())
+        {
+            if(getPayload())
+            {
+                ret[pMasqueradingVector[6]]=getValueOfPayload();
+            }
+            else
+            {
+                ret[pMasqueradingVector[6]]=Json::Value();
+            }
+        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
+    if(getId())
+    {
+        ret["id"]=(Json::Int64)getValueOfId();
+    }
+    else
+    {
+        ret["id"]=Json::Value();
+    }
+    if(getRequesterUid())
+    {
+        ret["requester_uid"]=getValueOfRequesterUid();
+    }
+    else
+    {
+        ret["requester_uid"]=Json::Value();
+    }
+    if(getTargetUid())
+    {
+        ret["target_uid"]=getValueOfTargetUid();
+    }
+    else
+    {
+        ret["target_uid"]=Json::Value();
+    }
+    if(getStatus())
+    {
+        ret["status"]=(Json::Int64)getValueOfStatus();
+    }
+    else
+    {
+        ret["status"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
+    if(getUpdatedTime())
+    {
+        ret["updated_time"]=(Json::Int64)getValueOfUpdatedTime();
+    }
+    else
+    {
+        ret["updated_time"]=Json::Value();
+    }
+    if(getPayload())
+    {
+        ret["payload"]=getValueOfPayload();
+    }
+    else
+    {
+        ret["payload"]=Json::Value();
+    }
     return ret;
 }
 
 bool FriendRequests::validateJsonForCreation(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!validJsonOfField(0, "id", pJson["id"], err, true))
+            return false;
+    }
+    if(pJson.isMember("requester_uid"))
+    {
+        if(!validJsonOfField(1, "requester_uid", pJson["requester_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The requester_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("target_uid"))
+    {
+        if(!validJsonOfField(2, "target_uid", pJson["target_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The target_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("status"))
+    {
+        if(!validJsonOfField(3, "status", pJson["status"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The status column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(4, "created_time", pJson["created_time"], err, true))
+            return false;
+    }
+    if(pJson.isMember("updated_time"))
+    {
+        if(!validJsonOfField(5, "updated_time", pJson["updated_time"], err, true))
+            return false;
+    }
+    if(pJson.isMember("payload"))
+    {
+        if(!validJsonOfField(6, "payload", pJson["payload"], err, true))
+            return false;
+    }
     return true;
 }
 bool FriendRequests::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                         const std::vector<std::string> &pMasqueradingVector,
                                                         std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 7)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[0]))
+          {
+              if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[1].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[1]))
+          {
+              if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[1] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[2].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[2]))
+          {
+              if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[2] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[3].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[3]))
+          {
+              if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[3] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[4].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[4]))
+          {
+              if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[5].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[5]))
+          {
+              if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[6].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[6]))
+          {
+              if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, true))
+                  return false;
+          }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -136,18 +1066,98 @@ bool FriendRequests::validateMasqueradedJsonForCreation(const Json::Value &pJson
 }
 bool FriendRequests::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!validJsonOfField(0, "id", pJson["id"], err, false))
+            return false;
+    }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
+    if(pJson.isMember("requester_uid"))
+    {
+        if(!validJsonOfField(1, "requester_uid", pJson["requester_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("target_uid"))
+    {
+        if(!validJsonOfField(2, "target_uid", pJson["target_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("status"))
+    {
+        if(!validJsonOfField(3, "status", pJson["status"], err, false))
+            return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(4, "created_time", pJson["created_time"], err, false))
+            return false;
+    }
+    if(pJson.isMember("updated_time"))
+    {
+        if(!validJsonOfField(5, "updated_time", pJson["updated_time"], err, false))
+            return false;
+    }
+    if(pJson.isMember("payload"))
+    {
+        if(!validJsonOfField(6, "payload", pJson["payload"], err, false))
+            return false;
+    }
     return true;
 }
 bool FriendRequests::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                       const std::vector<std::string> &pMasqueradingVector,
                                                       std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 7)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+      {
+          if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, false))
+              return false;
+      }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
+      if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+      {
+          if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+      {
+          if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+      {
+          if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+      {
+          if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
+      {
+          if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+      {
+          if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, false))
+              return false;
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -164,6 +1174,91 @@ bool FriendRequests::validJsonOfField(size_t index,
 {
     switch(index)
     {
+        case 0:
+            if(isForCreation)
+            {
+                err="The automatic primary key cannot be set";
+                return false;
+            }
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 1:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 2:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 3:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 4:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 5:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 6:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
         default:
             err="Internal error in the server";
             return false;

@@ -25,8 +25,6 @@ drogon::Task<int> SQLiteThreadRepository::CreatePrivateThread(PrivateThread info
 		if (!info.IsDataValid())
 			throw std::invalid_argument("info is not valid");
 
-		DbAccessor::GetDbClient()->newTransaction();
-
 		auto trans = co_await DbAccessor::GetDbClient()->newTransactionCoro();
 		if (trans == nullptr)
 			throw std::runtime_error("fail to create transaction");

@@ -44,14 +44,21 @@ class FriendRequests
   public:
     struct Cols
     {
+        static const std::string _id;
+        static const std::string _requester_uid;
+        static const std::string _target_uid;
+        static const std::string _status;
+        static const std::string _created_time;
+        static const std::string _updated_time;
+        static const std::string _payload;
     };
 
     static const int primaryKeyNumber;
     static const std::string tableName;
     static const bool hasPrimaryKey;
     static const std::string primaryKeyName;
-    using PrimaryKeyType = void;
-    int getPrimaryKey() const { assert(false); return 0; }
+    using PrimaryKeyType = int64_t;
+    const PrimaryKeyType &getPrimaryKey() const;
 
     /**
      * @brief constructor
@@ -95,8 +102,71 @@ class FriendRequests
                           std::string &err,
                           bool isForCreation);
 
+    /**  For column id  */
+    ///Get the value of the column id, returns the default value if the column is null
+    const int64_t &getValueOfId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getId() const noexcept;
+    ///Set the value of the column id
+    void setId(const int64_t &pId) noexcept;
+    void setIdToNull() noexcept;
 
-    static size_t getColumnNumber() noexcept {  return 0;  }
+    /**  For column requester_uid  */
+    ///Get the value of the column requester_uid, returns the default value if the column is null
+    const std::string &getValueOfRequesterUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getRequesterUid() const noexcept;
+    ///Set the value of the column requester_uid
+    void setRequesterUid(const std::string &pRequesterUid) noexcept;
+    void setRequesterUid(std::string &&pRequesterUid) noexcept;
+
+    /**  For column target_uid  */
+    ///Get the value of the column target_uid, returns the default value if the column is null
+    const std::string &getValueOfTargetUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getTargetUid() const noexcept;
+    ///Set the value of the column target_uid
+    void setTargetUid(const std::string &pTargetUid) noexcept;
+    void setTargetUid(std::string &&pTargetUid) noexcept;
+
+    /**  For column status  */
+    ///Get the value of the column status, returns the default value if the column is null
+    const int64_t &getValueOfStatus() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getStatus() const noexcept;
+    ///Set the value of the column status
+    void setStatus(const int64_t &pStatus) noexcept;
+
+    /**  For column created_time  */
+    ///Get the value of the column created_time, returns the default value if the column is null
+    const int64_t &getValueOfCreatedTime() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getCreatedTime() const noexcept;
+    ///Set the value of the column created_time
+    void setCreatedTime(const int64_t &pCreatedTime) noexcept;
+    void setCreatedTimeToNull() noexcept;
+
+    /**  For column updated_time  */
+    ///Get the value of the column updated_time, returns the default value if the column is null
+    const int64_t &getValueOfUpdatedTime() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getUpdatedTime() const noexcept;
+    ///Set the value of the column updated_time
+    void setUpdatedTime(const int64_t &pUpdatedTime) noexcept;
+    void setUpdatedTimeToNull() noexcept;
+
+    /**  For column payload  */
+    ///Get the value of the column payload, returns the default value if the column is null
+    const std::string &getValueOfPayload() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getPayload() const noexcept;
+    ///Set the value of the column payload
+    void setPayload(const std::string &pPayload) noexcept;
+    void setPayload(std::string &&pPayload) noexcept;
+    void setPayloadToNull() noexcept;
+
+
+    static size_t getColumnNumber() noexcept {  return 7;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -117,6 +187,13 @@ class FriendRequests
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
+    std::shared_ptr<int64_t> id_;
+    std::shared_ptr<std::string> requesterUid_;
+    std::shared_ptr<std::string> targetUid_;
+    std::shared_ptr<int64_t> status_;
+    std::shared_ptr<int64_t> createdTime_;
+    std::shared_ptr<int64_t> updatedTime_;
+    std::shared_ptr<std::string> payload_;
     struct MetaData
     {
         const std::string colName_;
@@ -128,17 +205,17 @@ class FriendRequests
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[0]={ false };
+    bool dirtyFlag_[7]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="";
+        static const std::string sql="select * from " + tableName + " where id = ?";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="";
+        static const std::string sql="delete from " + tableName + " where id = ?";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -146,6 +223,44 @@ class FriendRequests
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+        if(dirtyFlag_[1])
+        {
+            sql += "requester_uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[2])
+        {
+            sql += "target_uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[3])
+        {
+            sql += "status,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[4])
+        {
+            sql += "created_time,";
+            ++parametersCount;
+        }
+        if(!dirtyFlag_[4])
+        {
+            needSelection=true;
+        }
+        if(dirtyFlag_[5])
+        {
+            sql += "updated_time,";
+            ++parametersCount;
+        }
+        if(!dirtyFlag_[5])
+        {
+            needSelection=true;
+        }
+        if(dirtyFlag_[6])
+        {
+            sql += "payload,";
+            ++parametersCount;
+        }
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -154,6 +269,36 @@ class FriendRequests
         else
             sql += ") values (";
 
+        if(dirtyFlag_[1])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[2])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[3])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[4])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[5])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[6])
+        {
+            sql.append("?,");
+
+        }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);

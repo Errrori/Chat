@@ -44,14 +44,21 @@ class Notifications
   public:
     struct Cols
     {
+        static const std::string _id;
+        static const std::string _type;
+        static const std::string _sender_uid;
+        static const std::string _recipient_uid;
+        static const std::string _payload;
+        static const std::string _is_read;
+        static const std::string _created_time;
     };
 
     static const int primaryKeyNumber;
     static const std::string tableName;
     static const bool hasPrimaryKey;
     static const std::string primaryKeyName;
-    using PrimaryKeyType = void;
-    int getPrimaryKey() const { assert(false); return 0; }
+    using PrimaryKeyType = int64_t;
+    const PrimaryKeyType &getPrimaryKey() const;
 
     /**
      * @brief constructor
@@ -95,8 +102,71 @@ class Notifications
                           std::string &err,
                           bool isForCreation);
 
+    /**  For column id  */
+    ///Get the value of the column id, returns the default value if the column is null
+    const int64_t &getValueOfId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getId() const noexcept;
+    ///Set the value of the column id
+    void setId(const int64_t &pId) noexcept;
+    void setIdToNull() noexcept;
 
-    static size_t getColumnNumber() noexcept {  return 0;  }
+    /**  For column type  */
+    ///Get the value of the column type, returns the default value if the column is null
+    const int64_t &getValueOfType() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getType() const noexcept;
+    ///Set the value of the column type
+    void setType(const int64_t &pType) noexcept;
+
+    /**  For column sender_uid  */
+    ///Get the value of the column sender_uid, returns the default value if the column is null
+    const std::string &getValueOfSenderUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getSenderUid() const noexcept;
+    ///Set the value of the column sender_uid
+    void setSenderUid(const std::string &pSenderUid) noexcept;
+    void setSenderUid(std::string &&pSenderUid) noexcept;
+
+    /**  For column recipient_uid  */
+    ///Get the value of the column recipient_uid, returns the default value if the column is null
+    const std::string &getValueOfRecipientUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getRecipientUid() const noexcept;
+    ///Set the value of the column recipient_uid
+    void setRecipientUid(const std::string &pRecipientUid) noexcept;
+    void setRecipientUid(std::string &&pRecipientUid) noexcept;
+
+    /**  For column payload  */
+    ///Get the value of the column payload, returns the default value if the column is null
+    const std::string &getValueOfPayload() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getPayload() const noexcept;
+    ///Set the value of the column payload
+    void setPayload(const std::string &pPayload) noexcept;
+    void setPayload(std::string &&pPayload) noexcept;
+    void setPayloadToNull() noexcept;
+
+    /**  For column is_read  */
+    ///Get the value of the column is_read, returns the default value if the column is null
+    const int64_t &getValueOfIsRead() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getIsRead() const noexcept;
+    ///Set the value of the column is_read
+    void setIsRead(const int64_t &pIsRead) noexcept;
+    void setIsReadToNull() noexcept;
+
+    /**  For column created_time  */
+    ///Get the value of the column created_time, returns the default value if the column is null
+    const int64_t &getValueOfCreatedTime() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getCreatedTime() const noexcept;
+    ///Set the value of the column created_time
+    void setCreatedTime(const int64_t &pCreatedTime) noexcept;
+    void setCreatedTimeToNull() noexcept;
+
+
+    static size_t getColumnNumber() noexcept {  return 7;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -117,6 +187,13 @@ class Notifications
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
+    std::shared_ptr<int64_t> id_;
+    std::shared_ptr<int64_t> type_;
+    std::shared_ptr<std::string> senderUid_;
+    std::shared_ptr<std::string> recipientUid_;
+    std::shared_ptr<std::string> payload_;
+    std::shared_ptr<int64_t> isRead_;
+    std::shared_ptr<int64_t> createdTime_;
     struct MetaData
     {
         const std::string colName_;
@@ -128,17 +205,17 @@ class Notifications
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[0]={ false };
+    bool dirtyFlag_[7]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="";
+        static const std::string sql="select * from " + tableName + " where id = ?";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="";
+        static const std::string sql="delete from " + tableName + " where id = ?";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -146,6 +223,44 @@ class Notifications
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+        if(dirtyFlag_[1])
+        {
+            sql += "type,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[2])
+        {
+            sql += "sender_uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[3])
+        {
+            sql += "recipient_uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[4])
+        {
+            sql += "payload,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[5])
+        {
+            sql += "is_read,";
+            ++parametersCount;
+        }
+        if(!dirtyFlag_[5])
+        {
+            needSelection=true;
+        }
+        if(dirtyFlag_[6])
+        {
+            sql += "created_time,";
+            ++parametersCount;
+        }
+        if(!dirtyFlag_[6])
+        {
+            needSelection=true;
+        }
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -154,6 +269,36 @@ class Notifications
         else
             sql += ") values (";
 
+        if(dirtyFlag_[1])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[2])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[3])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[4])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[5])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[6])
+        {
+            sql.append("?,");
+
+        }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);

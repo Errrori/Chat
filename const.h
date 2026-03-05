@@ -93,26 +93,16 @@ namespace DataBase
 		"following INTEGER DEFAULT 0 "
 		");";
 
-	const static std::string RELATIONSHIP_EVENT = "CREATE TABLE IF NOT EXISTS relationship_event("
-		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
-		"actor_uid TEXT NOT NULL,"
-		"reactor_uid TEXT NOT NULL,"
-		"type TEXT NOT NULL CHECK (type IN ('RequestSent','RequestAccepted','RequestRefused','UserBlocked')),"
-		"created_time INTEGER DEFAULT (strftime('%s','now')),"
-		"FOREIGN KEY (actor_uid) REFERENCES users(uid) ON DELETE CASCADE,"
-		"FOREIGN KEY (reactor_uid) REFERENCES users(uid) ON DELETE CASCADE"
-		");";
+
 
 	const static std::string NOTIFICATION = "CREATE TABLE IF NOT EXISTS notifications("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
-		"event_id NOT NULL,"
-		"type INTEGER NOT NULL CHECK (type IN (0,1,2)),"//0 = RequestReceived , 1 = RequestAccepted, 2 = RequestRejected
+		"type INTEGER NOT NULL CHECK (type IN (0,1,2,3)),"//0 = RequestReceived , 1 = RequestAccepted, 2 = RequestRejected, 3 = BlockUser
 		"sender_uid TEXT NOT NULL,"
 		"recipient_uid TEXT NOT NULL,"
 		"payload TEXT,"
 		"is_read INTEGER CHECK (is_read IN (0,1)) DEFAULT 0,"
 		"created_time INTEGER DEFAULT (strftime('%s','now')),"
-		"FOREIGN KEY (event_id) REFERENCES relationship_event(id) ON DELETE CASCADE,"
 		"FOREIGN KEY (sender_uid) REFERENCES users(uid) ON DELETE CASCADE,"
 		"FOREIGN KEY (recipient_uid) REFERENCES users(uid) ON DELETE CASCADE"
 		");";
@@ -142,6 +132,7 @@ namespace DataBase
 		"status INTEGER NOT NULL CHECK (status IN (0,1,2)),"//0=pending,1=accepted,2=refused
 		"created_time INTEGER DEFAULT (strftime('%s','now')),"
 		"updated_time INTEGER DEFAULT (strftime('%s','now')),"
+		"payload TEXT,"
 		"FOREIGN KEY (requester_uid) REFERENCES users(uid) ON DELETE CASCADE,"
 		"FOREIGN KEY (target_uid) REFERENCES users(uid) ON DELETE CASCADE"
 		");";
@@ -156,10 +147,9 @@ namespace DataBase
 		MESSAGE_TABLE,
 		USER_TABLE,
 		AI_MESSAGE_TABLE,
-		NOTIFICATION,
-		RELATIONSHIP_EVENT,
 		FRIENDSHIP,
 		FRIEND_REQUEST,
+		NOTIFICATION,
 		BLOCK
 	};
 
@@ -204,7 +194,14 @@ namespace ChatCode
 		FailAddConn = 107,
 		UnMatchedType = 108,//thread type is not matched to thread_id
 		LoginKicked = 109,//logged in from another device
-		InvalidArg = 110
+		InvalidArg = 110,
+
+
+
+
+		//relationship
+		FriendRequestExisted = 201,
+		AlreadyFriends = 202,
 	};
 }
 

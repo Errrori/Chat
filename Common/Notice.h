@@ -1,6 +1,7 @@
 #pragma once
 #include <json/json.h>
 #include <string>
+#include "Enums.h"
 
 class Notice
 {
@@ -21,6 +22,8 @@ public:
 	const std::string& getSenderAvatar() const { return _sender_avatar; }
 	const std::string& getMessage() const { return _message; }
 	int64_t getCreatedTime() const { return _created_time; }
+	int64_t getEventId() const { return _event_id; }
+	ChatEnums::NoticeType getType() const { return _type; }
 
 	// Setters
 	void setSenderUid(const std::string& uid) { _sender_uid = uid; }
@@ -28,6 +31,8 @@ public:
 	void setSenderAvatar(const std::string& avatar) { _sender_avatar = avatar; }
 	void setMessage(const std::string& msg) { _message = msg; }
 	void setCreatedTime(int64_t time) { _created_time = time; }
+	void setEventId(int64_t event_id) { _event_id = event_id; }
+	void setType(ChatEnums::NoticeType type) { _type = type; }
 
 private:
 	std::string _sender_uid;
@@ -35,4 +40,6 @@ private:
 	std::string _sender_avatar;
 	std::string _message;
 	int64_t _created_time = -1;
+	int64_t _event_id = -1;
+	ChatEnums::NoticeType _type = ChatEnums::NoticeType::RequestReceived;
 };

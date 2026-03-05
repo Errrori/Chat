@@ -41,6 +41,11 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         }
 
         const auto& conn_info = GET_CONN_SERVICE->GetConnInfo(conn);
+        if (!conn_info)
+        {
+            Utils::SendJson(conn, Utils::GenErrorResponse("connection info not found", ChatCode::NotPermission));
+            return;
+        }
 
         if (!GET_THREAD_SERVICE->
             ValidateMember(msg_data["thread_id"].asInt(), conn_info->getUid()))
@@ -90,6 +95,7 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
     //after verify,write user info
     const auto& conn_service = GET_CONN_SERVICE;
 
+    const auto username = info.getUsername();
     if (!conn_service->AddConnection(conn,std::move(info)))
     {
         Utils::SendJson(conn, Utils::GenErrorResponse("can not add connection",ChatCode::FailAddConn));
@@ -98,7 +104,7 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
     }
     else
     {
-        LOG_INFO << "add new connection: "+info.ToString();
+        LOG_INFO << "add new connection: " << username;
     }
 }
 

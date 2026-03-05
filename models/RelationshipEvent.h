@@ -44,14 +44,19 @@ class RelationshipEvent
   public:
     struct Cols
     {
+        static const std::string _id;
+        static const std::string _actor_uid;
+        static const std::string _reactor_uid;
+        static const std::string _type;
+        static const std::string _created_time;
     };
 
     static const int primaryKeyNumber;
     static const std::string tableName;
     static const bool hasPrimaryKey;
     static const std::string primaryKeyName;
-    using PrimaryKeyType = void;
-    int getPrimaryKey() const { assert(false); return 0; }
+    using PrimaryKeyType = int64_t;
+    const PrimaryKeyType &getPrimaryKey() const;
 
     /**
      * @brief constructor
@@ -95,8 +100,52 @@ class RelationshipEvent
                           std::string &err,
                           bool isForCreation);
 
+    /**  For column id  */
+    ///Get the value of the column id, returns the default value if the column is null
+    const int64_t &getValueOfId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getId() const noexcept;
+    ///Set the value of the column id
+    void setId(const int64_t &pId) noexcept;
+    void setIdToNull() noexcept;
 
-    static size_t getColumnNumber() noexcept {  return 0;  }
+    /**  For column actor_uid  */
+    ///Get the value of the column actor_uid, returns the default value if the column is null
+    const std::string &getValueOfActorUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getActorUid() const noexcept;
+    ///Set the value of the column actor_uid
+    void setActorUid(const std::string &pActorUid) noexcept;
+    void setActorUid(std::string &&pActorUid) noexcept;
+
+    /**  For column reactor_uid  */
+    ///Get the value of the column reactor_uid, returns the default value if the column is null
+    const std::string &getValueOfReactorUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getReactorUid() const noexcept;
+    ///Set the value of the column reactor_uid
+    void setReactorUid(const std::string &pReactorUid) noexcept;
+    void setReactorUid(std::string &&pReactorUid) noexcept;
+
+    /**  For column type  */
+    ///Get the value of the column type, returns the default value if the column is null
+    const int64_t &getValueOfType() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getType() const noexcept;
+    ///Set the value of the column type
+    void setType(const int64_t &pType) noexcept;
+
+    /**  For column created_time  */
+    ///Get the value of the column created_time, returns the default value if the column is null
+    const int64_t &getValueOfCreatedTime() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getCreatedTime() const noexcept;
+    ///Set the value of the column created_time
+    void setCreatedTime(const int64_t &pCreatedTime) noexcept;
+    void setCreatedTimeToNull() noexcept;
+
+
+    static size_t getColumnNumber() noexcept {  return 5;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -117,6 +166,11 @@ class RelationshipEvent
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
+    std::shared_ptr<int64_t> id_;
+    std::shared_ptr<std::string> actorUid_;
+    std::shared_ptr<std::string> reactorUid_;
+    std::shared_ptr<int64_t> type_;
+    std::shared_ptr<int64_t> createdTime_;
     struct MetaData
     {
         const std::string colName_;
@@ -128,17 +182,17 @@ class RelationshipEvent
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[0]={ false };
+    bool dirtyFlag_[5]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="";
+        static const std::string sql="select * from " + tableName + " where id = ?";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="";
+        static const std::string sql="delete from " + tableName + " where id = ?";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -146,6 +200,30 @@ class RelationshipEvent
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+        if(dirtyFlag_[1])
+        {
+            sql += "actor_uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[2])
+        {
+            sql += "reactor_uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[3])
+        {
+            sql += "type,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[4])
+        {
+            sql += "created_time,";
+            ++parametersCount;
+        }
+        if(!dirtyFlag_[4])
+        {
+            needSelection=true;
+        }
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -154,6 +232,26 @@ class RelationshipEvent
         else
             sql += ") values (";
 
+        if(dirtyFlag_[1])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[2])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[3])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[4])
+        {
+            sql.append("?,");
+
+        }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);

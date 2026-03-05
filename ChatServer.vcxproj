@@ -138,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\AIMessage.h" />
+    <ClInclude Include="Common\Enums.h" />
     <ClInclude Include="Data\IRelationshipRepository.h" />
     <ClInclude Include="HttpClient.h" />
     <ClInclude Include="middleware\CORSMiddleware.h" />

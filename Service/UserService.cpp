@@ -96,4 +96,9 @@ void UserService::UserLogin(const UserInfo& info, RespCallback&& callback) const
 		});
 
 }
+
+drogon::Task<UserInfo> UserService::GetUserInfo(const std::string& uid)
+{
+	co_return co_await _user_repo->GetUserInfo(uid);
+}
  

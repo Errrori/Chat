@@ -13,11 +13,21 @@ using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
-const std::string RelationshipEvent::primaryKeyName = "";
-const bool RelationshipEvent::hasPrimaryKey = false;
+const std::string RelationshipEvent::Cols::_id = "id";
+const std::string RelationshipEvent::Cols::_actor_uid = "actor_uid";
+const std::string RelationshipEvent::Cols::_reactor_uid = "reactor_uid";
+const std::string RelationshipEvent::Cols::_type = "type";
+const std::string RelationshipEvent::Cols::_created_time = "created_time";
+const std::string RelationshipEvent::primaryKeyName = "id";
+const bool RelationshipEvent::hasPrimaryKey = true;
 const std::string RelationshipEvent::tableName = "relationship_event";
 
 const std::vector<typename RelationshipEvent::MetaData> RelationshipEvent::metaData_={
+{"id","int64_t","integer",8,1,1,0},
+{"actor_uid","std::string","text",0,0,0,1},
+{"reactor_uid","std::string","text",0,0,0,1},
+{"type","int64_t","int",8,0,0,1},
+{"created_time","int64_t","integer",8,0,0,0}
 };
 const std::string &RelationshipEvent::getColumnName(size_t index) noexcept(false)
 {
@@ -28,74 +38,536 @@ RelationshipEvent::RelationshipEvent(const Row &r, const ssize_t indexOffset) no
 {
     if(indexOffset < 0)
     {
+        if(!r["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>(r["id"].as<int64_t>());
+        }
+        if(!r["actor_uid"].isNull())
+        {
+            actorUid_=std::make_shared<std::string>(r["actor_uid"].as<std::string>());
+        }
+        if(!r["reactor_uid"].isNull())
+        {
+            reactorUid_=std::make_shared<std::string>(r["reactor_uid"].as<std::string>());
+        }
+        if(!r["type"].isNull())
+        {
+            type_=std::make_shared<int64_t>(r["type"].as<int64_t>());
+        }
+        if(!r["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r["created_time"].as<int64_t>());
+        }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 0 > r.size())
+        if(offset + 5 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
         }
         size_t index;
+        index = offset + 0;
+        if(!r[index].isNull())
+        {
+            id_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 1;
+        if(!r[index].isNull())
+        {
+            actorUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 2;
+        if(!r[index].isNull())
+        {
+            reactorUid_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 3;
+        if(!r[index].isNull())
+        {
+            type_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
+        index = offset + 4;
+        if(!r[index].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
     }
 
 }
 
 RelationshipEvent::RelationshipEvent(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 5)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            actorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            reactorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+        }
+    }
+    if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson[pMasqueradingVector[3]].isNull())
+        {
+            type_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[3]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[4]].asInt64());
+        }
     }
 }
 
 RelationshipEvent::RelationshipEvent(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("id"))
+    {
+        dirtyFlag_[0]=true;
+        if(!pJson["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+        }
+    }
+    if(pJson.isMember("actor_uid"))
+    {
+        dirtyFlag_[1]=true;
+        if(!pJson["actor_uid"].isNull())
+        {
+            actorUid_=std::make_shared<std::string>(pJson["actor_uid"].asString());
+        }
+    }
+    if(pJson.isMember("reactor_uid"))
+    {
+        dirtyFlag_[2]=true;
+        if(!pJson["reactor_uid"].isNull())
+        {
+            reactorUid_=std::make_shared<std::string>(pJson["reactor_uid"].asString());
+        }
+    }
+    if(pJson.isMember("type"))
+    {
+        dirtyFlag_[3]=true;
+        if(!pJson["type"].isNull())
+        {
+            type_=std::make_shared<int64_t>((int64_t)pJson["type"].asInt64());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[4]=true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
 }
 
 void RelationshipEvent::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 5)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[0]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            actorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            reactorUid_=std::make_shared<std::string>(pJson[pMasqueradingVector[2]].asString());
+        }
+    }
+    if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson[pMasqueradingVector[3]].isNull())
+        {
+            type_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[3]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[4]].asInt64());
+        }
     }
 }
 
 void RelationshipEvent::updateByJson(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!pJson["id"].isNull())
+        {
+            id_=std::make_shared<int64_t>((int64_t)pJson["id"].asInt64());
+        }
+    }
+    if(pJson.isMember("actor_uid"))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson["actor_uid"].isNull())
+        {
+            actorUid_=std::make_shared<std::string>(pJson["actor_uid"].asString());
+        }
+    }
+    if(pJson.isMember("reactor_uid"))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson["reactor_uid"].isNull())
+        {
+            reactorUid_=std::make_shared<std::string>(pJson["reactor_uid"].asString());
+        }
+    }
+    if(pJson.isMember("type"))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson["type"].isNull())
+        {
+            type_=std::make_shared<int64_t>((int64_t)pJson["type"].asInt64());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
+}
+
+const int64_t &RelationshipEvent::getValueOfId() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(id_)
+        return *id_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &RelationshipEvent::getId() const noexcept
+{
+    return id_;
+}
+void RelationshipEvent::setId(const int64_t &pId) noexcept
+{
+    id_ = std::make_shared<int64_t>(pId);
+    dirtyFlag_[0] = true;
+}
+void RelationshipEvent::setIdToNull() noexcept
+{
+    id_.reset();
+    dirtyFlag_[0] = true;
+}
+const typename RelationshipEvent::PrimaryKeyType & RelationshipEvent::getPrimaryKey() const
+{
+    assert(id_);
+    return *id_;
+}
+
+const std::string &RelationshipEvent::getValueOfActorUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(actorUid_)
+        return *actorUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &RelationshipEvent::getActorUid() const noexcept
+{
+    return actorUid_;
+}
+void RelationshipEvent::setActorUid(const std::string &pActorUid) noexcept
+{
+    actorUid_ = std::make_shared<std::string>(pActorUid);
+    dirtyFlag_[1] = true;
+}
+void RelationshipEvent::setActorUid(std::string &&pActorUid) noexcept
+{
+    actorUid_ = std::make_shared<std::string>(std::move(pActorUid));
+    dirtyFlag_[1] = true;
+}
+
+const std::string &RelationshipEvent::getValueOfReactorUid() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(reactorUid_)
+        return *reactorUid_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &RelationshipEvent::getReactorUid() const noexcept
+{
+    return reactorUid_;
+}
+void RelationshipEvent::setReactorUid(const std::string &pReactorUid) noexcept
+{
+    reactorUid_ = std::make_shared<std::string>(pReactorUid);
+    dirtyFlag_[2] = true;
+}
+void RelationshipEvent::setReactorUid(std::string &&pReactorUid) noexcept
+{
+    reactorUid_ = std::make_shared<std::string>(std::move(pReactorUid));
+    dirtyFlag_[2] = true;
+}
+
+const int64_t &RelationshipEvent::getValueOfType() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(type_)
+        return *type_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &RelationshipEvent::getType() const noexcept
+{
+    return type_;
+}
+void RelationshipEvent::setType(const int64_t &pType) noexcept
+{
+    type_ = std::make_shared<int64_t>(pType);
+    dirtyFlag_[3] = true;
+}
+
+const int64_t &RelationshipEvent::getValueOfCreatedTime() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(createdTime_)
+        return *createdTime_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &RelationshipEvent::getCreatedTime() const noexcept
+{
+    return createdTime_;
+}
+void RelationshipEvent::setCreatedTime(const int64_t &pCreatedTime) noexcept
+{
+    createdTime_ = std::make_shared<int64_t>(pCreatedTime);
+    dirtyFlag_[4] = true;
+}
+void RelationshipEvent::setCreatedTimeToNull() noexcept
+{
+    createdTime_.reset();
+    dirtyFlag_[4] = true;
 }
 
 void RelationshipEvent::updateId(const uint64_t id)
 {
+    id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &RelationshipEvent::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
+        "actor_uid",
+        "reactor_uid",
+        "type",
+        "created_time"
     };
     return inCols;
 }
 
 void RelationshipEvent::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[1])
+    {
+        if(getActorUid())
+        {
+            binder << getValueOfActorUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getReactorUid())
+        {
+            binder << getValueOfReactorUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[3])
+    {
+        if(getType())
+        {
+            binder << getValueOfType();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 
 const std::vector<std::string> RelationshipEvent::updateColumns() const
 {
     std::vector<std::string> ret;
+    if(dirtyFlag_[1])
+    {
+        ret.push_back(getColumnName(1));
+    }
+    if(dirtyFlag_[2])
+    {
+        ret.push_back(getColumnName(2));
+    }
+    if(dirtyFlag_[3])
+    {
+        ret.push_back(getColumnName(3));
+    }
+    if(dirtyFlag_[4])
+    {
+        ret.push_back(getColumnName(4));
+    }
     return ret;
 }
 
 void RelationshipEvent::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[1])
+    {
+        if(getActorUid())
+        {
+            binder << getValueOfActorUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getReactorUid())
+        {
+            binder << getValueOfReactorUid();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[3])
+    {
+        if(getType())
+        {
+            binder << getValueOfType();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 Json::Value RelationshipEvent::toJson() const
 {
     Json::Value ret;
+    if(getId())
+    {
+        ret["id"]=(Json::Int64)getValueOfId();
+    }
+    else
+    {
+        ret["id"]=Json::Value();
+    }
+    if(getActorUid())
+    {
+        ret["actor_uid"]=getValueOfActorUid();
+    }
+    else
+    {
+        ret["actor_uid"]=Json::Value();
+    }
+    if(getReactorUid())
+    {
+        ret["reactor_uid"]=getValueOfReactorUid();
+    }
+    else
+    {
+        ret["reactor_uid"]=Json::Value();
+    }
+    if(getType())
+    {
+        ret["type"]=(Json::Int64)getValueOfType();
+    }
+    else
+    {
+        ret["type"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
     return ret;
 }
 
@@ -103,28 +575,218 @@ Json::Value RelationshipEvent::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 0)
+    if(pMasqueradingVector.size() == 5)
     {
+        if(!pMasqueradingVector[0].empty())
+        {
+            if(getId())
+            {
+                ret[pMasqueradingVector[0]]=(Json::Int64)getValueOfId();
+            }
+            else
+            {
+                ret[pMasqueradingVector[0]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[1].empty())
+        {
+            if(getActorUid())
+            {
+                ret[pMasqueradingVector[1]]=getValueOfActorUid();
+            }
+            else
+            {
+                ret[pMasqueradingVector[1]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[2].empty())
+        {
+            if(getReactorUid())
+            {
+                ret[pMasqueradingVector[2]]=getValueOfReactorUid();
+            }
+            else
+            {
+                ret[pMasqueradingVector[2]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[3].empty())
+        {
+            if(getType())
+            {
+                ret[pMasqueradingVector[3]]=(Json::Int64)getValueOfType();
+            }
+            else
+            {
+                ret[pMasqueradingVector[3]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[4].empty())
+        {
+            if(getCreatedTime())
+            {
+                ret[pMasqueradingVector[4]]=(Json::Int64)getValueOfCreatedTime();
+            }
+            else
+            {
+                ret[pMasqueradingVector[4]]=Json::Value();
+            }
+        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
+    if(getId())
+    {
+        ret["id"]=(Json::Int64)getValueOfId();
+    }
+    else
+    {
+        ret["id"]=Json::Value();
+    }
+    if(getActorUid())
+    {
+        ret["actor_uid"]=getValueOfActorUid();
+    }
+    else
+    {
+        ret["actor_uid"]=Json::Value();
+    }
+    if(getReactorUid())
+    {
+        ret["reactor_uid"]=getValueOfReactorUid();
+    }
+    else
+    {
+        ret["reactor_uid"]=Json::Value();
+    }
+    if(getType())
+    {
+        ret["type"]=(Json::Int64)getValueOfType();
+    }
+    else
+    {
+        ret["type"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
     return ret;
 }
 
 bool RelationshipEvent::validateJsonForCreation(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!validJsonOfField(0, "id", pJson["id"], err, true))
+            return false;
+    }
+    if(pJson.isMember("actor_uid"))
+    {
+        if(!validJsonOfField(1, "actor_uid", pJson["actor_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The actor_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("reactor_uid"))
+    {
+        if(!validJsonOfField(2, "reactor_uid", pJson["reactor_uid"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The reactor_uid column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("type"))
+    {
+        if(!validJsonOfField(3, "type", pJson["type"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The type column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(4, "created_time", pJson["created_time"], err, true))
+            return false;
+    }
     return true;
 }
 bool RelationshipEvent::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                            const std::vector<std::string> &pMasqueradingVector,
                                                            std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 5)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[0]))
+          {
+              if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
+                  return false;
+          }
+      }
+      if(!pMasqueradingVector[1].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[1]))
+          {
+              if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[1] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[2].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[2]))
+          {
+              if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[2] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[3].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[3]))
+          {
+              if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[3] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[4].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[4]))
+          {
+              if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, true))
+                  return false;
+          }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -135,18 +797,78 @@ bool RelationshipEvent::validateMasqueradedJsonForCreation(const Json::Value &pJ
 }
 bool RelationshipEvent::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("id"))
+    {
+        if(!validJsonOfField(0, "id", pJson["id"], err, false))
+            return false;
+    }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
+    if(pJson.isMember("actor_uid"))
+    {
+        if(!validJsonOfField(1, "actor_uid", pJson["actor_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("reactor_uid"))
+    {
+        if(!validJsonOfField(2, "reactor_uid", pJson["reactor_uid"], err, false))
+            return false;
+    }
+    if(pJson.isMember("type"))
+    {
+        if(!validJsonOfField(3, "type", pJson["type"], err, false))
+            return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(4, "created_time", pJson["created_time"], err, false))
+            return false;
+    }
     return true;
 }
 bool RelationshipEvent::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                          const std::vector<std::string> &pMasqueradingVector,
                                                          std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 5)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+      {
+          if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, false))
+              return false;
+      }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
+      if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+      {
+          if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+      {
+          if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
+      {
+          if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+      {
+          if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, false))
+              return false;
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -163,6 +885,69 @@ bool RelationshipEvent::validJsonOfField(size_t index,
 {
     switch(index)
     {
+        case 0:
+            if(isForCreation)
+            {
+                err="The automatic primary key cannot be set";
+                return false;
+            }
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 1:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 2:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 3:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 4:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
         default:
             err="Internal error in the server";
             return false;

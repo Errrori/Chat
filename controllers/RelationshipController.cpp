@@ -26,9 +26,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::SendFriendRequest(
 		std::string acceptor_uid = (*jsonBody)["acceptor_uid"].asString();
 		std::string message = "";
 		if (jsonBody->isMember("message"))
-		{
 			message = (*jsonBody)["message"].asString();
-		}
 
 		if (requester_uid == acceptor_uid)
 		{
@@ -43,7 +41,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::SendFriendRequest(
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in SendFriendRequest: " << e.what();
-		co_return Utils::CreateErrorResponse(500, 500, "Internal Server Error");
+		co_return Utils::CreateErrorResponse(400,400, "request is already existed");
 	}
 }
 
@@ -51,8 +49,8 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::ProcessFriendReque
 {
 	try
 	{
-		auto userInfo = req->getAttributes()->get<UserInfo>("visitor_info");
-		std::string acceptor_uid = userInfo.getUid(); // The current user is processing the request
+		const auto& userInfo = req->getAttributes()->get<UserInfo>("visitor_info");
+		const auto& acceptor_uid = userInfo.getUid(); // The current user is processing the request
 
 		auto jsonBody = req->getJsonObject();
 		if (!jsonBody)
@@ -69,17 +67,24 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::ProcessFriendReque
 		int action = (*jsonBody)["action"].asInt();
 
 		if (action != 1 && action != 2)
-		{
 			co_return Utils::CreateErrorResponse(400, 400, "Invalid action (1=Accept, 2=Reject)");
-		}
 
 		auto service = GET_RELATIONSHIP_SERVICE;
-		int64_t thread_id = co_await service->ProcessFriendRequest(requester_uid, acceptor_uid, action);
-
-		Json::Value data;
-		data["thread_id"] = thread_id;
-
-		co_return Utils::CreateSuccessJsonResp(200, 200, "Friend request processed successfully", data);
+		try
+		{
+			int64_t thread_id = co_await service->ProcessFriendRequest(requester_uid, acceptor_uid, action);
+			Json::Value data;
+			if (thread_id <= 0)
+				data = Json::nullValue;
+			else
+				data["thread_id"] = thread_id;
+			co_return Utils::CreateSuccessJsonResp(200, 200, "Friend request processed successfully", data);
+		}
+		catch (const std::exception& e)
+		{
+			LOG_ERROR << "exception:"<< e.what();
+			co_return Utils::CreateErrorResponse(400, 400, "fail to process the friend request");
+		}
 	}
 	catch (const std::exception& e)
 	{

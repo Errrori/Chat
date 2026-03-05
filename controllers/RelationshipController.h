@@ -7,7 +7,7 @@ public:
         ADD_METHOD_TO(ProcessFriendRequest, "/relation/process-friend-request", drogon::Post, "CORSMiddleware","TokenVerifyFilter");
     METHOD_LIST_END
 
-	drogon::Task<drogon::HttpResponsePtr> SendFriendRequest(drogon::HttpRequestPtr req);
-	drogon::Task<drogon::HttpResponsePtr> ProcessFriendRequest(drogon::HttpRequestPtr req);
+	static drogon::Task<drogon::HttpResponsePtr> SendFriendRequest(drogon::HttpRequestPtr req);
+	static drogon::Task<drogon::HttpResponsePtr> ProcessFriendRequest(drogon::HttpRequestPtr req);
 }; 
 

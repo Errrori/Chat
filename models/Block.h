@@ -44,6 +44,9 @@ class Block
   public:
     struct Cols
     {
+        static const std::string _operator_uid;
+        static const std::string _blocked_uid;
+        static const std::string _created_time;
     };
 
     static const int primaryKeyNumber;
@@ -95,8 +98,35 @@ class Block
                           std::string &err,
                           bool isForCreation);
 
+    /**  For column operator_uid  */
+    ///Get the value of the column operator_uid, returns the default value if the column is null
+    const std::string &getValueOfOperatorUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getOperatorUid() const noexcept;
+    ///Set the value of the column operator_uid
+    void setOperatorUid(const std::string &pOperatorUid) noexcept;
+    void setOperatorUid(std::string &&pOperatorUid) noexcept;
 
-    static size_t getColumnNumber() noexcept {  return 0;  }
+    /**  For column blocked_uid  */
+    ///Get the value of the column blocked_uid, returns the default value if the column is null
+    const std::string &getValueOfBlockedUid() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getBlockedUid() const noexcept;
+    ///Set the value of the column blocked_uid
+    void setBlockedUid(const std::string &pBlockedUid) noexcept;
+    void setBlockedUid(std::string &&pBlockedUid) noexcept;
+
+    /**  For column created_time  */
+    ///Get the value of the column created_time, returns the default value if the column is null
+    const int64_t &getValueOfCreatedTime() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int64_t> &getCreatedTime() const noexcept;
+    ///Set the value of the column created_time
+    void setCreatedTime(const int64_t &pCreatedTime) noexcept;
+    void setCreatedTimeToNull() noexcept;
+
+
+    static size_t getColumnNumber() noexcept {  return 3;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -117,6 +147,9 @@ class Block
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
+    std::shared_ptr<std::string> operatorUid_;
+    std::shared_ptr<std::string> blockedUid_;
+    std::shared_ptr<int64_t> createdTime_;
     struct MetaData
     {
         const std::string colName_;
@@ -128,7 +161,7 @@ class Block
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[0]={ false };
+    bool dirtyFlag_[3]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -146,6 +179,21 @@ class Block
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+        if(dirtyFlag_[0])
+        {
+            sql += "operator_uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[1])
+        {
+            sql += "blocked_uid,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[2])
+        {
+            sql += "created_time,";
+            ++parametersCount;
+        }
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -154,6 +202,21 @@ class Block
         else
             sql += ") values (";
 
+        if(dirtyFlag_[0])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[1])
+        {
+            sql.append("?,");
+
+        }
+        if(dirtyFlag_[2])
+        {
+            sql.append("?,");
+
+        }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);

@@ -5,7 +5,6 @@
  *
  */
 #include "pch.h"
-
 #include "Friendships.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
@@ -14,11 +13,17 @@ using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
+const std::string Friendships::Cols::_uid1 = "uid1";
+const std::string Friendships::Cols::_uid2 = "uid2";
+const std::string Friendships::Cols::_created_time = "created_time";
 const std::string Friendships::primaryKeyName = "";
 const bool Friendships::hasPrimaryKey = false;
 const std::string Friendships::tableName = "friendships";
 
 const std::vector<typename Friendships::MetaData> Friendships::metaData_={
+{"uid1","std::string","text",0,0,0,1},
+{"uid2","std::string","text",0,0,0,1},
+{"created_time","int64_t","integer",8,0,0,0}
 };
 const std::string &Friendships::getColumnName(size_t index) noexcept(false)
 {
@@ -29,45 +34,234 @@ Friendships::Friendships(const Row &r, const ssize_t indexOffset) noexcept
 {
     if(indexOffset < 0)
     {
+        if(!r["uid1"].isNull())
+        {
+            uid1_=std::make_shared<std::string>(r["uid1"].as<std::string>());
+        }
+        if(!r["uid2"].isNull())
+        {
+            uid2_=std::make_shared<std::string>(r["uid2"].as<std::string>());
+        }
+        if(!r["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r["created_time"].as<int64_t>());
+        }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 0 > r.size())
+        if(offset + 3 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
         }
         size_t index;
+        index = offset + 0;
+        if(!r[index].isNull())
+        {
+            uid1_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 1;
+        if(!r[index].isNull())
+        {
+            uid2_=std::make_shared<std::string>(r[index].as<std::string>());
+        }
+        index = offset + 2;
+        if(!r[index].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>(r[index].as<int64_t>());
+        }
     }
 
 }
 
 Friendships::Friendships(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 3)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            uid1_=std::make_shared<std::string>(pJson[pMasqueradingVector[0]].asString());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            uid2_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
+        }
     }
 }
 
 Friendships::Friendships(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("uid1"))
+    {
+        dirtyFlag_[0]=true;
+        if(!pJson["uid1"].isNull())
+        {
+            uid1_=std::make_shared<std::string>(pJson["uid1"].asString());
+        }
+    }
+    if(pJson.isMember("uid2"))
+    {
+        dirtyFlag_[1]=true;
+        if(!pJson["uid2"].isNull())
+        {
+            uid2_=std::make_shared<std::string>(pJson["uid2"].asString());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[2]=true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
 }
 
 void Friendships::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 3)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
+    }
+    if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson[pMasqueradingVector[0]].isNull())
+        {
+            uid1_=std::make_shared<std::string>(pJson[pMasqueradingVector[0]].asString());
+        }
+    }
+    if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson[pMasqueradingVector[1]].isNull())
+        {
+            uid2_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
+        }
+    }
+    if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson[pMasqueradingVector[2]].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
+        }
     }
 }
 
 void Friendships::updateByJson(const Json::Value &pJson) noexcept(false)
 {
+    if(pJson.isMember("uid1"))
+    {
+        dirtyFlag_[0] = true;
+        if(!pJson["uid1"].isNull())
+        {
+            uid1_=std::make_shared<std::string>(pJson["uid1"].asString());
+        }
+    }
+    if(pJson.isMember("uid2"))
+    {
+        dirtyFlag_[1] = true;
+        if(!pJson["uid2"].isNull())
+        {
+            uid2_=std::make_shared<std::string>(pJson["uid2"].asString());
+        }
+    }
+    if(pJson.isMember("created_time"))
+    {
+        dirtyFlag_[2] = true;
+        if(!pJson["created_time"].isNull())
+        {
+            createdTime_=std::make_shared<int64_t>((int64_t)pJson["created_time"].asInt64());
+        }
+    }
+}
+
+const std::string &Friendships::getValueOfUid1() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(uid1_)
+        return *uid1_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Friendships::getUid1() const noexcept
+{
+    return uid1_;
+}
+void Friendships::setUid1(const std::string &pUid1) noexcept
+{
+    uid1_ = std::make_shared<std::string>(pUid1);
+    dirtyFlag_[0] = true;
+}
+void Friendships::setUid1(std::string &&pUid1) noexcept
+{
+    uid1_ = std::make_shared<std::string>(std::move(pUid1));
+    dirtyFlag_[0] = true;
+}
+
+const std::string &Friendships::getValueOfUid2() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(uid2_)
+        return *uid2_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Friendships::getUid2() const noexcept
+{
+    return uid2_;
+}
+void Friendships::setUid2(const std::string &pUid2) noexcept
+{
+    uid2_ = std::make_shared<std::string>(pUid2);
+    dirtyFlag_[1] = true;
+}
+void Friendships::setUid2(std::string &&pUid2) noexcept
+{
+    uid2_ = std::make_shared<std::string>(std::move(pUid2));
+    dirtyFlag_[1] = true;
+}
+
+const int64_t &Friendships::getValueOfCreatedTime() const noexcept
+{
+    static const int64_t defaultValue = int64_t();
+    if(createdTime_)
+        return *createdTime_;
+    return defaultValue;
+}
+const std::shared_ptr<int64_t> &Friendships::getCreatedTime() const noexcept
+{
+    return createdTime_;
+}
+void Friendships::setCreatedTime(const int64_t &pCreatedTime) noexcept
+{
+    createdTime_ = std::make_shared<int64_t>(pCreatedTime);
+    dirtyFlag_[2] = true;
+}
+void Friendships::setCreatedTimeToNull() noexcept
+{
+    createdTime_.reset();
+    dirtyFlag_[2] = true;
 }
 
 void Friendships::updateId(const uint64_t id)
@@ -77,26 +271,131 @@ void Friendships::updateId(const uint64_t id)
 const std::vector<std::string> &Friendships::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
+        "uid1",
+        "uid2",
+        "created_time"
     };
     return inCols;
 }
 
 void Friendships::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[0])
+    {
+        if(getUid1())
+        {
+            binder << getValueOfUid1();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[1])
+    {
+        if(getUid2())
+        {
+            binder << getValueOfUid2();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 
 const std::vector<std::string> Friendships::updateColumns() const
 {
     std::vector<std::string> ret;
+    if(dirtyFlag_[0])
+    {
+        ret.push_back(getColumnName(0));
+    }
+    if(dirtyFlag_[1])
+    {
+        ret.push_back(getColumnName(1));
+    }
+    if(dirtyFlag_[2])
+    {
+        ret.push_back(getColumnName(2));
+    }
     return ret;
 }
 
 void Friendships::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
+    if(dirtyFlag_[0])
+    {
+        if(getUid1())
+        {
+            binder << getValueOfUid1();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[1])
+    {
+        if(getUid2())
+        {
+            binder << getValueOfUid2();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[2])
+    {
+        if(getCreatedTime())
+        {
+            binder << getValueOfCreatedTime();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 Json::Value Friendships::toJson() const
 {
     Json::Value ret;
+    if(getUid1())
+    {
+        ret["uid1"]=getValueOfUid1();
+    }
+    else
+    {
+        ret["uid1"]=Json::Value();
+    }
+    if(getUid2())
+    {
+        ret["uid2"]=getValueOfUid2();
+    }
+    else
+    {
+        ret["uid2"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
     return ret;
 }
 
@@ -104,28 +403,144 @@ Json::Value Friendships::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 0)
+    if(pMasqueradingVector.size() == 3)
     {
+        if(!pMasqueradingVector[0].empty())
+        {
+            if(getUid1())
+            {
+                ret[pMasqueradingVector[0]]=getValueOfUid1();
+            }
+            else
+            {
+                ret[pMasqueradingVector[0]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[1].empty())
+        {
+            if(getUid2())
+            {
+                ret[pMasqueradingVector[1]]=getValueOfUid2();
+            }
+            else
+            {
+                ret[pMasqueradingVector[1]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[2].empty())
+        {
+            if(getCreatedTime())
+            {
+                ret[pMasqueradingVector[2]]=(Json::Int64)getValueOfCreatedTime();
+            }
+            else
+            {
+                ret[pMasqueradingVector[2]]=Json::Value();
+            }
+        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
+    if(getUid1())
+    {
+        ret["uid1"]=getValueOfUid1();
+    }
+    else
+    {
+        ret["uid1"]=Json::Value();
+    }
+    if(getUid2())
+    {
+        ret["uid2"]=getValueOfUid2();
+    }
+    else
+    {
+        ret["uid2"]=Json::Value();
+    }
+    if(getCreatedTime())
+    {
+        ret["created_time"]=(Json::Int64)getValueOfCreatedTime();
+    }
+    else
+    {
+        ret["created_time"]=Json::Value();
+    }
     return ret;
 }
 
 bool Friendships::validateJsonForCreation(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("uid1"))
+    {
+        if(!validJsonOfField(0, "uid1", pJson["uid1"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The uid1 column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("uid2"))
+    {
+        if(!validJsonOfField(1, "uid2", pJson["uid2"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The uid2 column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(2, "created_time", pJson["created_time"], err, true))
+            return false;
+    }
     return true;
 }
 bool Friendships::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                      const std::vector<std::string> &pMasqueradingVector,
                                                      std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 3)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[0]))
+          {
+              if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[0] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[1].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[1]))
+          {
+              if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[1] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[2].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[2]))
+          {
+              if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, true))
+                  return false;
+          }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -136,18 +551,48 @@ bool Friendships::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 }
 bool Friendships::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
 {
+    if(pJson.isMember("uid1"))
+    {
+        if(!validJsonOfField(0, "uid1", pJson["uid1"], err, false))
+            return false;
+    }
+    if(pJson.isMember("uid2"))
+    {
+        if(!validJsonOfField(1, "uid2", pJson["uid2"], err, false))
+            return false;
+    }
+    if(pJson.isMember("created_time"))
+    {
+        if(!validJsonOfField(2, "created_time", pJson["created_time"], err, false))
+            return false;
+    }
     return true;
 }
 bool Friendships::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                    const std::vector<std::string> &pMasqueradingVector,
                                                    std::string &err)
 {
-    if(pMasqueradingVector.size() != 0)
+    if(pMasqueradingVector.size() != 3)
     {
         err = "Bad masquerading vector";
         return false;
     }
     try {
+      if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
+      {
+          if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
+      {
+          if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
+      {
+          if(!validJsonOfField(2, pMasqueradingVector[2], pJson[pMasqueradingVector[2]], err, false))
+              return false;
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -164,6 +609,41 @@ bool Friendships::validJsonOfField(size_t index,
 {
     switch(index)
     {
+        case 0:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 1:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 2:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isInt64())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
         default:
             err="Internal error in the server";
             return false;

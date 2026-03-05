@@ -29,12 +29,11 @@ public:
 	Container& operator=(const Container&) = delete;
 	Container& operator=(Container&&) = delete;
 
-private:
-	Container();
-
 	template<typename T>
 	std::shared_ptr<T> GetService() const;
 
+private:
+	Container();
 	std::shared_ptr<IUserRepository> _user_repo;
 	std::shared_ptr<UserService> _user_service;
 	std::shared_ptr<IThreadRepository> _thread_repo;

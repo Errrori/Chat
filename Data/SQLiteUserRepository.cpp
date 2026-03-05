@@ -35,7 +35,7 @@ std::future<bool> SQLiteUserRepository::AddUser(const UserInfo& info)
 	return promise->get_future();
 }
 
-//ÔÝÊ±Ö»Ö§³ÖÐÞ¸ÄÐÕÃû£¬ÓÃ»§ÃûºÍÃÜÂë
+//ï¿½ï¿½Ê±Ö»Ö§ï¿½ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 std::future<bool> SQLiteUserRepository::ModifyUserInfo(const UserInfo& info)
 {
 	auto promise = std::make_shared<std::promise<bool>>();
@@ -85,7 +85,7 @@ std::future<bool> SQLiteUserRepository::DeleteUser(const std::string& uid)
 	return promise->get_future();
 }
 
-//Õâ¸öº¯Êý²»ÖªµÀÒª·µ»Øuserinfo»¹ÊÇjson±È½ÏºÃ
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öªï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½userinfoï¿½ï¿½ï¿½ï¿½jsonï¿½È½Ïºï¿½
 std::future<Json::Value> SQLiteUserRepository::GetUserInfoByUid(const std::string& uid) const noexcept(false)
 {
 	auto promise = std::make_shared<std::promise<Json::Value>>();
@@ -126,4 +126,49 @@ std::future<Json::Value> SQLiteUserRepository::GetUserInfoByAccount(const std::s
 			promise->set_exception(std::make_exception_ptr(e));
 		});
 	return promise->get_future();
+}
+
+drogon::Task<UserInfo> SQLiteUserRepository::GetUserInfo(const std::string& uid)
+{
+	try
+	{
+		CoroMapper<Users> mapper(DbAccessor::GetDbClient());
+		auto users = co_await mapper.findBy(Criteria(Users::Cols::_uid, CompareOperator::EQ, uid));
+
+		if (users.empty())
+		{
+			throw std::runtime_error("User not found");
+		}
+
+		auto& db_user = users[0];
+		UserInfo user_info;
+		user_info.setUsername(db_user.getValueOfUsername());
+		user_info.setAvatar(db_user.getValueOfAvatar());
+		user_info.setAccount(db_user.getValueOfAccount());
+		user_info.setUid(db_user.getValueOfUid());
+		user_info.setEmail(db_user.getValueOfEmail());
+		if(db_user.getPosts())
+			user_info.setPosts(db_user.getValueOfPosts());
+		if(db_user.getFollowers())
+			user_info.setFollowers(db_user.getValueOfFollowers());
+		if(db_user.getFollowing())
+			user_info.setFollowing(db_user.getValueOfFollowing());
+		if(db_user.getLevel())
+			user_info.setLevel(db_user.getValueOfLevel());
+		if(db_user.getStatus())
+			user_info.setStatus(db_user.getValueOfStatus());
+		if(db_user.getCreateTime())
+			user_info.setCreateTime(db_user.getValueOfCreateTime());
+		if(db_user.getLastLoginTime())
+			user_info.setLastLoginTime(db_user.getValueOfLastLoginTime());
+		if(db_user.getSignature())
+			user_info.setSignature(db_user.getValueOfSignature());
+
+		co_return user_info;
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "Failed to get user info for uid: " << uid << " - " << e.what();
+		throw;
+	}
 }

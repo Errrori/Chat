@@ -94,6 +94,7 @@
     <ClInclude Include="Data\SQLiteRelationshipRepository.h" />
     <ClInclude Include="Service\RelationshipService.h" />
     <ClInclude Include="Common\Notice.h" />
+    <ClInclude Include="Common\Enums.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="models\model.json" />

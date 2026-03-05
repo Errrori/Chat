@@ -4,8 +4,6 @@
 
 bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn,UserInfo info)
 {
-	conn->setContext(std::make_shared<UserInfo>(info));
-
 	{
 		std::lock_guard lock(_mutex);
 		auto it = _conn_to_id_map.find(info.getUid());
