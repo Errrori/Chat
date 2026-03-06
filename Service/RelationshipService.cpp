@@ -84,3 +84,63 @@ drogon::Task<int64_t> RelationshipService::ProcessFriendRequest(const std::strin
 
 
 }
+
+drogon::Task<Json::Value> RelationshipService::GetUnreadNotifications(const std::string& uid) const
+{
+	auto items = co_await _relationship_repo->GetUnreadNotifications(uid);
+
+	Json::Value data;
+	data["items"] = Json::arrayValue;
+	for (const auto& n : items)
+		data["items"].append(n.toJson());
+	data["count"] = static_cast<int>(items.size());
+	co_return data;
+}
+
+drogon::Task<Json::Value> RelationshipService::GetNotifications(
+	const std::string& uid, int offset, int limit) const
+{
+	auto items = co_await _relationship_repo->GetNotifications(uid, offset, limit);
+
+	Json::Value data;
+	data["items"] = Json::arrayValue;
+	for (const auto& n : items)
+		data["items"].append(n.toJson());
+	data["count"]  = static_cast<int>(items.size());
+	data["offset"] = offset;
+	data["limit"]  = limit;
+	co_return data;
+}
+
+drogon::Task<size_t> RelationshipService::MarkNotificationsRead(
+	const std::string& uid, const std::vector<int64_t>& ids) const
+{
+	co_return co_await _relationship_repo->MarkNotificationsRead(uid, ids);
+}
+
+drogon::Task<Json::Value> RelationshipService::GetPendingFriendRequests(const std::string& uid) const
+{
+	auto items = co_await _relationship_repo->GetPendingFriendRequests(uid);
+
+	Json::Value data;
+	data["items"] = Json::arrayValue;
+	for (const auto& req : items)
+		data["items"].append(req.toJson());
+	data["count"] = static_cast<int>(items.size());
+	co_return data;
+}
+
+drogon::Task<> RelationshipService::BlockUser(const std::string& operator_uid, const std::string& blocked_uid) const
+{
+	co_await _relationship_repo->BlockUser(operator_uid, blocked_uid);
+}
+
+drogon::Task<> RelationshipService::UnblockUser(const std::string& operator_uid, const std::string& blocked_uid) const
+{
+	co_await _relationship_repo->UnblockUser(operator_uid, blocked_uid);
+}
+
+drogon::Task<bool> RelationshipService::IsBlocked(const std::string& uid_a, const std::string& uid_b) const
+{
+	co_return co_await _relationship_repo->IsBlocked(uid_a, uid_b);
+}

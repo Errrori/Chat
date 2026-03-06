@@ -2,6 +2,7 @@
 #include <drogon/drogon.h>
 #include <csignal>
 #include <curl/curl.h>
+#include <filesystem>
 
 #include "Utils.h"
 
@@ -119,8 +120,39 @@ int main()
 	// 注册跨域支持
 	AddOptionHandle();
 
+	std::string configPath = "config.json";
+	for (const auto& candidate : {
+		std::filesystem::path("config.json"),
+		std::filesystem::path("ChatServer") / "config.json",
+		std::filesystem::path("..") / "ChatServer" / "config.json"
+		})
+	{
+		if (std::filesystem::exists(candidate))
+		{
+			configPath = candidate.string();
+			break;
+		}
+	}
+
+	std::string documentRoot = "static";
+	for (const auto& candidate : {
+		std::filesystem::path("static"),
+		std::filesystem::path("ChatServer") / "static",
+		std::filesystem::path("..") / "ChatServer" / "static"
+		})
+	{
+		if (std::filesystem::exists(candidate))
+		{
+			documentRoot = candidate.string();
+			break;
+		}
+	}
+
 	drogon::app().setLogLevel(trantor::Logger::kDebug)
-		.loadConfigFile("config.json").setThreadNum(16);
+		.loadConfigFile(configPath)
+		.setDocumentRoot(documentRoot)
+		.setHomePage("index.html")
+		.setThreadNum(16);
 	LOG_INFO << "Server start!";
 	
 	drogon::app().run();

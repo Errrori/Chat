@@ -6,6 +6,8 @@
 #include "ThreadService.h"
 #include "Common/AIMessage.h"
 #include "Common/AIRequestMsg.h"
+#include "Container.h"
+#include "RelationshipService.h"
 
 
 drogon::Task<Json::Value> MessageService::GetChatRecords(int thread_id, int num, int64_t existed_id)
@@ -62,6 +64,28 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 					cb(Utils::GenErrorResponse("user is not in thread", ChatCode::NotPermission));
 					co_return;
 				}
+
+				// Private chat block check
+				auto thread_type = co_await _thread_service->GetThreadType(msg.getThreadId());
+				if (thread_type == ChatThread::PRIVATE)
+				{
+					auto members = co_await _thread_service->GetThreadMember(msg.getThreadId());
+					std::string other_uid;
+					for (const auto& m : members)
+					{
+						if (m != msg.getSenderUid()) { other_uid = m; break; }
+					}
+					if (!other_uid.empty())
+					{
+						bool blocked = co_await GET_RELATIONSHIP_SERVICE->IsBlocked(msg.getSenderUid(), other_uid);
+						if (blocked)
+						{
+							cb(Utils::GenErrorResponse("Cannot send message due to block relationship", ChatCode::NotPermission));
+							co_return;
+						}
+					}
+				}
+
 				auto msg_id = co_await _msg_repo->RecordUserMessage(msg);
 				msg.setMessageId(msg_id);
 

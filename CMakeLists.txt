@@ -32,6 +32,7 @@ set(SOURCES
     
     # Controllers
     controllers/Authentication.cpp
+    controllers/RelationshipController.cpp
     controllers/ThreadController.cpp
     controllers/ChatController.cpp
     controllers/FileController.cpp
@@ -47,6 +48,7 @@ set(SOURCES
     Common/ChatThread.cpp
     Common/AIMessage.cpp
     Common/AIRequestMsg.cpp
+    Common/Notice.cpp
     
     # Service layer
     Service/UserService.cpp
@@ -54,11 +56,13 @@ set(SOURCES
     Service/ThreadService.cpp
     Service/ConnectionService.cpp
     Service/FileService.cpp
+    Service/RelationshipService.cpp
     
     # Data layer
     Data/SQLiteUserRepository.cpp
     Data/SQLiteMessageRepository.cpp
     Data/SQLiteThreadRepository.cpp
+    Data/SQLiteRelationshipRepository.cpp
     
     # Models
     models/Users.cc
@@ -69,6 +73,10 @@ set(SOURCES
     models/PrivateChats.cc
     models/AiChats.cc
     models/AiContext.cc
+    models/FriendRequests.cc
+    models/Notifications.cc
+    models/Friendships.cc
+    models/RelationshipEvent.cc
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

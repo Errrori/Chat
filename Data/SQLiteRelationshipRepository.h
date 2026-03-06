@@ -13,11 +13,20 @@ public:
 	drogon::Task<> WriteNotice(const std::string& actor_uid,
 		const std::string& reactor_uid, int type, const std::string& payload) override;
 
+	drogon::Task<std::vector<drogon_model::sqlite3::Notifications>>
+		GetUnreadNotifications(const std::string& uid) override;
 
-	//drogon::Task<>
-	//	DeleteFriend(const std::string& requester_uid, const std::string& acceptor_uid) override;
+	drogon::Task<std::vector<drogon_model::sqlite3::Notifications>>
+		GetNotifications(const std::string& uid, int offset, int limit) override;
 
-	//drogon::Task<>
-	//	GetFriendList(const std::string& uid) override;
+	drogon::Task<size_t>
+		MarkNotificationsRead(const std::string& uid, const std::vector<int64_t>& ids) override;
 
+	drogon::Task<std::vector<drogon_model::sqlite3::FriendRequests>>
+		GetPendingFriendRequests(const std::string& uid) override;
+
+	drogon::Task<> BlockUser(const std::string& operator_uid, const std::string& blocked_uid) override;
+	drogon::Task<> UnblockUser(const std::string& operator_uid, const std::string& blocked_uid) override;
+	drogon::Task<bool> IsBlocked(const std::string& uid_a, const std::string& uid_b) override;
+	drogon::Task<bool> HasBlocked(const std::string& operator_uid, const std::string& target_uid) override;
 };

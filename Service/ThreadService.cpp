@@ -128,9 +128,6 @@ drogon::Task<bool> ThreadService::ValidateMemberCoro(int thread_id, const std::s
 	
 }
 
-bool ThreadService::ValidateMember(int thread_id, const std::string& uid) const
-{
-	return drogon::sync_wait(ValidateMemberCoro(thread_id, uid));
-}
+
 
 

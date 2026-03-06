@@ -18,6 +18,8 @@ private:
 			try
 			{
 				auto conn = drogon::app().getDbClient();
+				conn->execSqlSync("PRAGMA journal_mode=WAL");
+				conn->execSqlSync("PRAGMA busy_timeout=5000");
 				conn->execSqlSync(DataBase::OPEN_FK);
 				conn->execSqlSync(table);
 			}

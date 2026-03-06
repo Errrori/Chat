@@ -5,6 +5,8 @@
 #include <json/json.h>
 #include "jwt-cpp/jwt.h"
 #include <random>
+#include <cctype>
+#include <filesystem>
 #include "Common/User.h"
 
 
@@ -86,41 +88,60 @@ namespace Utils {
 
         std::string LoadJwtSecret(const std::string& file_path)
         {
-            std::string secret;
+            namespace fs = std::filesystem;
 
-            std::ifstream file(file_path);
-            if (!file.is_open())
-            {
-                // 文件不存在则生成新秘钥并写入
-                secret = GenerateSecret();
-                Json::Value data;
-                data["jwt_secret"] = secret;
-
-                std::ofstream ofile(file_path);
-                if (!ofile.is_open())
+            auto loadSecretFromFile = [](const fs::path& path) -> std::string {
+                std::ifstream file(path.string());
+                if (!file.is_open())
                 {
-                    LOG_ERROR << "fail to generate secret file";
                     return {};
                 }
-                Json::StreamWriterBuilder builder;
-                builder["indentation"] = "";
-                ofile << Json::writeString(builder, data);
-                ofile.close();
-            }
-            else
-            {
+
                 Json::Value root;
                 file >> root;
-                if (root.isMember("jwt_secret"))
+                if (!root.isMember("jwt_secret"))
                 {
-                    secret = root["jwt_secret"].asString();
-                }
-                else
-                {
-                    LOG_ERROR << "can not find secret";
+                    LOG_ERROR << "can not find secret in file: " << path.string();
                     return {};
                 }
+                return root["jwt_secret"].asString();
+            };
+
+            const std::vector<fs::path> candidates = {
+                fs::path(file_path),
+                fs::path("ChatServer") / file_path,
+                fs::path("..") / file_path,
+                fs::path("..") / "ChatServer" / file_path
+            };
+
+            for (const auto& candidate : candidates)
+            {
+                if (fs::exists(candidate))
+                {
+                    auto secret = loadSecretFromFile(candidate);
+                    if (!secret.empty())
+                    {
+                        return secret;
+                    }
+                }
             }
+
+            // No existing file found, create one using the provided relative path.
+            const auto writeTarget = fs::path(file_path);
+            auto secret = GenerateSecret();
+            Json::Value data;
+            data["jwt_secret"] = secret;
+
+            std::ofstream ofile(writeTarget.string());
+            if (!ofile.is_open())
+            {
+                LOG_ERROR << "fail to generate secret file: " << writeTarget.string();
+                return {};
+            }
+            Json::StreamWriterBuilder builder;
+            builder["indentation"] = "";
+            ofile << Json::writeString(builder, data);
+            ofile.close();
             return secret;
         }
 
@@ -194,21 +215,53 @@ namespace Utils {
         std::string GetToken(const drogon::HttpRequestPtr& req)
         {
             std::string token{};
-            //1.find token in authorization
+            // 1. Find token in Authorization header.
+            // Accept both "Bearer <token>" and "JWT <token>" for compatibility.
             std::string authHeader = req->getHeader("Authorization");
             if (!authHeader.empty()) {
-                if (authHeader.substr(0, 4) == "JWT ") {
+                // Trim surrounding spaces.
+                auto begin = authHeader.find_first_not_of(" \t\r\n");
+                if (begin != std::string::npos)
+                {
+                    auto end = authHeader.find_last_not_of(" \t\r\n");
+                    authHeader = authHeader.substr(begin, end - begin + 1);
+                }
+
+                auto startsWithNoCase = [](const std::string& s, const std::string& prefix) {
+                    if (s.size() < prefix.size())
+                    {
+                        return false;
+                    }
+                    for (size_t i = 0; i < prefix.size(); ++i)
+                    {
+                        if (std::tolower(static_cast<unsigned char>(s[i])) !=
+                            std::tolower(static_cast<unsigned char>(prefix[i])))
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                };
+
+                if (startsWithNoCase(authHeader, "Bearer "))
+                {
+                    token = authHeader.substr(7);
+                }
+                else if (startsWithNoCase(authHeader, "JWT "))
+                {
                     token = authHeader.substr(4);
                 }
-                else {
+                else
+                {
+                    // Backward compatibility: allow raw token value in header.
                     token = authHeader;
                 }
             }
-            // 2.find token in Json
+            // 2. Find token in JSON body.
             else if (auto jsonObj = req->getJsonObject(); jsonObj && jsonObj->isMember("token")) {
                 token = (*jsonObj)["token"].asString();
             }
-            // 3.find token in parameter
+            // 3. Find token in query parameter.
             else if (!req->getParameter("token").empty()) {
                 token = req->getParameter("token");
             }

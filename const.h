@@ -121,6 +121,7 @@ namespace DataBase
 		"operator_uid TEXT NOT NULL,"
 		"blocked_uid TEXT NOT NULL,"
 		"created_time INTEGER DEFAULT (strftime('%s','now')),"
+		"UNIQUE (operator_uid, blocked_uid),"
 		"FOREIGN KEY (operator_uid) REFERENCES users(uid) ON DELETE CASCADE,"
 		"FOREIGN KEY (blocked_uid) REFERENCES users(uid) ON DELETE CASCADE"
 		");";

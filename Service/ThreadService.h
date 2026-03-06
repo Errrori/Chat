@@ -24,8 +24,6 @@ public:
 
 	drogon::Task<bool> ValidateMemberCoro(int thread_id, const std::string& uid) const;
 
-	bool ValidateMember(int thread_id, const std::string& uid) const;
-
 
 private:  
 	// a repository pointer

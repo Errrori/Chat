@@ -9,7 +9,7 @@
       "user": "",
       "passwd": "",
       "is_fast": false,
-      "connection_number": 10,
+      "connection_number": 1,
       "filename": "database.db"
     }
   ],

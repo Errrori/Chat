@@ -1,5 +1,6 @@
 # 使用多阶段构建，新增base镜像统一处理源和时区（核心优化）
-ARG BASE_IMAGE="docker.1ms.run/library/ubuntu:24.04"
+# 默认使用国内镜像，避免 Docker Hub 鉴权超时；需要时可通过 --build-arg BASE_IMAGE=... 覆盖
+ARG BASE_IMAGE="swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/ubuntu:24.04"
 # 运行时镜像复用base，避免重复配置
 FROM ${BASE_IMAGE} AS base
 
@@ -21,6 +22,7 @@ FROM base AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 RUN set -eux; \
     apt-get update && apt-get install -y --no-install-recommends \
+    clang \
     software-properties-common \
     ca-certificates wget git cmake build-essential pkg-config \
     libjsoncpp-dev uuid-dev libssl-dev zlib1g-dev \
@@ -54,10 +56,14 @@ RUN set -eux; \
     tar -xzf jwt-cpp.tar.gz; \
     mv jwt-cpp-* jwt-cpp
 
+# Set compiler to Clang to work around GCC bug
+ENV CC=clang
+ENV CXX=clang++
+
 # 构建项目（多线程编译，保持不变）
 RUN mkdir -p build \
     && cd build \
-    && cmake .. -DCMAKE_CXX_STANDARD=20 \
+    && cmake .. -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Debug \
     && make -j $(nproc)  # 利用所有CPU核心加速编译
 
 

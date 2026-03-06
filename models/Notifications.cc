@@ -1190,7 +1190,7 @@ bool Notifications::validJsonOfField(size_t index,
                 return false;
             }
             break;
-        case 1: // type, NOT NULL int64
+        case 1:
             if(pJson.isNull())
             {
                 err="The " + fieldName + " column cannot be null";
@@ -1202,7 +1202,7 @@ bool Notifications::validJsonOfField(size_t index,
                 return false;
             }
             break;
-        case 2: // sender_uid, NOT NULL text
+        case 2:
             if(pJson.isNull())
             {
                 err="The " + fieldName + " column cannot be null";
@@ -1214,7 +1214,7 @@ bool Notifications::validJsonOfField(size_t index,
                 return false;
             }
             break;
-        case 3: // recipient_uid, NOT NULL text
+        case 3:
             if(pJson.isNull())
             {
                 err="The " + fieldName + " column cannot be null";
@@ -1226,7 +1226,7 @@ bool Notifications::validJsonOfField(size_t index,
                 return false;
             }
             break;
-        case 4: // payload, nullable text
+        case 4:
             if(pJson.isNull())
             {
                 return true;
@@ -1237,7 +1237,7 @@ bool Notifications::validJsonOfField(size_t index,
                 return false;
             }
             break;
-        case 5: // is_read, nullable int64
+        case 5:
             if(pJson.isNull())
             {
                 return true;
@@ -1248,7 +1248,7 @@ bool Notifications::validJsonOfField(size_t index,
                 return false;
             }
             break;
-        case 6: // created_time, nullable int64
+        case 6:
             if(pJson.isNull())
             {
                 return true;
