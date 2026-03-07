@@ -10,7 +10,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::SendFriendRequest(
 	try
 	{
 		auto userInfo = req->getAttributes()->get<UserInfo>("visitor_info");
-		std::string requester_uid = userInfo.getUid();
+		const auto& requester_uid = userInfo.getUid();
 
 		auto jsonBody = req->getJsonObject();
 		if (!jsonBody)
@@ -192,7 +192,14 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::BlockUser(drogon::
 		if (operator_uid == target_uid)
 			co_return Utils::CreateErrorResponse(400, 400, "Cannot block yourself");
 
-		co_await GET_RELATIONSHIP_SERVICE->BlockUser(operator_uid, target_uid);
+		try
+		{
+			co_await GET_RELATIONSHIP_SERVICE->BlockUser(operator_uid, target_uid);
+		}
+		catch (const std::invalid_argument& e)
+		{
+			co_return Utils::CreateErrorResponse(400, 400, e.what());
+		}
 		co_return Utils::CreateSuccessResp(200, 200, "User blocked successfully");
 	}
 	catch (const std::exception& e)
@@ -214,8 +221,17 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::UnblockUser(drogon
 			co_return Utils::CreateErrorResponse(400, 400, "Missing target_uid");
 
 		std::string target_uid = (*jsonBody)["target_uid"].asString();
+		if (operator_uid == target_uid)
+			co_return Utils::CreateErrorResponse(400, 400, "Cannot unblock yourself");
 
-		co_await GET_RELATIONSHIP_SERVICE->UnblockUser(operator_uid, target_uid);
+		try
+		{
+			co_await GET_RELATIONSHIP_SERVICE->UnblockUser(operator_uid, target_uid);
+		}
+		catch (const std::invalid_argument& e)
+		{
+			co_return Utils::CreateErrorResponse(400, 400, e.what());
+		}
 		co_return Utils::CreateSuccessResp(200, 200, "User unblocked successfully");
 	}
 	catch (const std::exception& e)

@@ -303,15 +303,23 @@ drogon::Task<std::vector<FriendRequests>> SQLiteRelationshipRepository::GetPendi
 
 drogon::Task<> SQLiteRelationshipRepository::BlockUser(const std::string& operator_uid, const std::string& blocked_uid)
 {
+	bool already = co_await HasBlocked(operator_uid, blocked_uid);
+	if (already)
+		throw std::invalid_argument("User is already blocked");
+
 	auto client = DbAccessor::GetDbClient();
 	co_await client->execSqlCoro(
-		"INSERT OR IGNORE INTO block (operator_uid, blocked_uid) VALUES (?, ?)",
+		"INSERT INTO block (operator_uid, blocked_uid) VALUES (?, ?)",
 		operator_uid, blocked_uid
 	);
 }
 
 drogon::Task<> SQLiteRelationshipRepository::UnblockUser(const std::string& operator_uid, const std::string& blocked_uid)
 {
+	bool exists = co_await HasBlocked(operator_uid, blocked_uid);
+	if (!exists)
+		throw std::invalid_argument("No block relationship found");
+
 	auto client = DbAccessor::GetDbClient();
 	co_await client->execSqlCoro(
 		"DELETE FROM block WHERE operator_uid = ? AND blocked_uid = ?",

@@ -24,6 +24,8 @@
 #include <drogon/orm/BaseBuilder.h>
 #include <drogon/utils/Utilities.h>
 
+#include <drogon/nosql/RedisClient.h>
+
 #include <trantor/utils/Logger.h>
 #include <trantor/utils/Date.h>
 

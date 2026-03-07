@@ -57,6 +57,7 @@ set(SOURCES
     Service/ConnectionService.cpp
     Service/FileService.cpp
     Service/RelationshipService.cpp
+    Service/RedisService.cpp
     
     # Data layer
     Data/SQLiteUserRepository.cpp
@@ -77,6 +78,7 @@ set(SOURCES
     models/Notifications.cc
     models/Friendships.cc
     models/RelationshipEvent.cc
+    models/Block.cc
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -96,4 +98,12 @@ include_directories(third_party/jwt-cpp/include)
 # 使用 C++20，协程无需额外编译选项
 
 # 链接 Drogon 库和 CURL 库
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon CURL::libcurl OpenSSL::SSL OpenSSL::Crypto uuid pch)
+# 查找 hiredis（Redis 客户端库）
+find_package(hiredis QUIET)
+if(hiredis_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon CURL::libcurl OpenSSL::SSL OpenSSL::Crypto uuid pch hiredis::hiredis)
+else()
+    # 回退到 pkg-config 或手动链接
+    find_library(HIREDIS_LIB hiredis)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon CURL::libcurl OpenSSL::SSL OpenSSL::Crypto uuid pch ${HIREDIS_LIB})
+endif()

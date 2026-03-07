@@ -56,5 +56,6 @@ private:
 	std::shared_ptr<IMessageRepository> _msg_repo;
 	std::shared_ptr<ConnectionService> _conn_service;
 	std::shared_ptr<ThreadService> _thread_service;
+	std::shared_ptr<RedisService> _redis_service;
 };
 

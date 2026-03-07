@@ -1,0 +1,21 @@
+# 前端部署用 compose —— 不含 build，直接使用 chat:latest 镜像
+# 使用方式：
+#   1. docker load -i chat.tar
+#   2. docker compose -f docker-compose.deploy.yml up -d
+name: chatserver
+
+services:
+  chat:
+    image: chat:latest
+    container_name: chat-server
+    ports:
+      - "10086:10086"
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./jwt_secret.json:/app/jwt_secret.json:ro
+      - ./uploads:/app/uploads
+      - ./database.db:/app/database.db
+    working_dir: /app

@@ -3,6 +3,7 @@
 #include <drogon/WebSocketConnection.h>
 class ChatMessage;
 class Container;
+class RedisService;
 
 class ConnectionService
 {
@@ -14,8 +15,13 @@ public:
 	ConnectionService(ConnectionService&& manager) = delete;
 	ConnectionService& operator=(ConnectionService&& manager) = delete;
 
-	bool AddConnection(const drogon::WebSocketConnectionPtr& conn,UserInfo info);
+	explicit ConnectionService(std::shared_ptr<RedisService> redis)
+		: _redis_service(std::move(redis)) {}
 
+	// 返回值为 true 表示根据 Redis 判断用户当前在线（包括本实例内连接）
+	drogon::Task<bool> IsOnline(const std::string& uid);
+
+	bool AddConnection(const drogon::WebSocketConnectionPtr& conn, UserInfo info);
 	bool RemoveConnection(const std::string& uid);
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
 
@@ -23,12 +29,12 @@ public:
 	void PostNotice(const std::string& receiver_uid, const Json::Value& notice);
 	void Broadcast(const std::vector<std::string>& targets, const Json::Value& message);
 
-	ConnectionService() = default;
 	~ConnectionService() = default;
 
 private:
 	//id to connection
 	std::unordered_map<std::string, drogon::WebSocketConnectionPtr> _conn_to_id_map;
 	std::recursive_mutex _mutex;
+	std::shared_ptr<RedisService> _redis_service;
 };
 

@@ -84,6 +84,7 @@ RUN set -eux; \
     libsqlite3-0 \
     libcurl4 \
     libtrantor1 \
+    libhiredis0.14 \
     ca-certificates \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*  # 清理缓存
@@ -98,6 +99,7 @@ WORKDIR /app
 # 从构建阶段复制产物（保持不变）
 COPY --from=builder /app/build/Test /app/
 COPY --from=builder /app/config.json /app/
+COPY --from=builder /app/jwt_secret.json /app/
 COPY --from=builder /app/static /app/static
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libhiredis.so* /usr/lib/x86_64-linux-gnu/
 

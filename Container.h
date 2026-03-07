@@ -11,6 +11,7 @@ class ChatController;
 class ThreadController;
 class RelationshipService;
 class IRelationshipRepository;
+class RedisService;
 
 class Container
 {
@@ -43,6 +44,7 @@ private:
 	std::shared_ptr<ConnectionService> _conn_service;
 	std::shared_ptr<IRelationshipRepository> _relationship_repo;
 	std::shared_ptr<RelationshipService> _relationship_service;
+	std::shared_ptr<RedisService> _redis_service;
 };
 
 #define UsingService(T) Container::GetInstance().GetService<T>()
@@ -52,6 +54,7 @@ private:
 #define GET_MESSAGE_SERVICE UsingService(MessageService)
 #define GET_THREAD_SERVICE UsingService(ThreadService)
 #define GET_RELATIONSHIP_SERVICE UsingService(RelationshipService)
+#define GET_REDIS_SERVICE UsingService(RedisService)
 
 template<>
 inline std::shared_ptr<UserService> Container::GetService() const { return _user_service; }
@@ -67,3 +70,6 @@ inline std::shared_ptr<ConnectionService> Container::GetService() const { return
 
 template<>
 inline std::shared_ptr<RelationshipService> Container::GetService() const { return _relationship_service; }
+
+template<>
+inline std::shared_ptr<RedisService> Container::GetService() const { return _redis_service; }

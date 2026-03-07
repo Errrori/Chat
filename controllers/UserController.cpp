@@ -5,6 +5,8 @@
 #include "models/Users.h"
 #include "Common/User.h"
 #include "models/PrivateChats.h"
+#include "Container.h"
+#include "Service/RedisService.h"
 
 using namespace drogon;
 
@@ -177,6 +179,19 @@ Task<HttpResponsePtr> UserController::ModifyUserInfo(drogon::HttpRequestPtr req)
         response["code"] = 200;
         response["message"] = "success to modify user's info ";
         response["data"] = *json_body;
+
+        // 修改资料后使 Redis 缓存失效
+        const auto uid_to_invalidate = json_body->isMember("uid")
+            ? (*json_body)["uid"].asString()
+            : std::string{};
+        if (!uid_to_invalidate.empty())
+        {
+            drogon::async_run([uid_to_invalidate]() -> drogon::Task<>
+            {
+                co_await GET_REDIS_SERVICE->InvalidateUserInfo(uid_to_invalidate);
+            }());
+        }
+
         co_return drogon::HttpResponse::newHttpJsonResponse(response);
     }
     catch (const std::exception& e) {

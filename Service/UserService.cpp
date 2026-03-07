@@ -2,6 +2,7 @@
 #include "UserService.h"
 #include "Common/User.h"
 #include "Data/IUserRepository.h"
+#include "RedisService.h"
 
 using namespace Utils::Authentication;
 
@@ -82,6 +83,14 @@ void UserService::UserLogin(const UserInfo& info, RespCallback&& callback) const
 				Json::Value data;
 				data["uid"] = user_record.getUid();
 				data["token"] = GenerateJWT(user_record);
+
+				// 登录成功后缓存用户信息到 Redis
+				auto user_json = user_record.ToJson();
+				drogon::async_run([this, uid = user_record.getUid(), user_json]() -> drogon::Task<>
+				{
+					co_await _redis_service->CacheUserInfo(uid, user_json);
+				}());
+
 				callback(Utils::CreateSuccessJsonResp(200, 200, "success login",data));
 				return;
 			}

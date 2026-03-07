@@ -1,8 +1,20 @@
 #include "pch.h"
 #include "ConnectionService.h"
+#include "RedisService.h"
 #include "Common/User.h"
 
-bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn,UserInfo info)
+// 查询用户是否在线（先查本进程内存，再查 Redis 以支持跨节点）
+drogon::Task<bool> ConnectionService::IsOnline(const std::string& uid)
+{
+	{
+		std::lock_guard lock(_mutex);
+		if (_conn_to_id_map.count(uid))
+			co_return true;
+	}
+	co_return co_await _redis_service->IsOnline(uid);
+}
+
+bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn, UserInfo info)
 {
 	{
 		std::lock_guard lock(_mutex);
@@ -20,6 +32,26 @@ bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn
 		conn->setContext(std::make_shared<UserInfo>(std::move(info)));
 	}
 
+	// 异步标记在线状态（不阻塞）
+	const auto uid = conn->getContext<UserInfo>()->getUid();
+	drogon::async_run([this, uid]() -> drogon::Task<>
+	{
+		co_await _redis_service->SetOnline(uid);
+		// 投递离线消息（在 MessageService 打包后随即可用）
+		auto msgs = co_await _redis_service->PopAllOfflineMessages(uid);
+		if (!msgs.empty())
+		{
+			LOG_INFO << "Delivering " << msgs.size() << " offline messages to " << uid;
+			std::lock_guard lock(_mutex);
+			auto it = _conn_to_id_map.find(uid);
+			if (it != _conn_to_id_map.end() && it->second && it->second->connected())
+			{
+				for (const auto& msg_str : msgs)
+					it->second->send(msg_str);
+			}
+		}
+	}());
+
 	return true;
 }
 
@@ -36,6 +68,13 @@ bool ConnectionService::RemoveConnection(const std::string& uid)
 	_conn_to_id_map.erase(uid);
 
 	LOG_INFO << "Remove Connection: " << uid;
+
+	// 异步清除 Redis 在线状态
+	drogon::async_run([this, uid]() -> drogon::Task<>
+	{
+		co_await _redis_service->SetOffline(uid);
+	}());
+
 	return true;
 }
 

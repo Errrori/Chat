@@ -1,0 +1,38 @@
+name: chatserver
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: chat-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis_data:/data
+    environment:
+      TZ: Asia/Shanghai
+
+  chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chat:latest
+    container_name: chat-server
+    ports:
+      - "10086:10086"
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    # Persist app data and allow local config override.
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./jwt_secret.json:/app/jwt_secret.json:ro
+      - ./uploads:/app/uploads
+      - ./database.db:/app/database.db
+    depends_on:
+      - redis
+    working_dir: /app
+
+volumes:
+  redis_data:

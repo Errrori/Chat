@@ -8,6 +8,7 @@
 #include "Common/AIRequestMsg.h"
 #include "Container.h"
 #include "RelationshipService.h"
+#include "RedisService.h"
 
 
 drogon::Task<Json::Value> MessageService::GetChatRecords(int thread_id, int num, int64_t existed_id)
@@ -101,6 +102,18 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 
 				LOG_INFO << "send message: " << json_msg.toStyledString();
 
+				// 对在线用户直接广播，对离线用户写入 Redis 离线队列
+				const std::string serialized = json_msg.toStyledString();
+				for (const auto& target_uid : members)
+				{
+					bool online = co_await _conn_service->IsOnline(target_uid);
+					if (!online)
+					{
+						co_await _redis_service->PushOfflineMessage(target_uid, serialized);
+						LOG_INFO << "Queued offline message for: " << target_uid;
+					}
+				}
+				// 对在线用户直接推送
 				_conn_service->Broadcast(members, json_msg);
 			}catch (const std::exception& e)
 			{
