@@ -2,15 +2,21 @@
 
 #include <drogon/HttpFilter.h>
 
-class CORSMiddleware : public drogon::HttpFilter<CORSMiddleware>
+namespace drogon
 {
-public:
-    CORSMiddleware() {}
+    namespace filters
+    {
+        class CORSMiddleware : public drogon::HttpFilter<CORSMiddleware>
+        {
+        public:
+            CORSMiddleware() {}
 
-    void doFilter(const drogon::HttpRequestPtr& req,
-        drogon::FilterCallback&& fcb,
-        drogon::FilterChainCallback&& fccb) override;
-};
+            void doFilter(const drogon::HttpRequestPtr& req,
+                drogon::FilterCallback&& fcb,
+                drogon::FilterChainCallback&& fccb) override;
+        };
+    }
+}
 
 
 

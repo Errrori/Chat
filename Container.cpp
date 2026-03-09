@@ -3,6 +3,18 @@
 #include <drogon/nosql/RedisClient.h>
 #include <cstring>
 
+// 平台特定的网络头文件
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #pragma comment(lib, "ws2_32.lib")
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <netdb.h>
+#endif
+
 #include "Data/SQLiteMessageRepository.h"
 #include "Data/SQLiteThreadRepository.h"
 #include "Data/SQLiteUserRepository.h"
@@ -15,11 +27,26 @@
 #include "Service/RedisService.h"
 #include "const.h"
 
-// DNS 主机名解析辅助函数
 namespace {
+	// 跨平台安全的环境变量获取函数
+	std::string SafeGetEnv(const char* name) {
+#ifdef _WIN32
+		char* value = nullptr;
+		size_t len = 0;
+		if (_dupenv_s(&value, &len, name) == 0 && value != nullptr) {
+			std::string result(value);
+			free(value);
+			return result;
+		}
+		return "";
+#else
+		const char* value = std::getenv(name);
+		return value ? std::string(value) : "";
+#endif
+	}
+
 	std::string ResolveHostname(const std::string& hostname) 
 	{
-		// 如果已经是 IP 地址格式，直接返回
 		struct in_addr test_addr;
 		if (inet_pton(AF_INET, hostname.c_str(), &test_addr) == 1) {
 			return hostname;
@@ -27,7 +54,7 @@ namespace {
 		
 		struct addrinfo hints, *result;
 		std::memset(&hints, 0, sizeof(hints));
-		hints.ai_family = AF_UNSPEC;  // 允许 IPv4 或 IPv6
+		hints.ai_family = AF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
 		
 		int ret = getaddrinfo(hostname.c_str(), nullptr, &hints, &result);
@@ -66,7 +93,6 @@ Container& Container::GetInstance()
 
 Container::Container()
 {
-	// ── 1. 数据库初始化（建表 + PRAGMA）──
 	{
 		auto db = drogon::app().getDbClient();
 		for (const auto& table : DataBase::db_table_list)
@@ -86,24 +112,22 @@ Container::Container()
 		LOG_INFO << "Database init success";
 	}
 
-	// ── 2. Redis 初始化（优先读环境变量，其次读 config.json）──
 	{
 		std::string redis_host = "127.0.0.1";
 		uint16_t    redis_port = 6379;
 		uint32_t    conn_num  = 2;
-		
-		// 优先从环境变量读取（Docker部署时使用）
-		const char* env_host = std::getenv("REDIS_HOST");
-		const char* env_port = std::getenv("REDIS_PORT");
+
+		std::string env_host = SafeGetEnv("REDIS_HOST");
+		std::string env_port = SafeGetEnv("REDIS_PORT");
 
 		
 		
-		if (env_host != nullptr && strlen(env_host) > 0)
+		if (!env_host.empty())
 		{
 			redis_host = env_host;
 			LOG_INFO << "Using Redis host from environment: " << redis_host;
 		}
-		if (env_port != nullptr && strlen(env_port) > 0)
+		if (!env_port.empty())
 		{
 			try
 			{
@@ -115,8 +139,7 @@ Container::Container()
 				LOG_WARN << "Invalid REDIS_PORT environment variable, using default: " << e.what();
 			}
 		}
-		
-		// 如果环境变量未设置，从 config.json 读取
+
 		if (env_host == nullptr || strlen(env_host) == 0)
 		{
 			try
@@ -136,8 +159,7 @@ Container::Container()
 				LOG_WARN << "Failed to read redis config from file, using defaults: " << e.what();
 			}
 		}
-		
-		// 解析主机名到 IP 地址（Docker 网络或远程主机）
+
 		std::string redis_ip = ResolveHostname(redis_host);
 		
 		LOG_INFO << "Connecting to Redis at " << redis_host 
@@ -150,21 +172,18 @@ Container::Container()
 		_redis_service = std::make_shared<RedisService>(redis_client);
 	}
 
-	// ── 3. Repository 创建（注入 DbClientPtr）──
 	auto db = drogon::app().getDbClient();
 	_user_repo         = std::make_shared<SQLiteUserRepository>(db);
 	_thread_repo       = std::make_shared<SQLiteThreadRepository>(db);
 	_message_repo      = std::make_shared<SQLiteMessageRepository>(db);
 	_relationship_repo = std::make_shared<SQLiteRelationshipRepository>(db);
 
-	// ── 4. Service 创建（第一阶段：构造函数注入直接依赖）──
 	_user_service         = std::make_shared<UserService>(_user_repo, _redis_service);
 	_thread_service       = std::make_shared<ThreadService>(_thread_repo);
 	_conn_service         = std::make_shared<ConnectionService>(_redis_service);
 	_message_service      = std::make_shared<MessageService>(_message_repo, _conn_service, _thread_service, _redis_service);
 	_relationship_service = std::make_shared<RelationshipService>(_relationship_repo, _conn_service);
 
-	// ── 5. 第二阶段：注入循环依赖 ──
 	_relationship_service->SetUserService(_user_service);
 	_message_service->SetRelationshipService(_relationship_service);
 
