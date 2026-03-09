@@ -2,8 +2,6 @@
 #include "CORSMiddleware.h"
 #include <drogon/drogon.h>
 
-using namespace drogon::filters;
-
 void CORSMiddleware::doFilter(const drogon::HttpRequestPtr& req,
     drogon::FilterCallback&& fcb,
     drogon::FilterChainCallback&& fccb)

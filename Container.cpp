@@ -140,7 +140,7 @@ Container::Container()
 			}
 		}
 
-		if (env_host == nullptr || strlen(env_host) == 0)
+		if (env_host.empty())
 		{
 			try
 			{
