@@ -127,6 +127,7 @@
     <ClCompile Include="controllers\ThreadController.cpp" />
     <ClCompile Include="Data\SQLiteUserRepository.cpp" />
     <ClCompile Include="Common\User.cpp" />
+    <ClCompile Include="Service\RedisService.cpp" />
     <ClCompile Include="Service\RelationshipService.cpp" />
     <ClCompile Include="Service\ThreadService.cpp" />
     <ClCompile Include="Service\UserService.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="controllers\ThreadController.h" />
     <ClInclude Include="Data\SQLiteUserRepository.h" />
     <ClInclude Include="Common\User.h" />
+    <ClInclude Include="Service\RedisService.h" />
     <ClInclude Include="Service\RelationshipService.h" />
     <ClInclude Include="Service\ThreadService.h" />
     <ClInclude Include="Service\UserService.h" />

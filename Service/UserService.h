@@ -6,17 +6,20 @@
 class IUserRepository;
 class RedisService;
 
-using RespCallback = std::function<void(const drogon::HttpResponsePtr&)>;
 class UserService
 {
-	friend class Container;
 public:
 
 	UserService(std::shared_ptr<IUserRepository> ptr, std::shared_ptr<RedisService> redis)
 		: _user_repo(std::move(ptr)), _redis_service(std::move(redis)) {}
-	void UserRegister(const UserInfo& info, RespCallback&& callback) const;
-	void UserLogin(const UserInfo& info, RespCallback&& callback) const;
+
+	drogon::Task<drogon::HttpResponsePtr> UserRegister(const UserInfo& info) const;
+	drogon::Task<drogon::HttpResponsePtr> UserLogin(const UserInfo& info) const;
 	drogon::Task<UserInfo> GetUserInfo(const std::string& uid);
+
+	drogon::Task<drogon::HttpResponsePtr> GetUser(
+		std::optional<std::string> uid, std::optional<std::string> account) const;
+	drogon::Task<drogon::HttpResponsePtr> ModifyUserInfo(const Json::Value& body) const;
 
 private:
 

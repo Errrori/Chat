@@ -12,8 +12,6 @@ class AuthController:public drogon::HttpController<AuthController>
 		ADD_METHOD_TO(AuthController::OnLogin, "/auth/login", drogon::Post, "CORSMiddleware");
 		METHOD_LIST_END
 
-		void OnRegister(const drogon::HttpRequestPtr& req,
-			std::function<void(const drogon::HttpResponsePtr&)>&& callback);
-		void OnLogin(const drogon::HttpRequestPtr& req,
-			std::function<void(const drogon::HttpResponsePtr&)>&& callback);
+		drogon::Task<drogon::HttpResponsePtr> OnRegister(drogon::HttpRequestPtr req);
+		drogon::Task<drogon::HttpResponsePtr> OnLogin(drogon::HttpRequestPtr req);
 };

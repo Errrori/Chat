@@ -1,4 +1,6 @@
 #pragma once
+#include <memory>
+
 class IMessageRepository;
 class MessageService;
 class ThreadService;
@@ -6,21 +8,13 @@ class IThreadRepository;
 class UserService;
 class IUserRepository;
 class ConnectionService;
-class AuthenticationController;
-class ChatController;
-class ThreadController;
 class RelationshipService;
 class IRelationshipRepository;
 class RedisService;
 
 class Container
 {
-	friend class ChatController;
-	friend class ThreadController;
-	friend class AuthController;
-	friend class RelationshipController; 
 public:
-	//register std::unique_ptr for repository and service
 	~Container() = default;
 
 	static Container& GetInstance();
@@ -30,11 +24,16 @@ public:
 	Container& operator=(const Container&) = delete;
 	Container& operator=(Container&&) = delete;
 
-	template<typename T>
-	std::shared_ptr<T> GetService() const;
+	std::shared_ptr<UserService>         GetUserService()         const { return _user_service; }
+	std::shared_ptr<ThreadService>       GetThreadService()       const { return _thread_service; }
+	std::shared_ptr<MessageService>      GetMessageService()      const { return _message_service; }
+	std::shared_ptr<ConnectionService>   GetConnectionService()   const { return _conn_service; }
+	std::shared_ptr<RelationshipService> GetRelationshipService() const { return _relationship_service; }
+	std::shared_ptr<RedisService>        GetRedisService()        const { return _redis_service; }
 
 private:
 	Container();
+
 	std::shared_ptr<IUserRepository> _user_repo;
 	std::shared_ptr<UserService> _user_service;
 	std::shared_ptr<IThreadRepository> _thread_repo;
@@ -46,30 +45,3 @@ private:
 	std::shared_ptr<RelationshipService> _relationship_service;
 	std::shared_ptr<RedisService> _redis_service;
 };
-
-#define UsingService(T) Container::GetInstance().GetService<T>()
-
-#define GET_USER_SERVICE UsingService(UserService)
-#define GET_CONN_SERVICE UsingService(ConnectionService)
-#define GET_MESSAGE_SERVICE UsingService(MessageService)
-#define GET_THREAD_SERVICE UsingService(ThreadService)
-#define GET_RELATIONSHIP_SERVICE UsingService(RelationshipService)
-#define GET_REDIS_SERVICE UsingService(RedisService)
-
-template<>
-inline std::shared_ptr<UserService> Container::GetService() const { return _user_service; }
-
-template<>
-inline std::shared_ptr<ThreadService> Container::GetService() const { return _thread_service; }
-
-template<>
-inline std::shared_ptr<MessageService> Container::GetService() const { return _message_service; }
-
-template<>
-inline std::shared_ptr<ConnectionService> Container::GetService() const { return _conn_service; }
-
-template<>
-inline std::shared_ptr<RelationshipService> Container::GetService() const { return _relationship_service; }
-
-template<>
-inline std::shared_ptr<RedisService> Container::GetService() const { return _redis_service; }

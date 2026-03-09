@@ -47,34 +47,24 @@ Json::Value ParseAuthBody(const drogon::HttpRequestPtr& req)
 }
 }
 
-void AuthController::OnRegister(const drogon::HttpRequestPtr& req,
-	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+drogon::Task<drogon::HttpResponsePtr> AuthController::OnRegister(drogon::HttpRequestPtr req)
 {
 	const auto req_body = ParseAuthBody(req);
+	if (req_body.empty())
+		co_return Utils::CreateErrorResponse(400, 400, "request body is not valid");
 
-	if (!req_body.empty())
-	{
-		auto user_info = UserInfo::FromJson(req_body);
-		user_info.setUid(Utils::Authentication::GenerateUid());
-		Container::GetInstance().GetService<UserService>()->UserRegister(user_info, std::move(callback));
-		return;
-	}
-
-	callback(Utils::CreateErrorResponse(400, 400, "request body is not valid"));
-
+	auto user_info = UserInfo::FromJson(req_body);
+	user_info.setUid(Utils::Authentication::GenerateUid());
+	co_return co_await Container::GetInstance().GetUserService()->UserRegister(user_info);
 }
 
-void AuthController::OnLogin(const drogon::HttpRequestPtr& req,
-	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
+drogon::Task<drogon::HttpResponsePtr> AuthController::OnLogin(drogon::HttpRequestPtr req)
 {
 	const auto req_body = ParseAuthBody(req);
-	if (!req_body.empty())
-	{
-		auto info = UserInfo::FromJson(req_body);
-		Container::GetInstance().GetService<UserService>()->UserLogin(info, std::move(callback));
-		return;
-	}
-	callback(Utils::CreateErrorResponse(400, 400, "can not login"));
+	if (req_body.empty())
+		co_return Utils::CreateErrorResponse(400, 400, "can not login");
 
+	const auto info = UserInfo::FromJson(req_body);
+	co_return co_await Container::GetInstance().GetUserService()->UserLogin(info);
 }
 

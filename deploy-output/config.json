@@ -34,7 +34,12 @@
       "https": false
     }
   ],
-  "upload_path": "uploads"
+  "upload_path": "uploads",
+  "redis": {
+    "host": "redis",
+    "port": 6379,
+    "connection_number": 2
+  }
 }
 
 

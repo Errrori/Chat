@@ -2,12 +2,10 @@
 #include <unordered_map>
 #include <drogon/WebSocketConnection.h>
 class ChatMessage;
-class Container;
 class RedisService;
 
 class ConnectionService
 {
-	friend class Container;
 public:
 
 	ConnectionService(const ConnectionService& manager) = delete;
@@ -18,7 +16,6 @@ public:
 	explicit ConnectionService(std::shared_ptr<RedisService> redis)
 		: _redis_service(std::move(redis)) {}
 
-	// 返回值为 true 表示根据 Redis 判断用户当前在线（包括本实例内连接）
 	drogon::Task<bool> IsOnline(const std::string& uid);
 
 	bool AddConnection(const drogon::WebSocketConnectionPtr& conn, UserInfo info);
@@ -26,6 +23,7 @@ public:
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
 
 	std::shared_ptr<UserInfo> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
+	bool SendIfConnected(const std::string& uid, const Json::Value& message);
 	void PostNotice(const std::string& receiver_uid, const Json::Value& notice);
 	void Broadcast(const std::vector<std::string>& targets, const Json::Value& message);
 
@@ -36,5 +34,8 @@ private:
 	std::unordered_map<std::string, drogon::WebSocketConnectionPtr> _conn_to_id_map;
 	std::recursive_mutex _mutex;
 	std::shared_ptr<RedisService> _redis_service;
+
+	drogon::Task<> OnUserConnected(std::string uid);
+	drogon::Task<> OnUserDisconnected(std::string uid);
 };
 

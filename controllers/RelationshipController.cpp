@@ -33,7 +33,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::SendFriendRequest(
 			co_return Utils::CreateErrorResponse(400, 400, "Cannot send friend request to yourself");
 		}
 
-		auto service = GET_RELATIONSHIP_SERVICE;
+		auto service = Container::GetInstance().GetRelationshipService();
 		co_await service->SendFriendRequest(requester_uid, acceptor_uid, message);
 
 		co_return Utils::CreateSuccessResp(200, 200, "Friend request sent successfully");
@@ -69,7 +69,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::ProcessFriendReque
 		if (action != 1 && action != 2)
 			co_return Utils::CreateErrorResponse(400, 400, "Invalid action (1=Accept, 2=Reject)");
 
-		auto service = GET_RELATIONSHIP_SERVICE;
+		auto service = Container::GetInstance().GetRelationshipService();
 		try
 		{
 			int64_t thread_id = co_await service->ProcessFriendRequest(requester_uid, acceptor_uid, action);
@@ -98,7 +98,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::GetUnreadNotificat
 	try
 	{
 		const auto& userInfo = req->getAttributes()->get<UserInfo>("visitor_info");
-		auto data = co_await GET_RELATIONSHIP_SERVICE->GetUnreadNotifications(userInfo.getUid());
+		auto data = co_await Container::GetInstance().GetRelationshipService()->GetUnreadNotifications(userInfo.getUid());
 		co_return Utils::CreateSuccessJsonResp(200, 200, "success", data);
 	}
 	catch (const std::exception& e)
@@ -114,14 +114,12 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::GetNotifications(d
 	{
 		const auto& userInfo = req->getAttributes()->get<UserInfo>("visitor_info");
 
-		int offset = 0;
-		int limit  = 20;
-		auto offsetParam = req->getOptionalParameter<int>("offset");
-		auto limitParam  = req->getOptionalParameter<int>("limit");
-		if (offsetParam.has_value()) offset = *offsetParam;
-		if (limitParam.has_value())  limit  = std::clamp(*limitParam, 1, 100);
+		int offset = req->getOptionalParameter<int>("offset").value_or(0);
+		int limit  = req->getOptionalParameter<int>("limit").value_or(0);
+		//limit the value between 1 and 100
+		limit  = std::clamp(limit, 1, 100);
 
-		auto data = co_await GET_RELATIONSHIP_SERVICE->GetNotifications(userInfo.getUid(), offset, limit);
+		auto data = co_await Container::GetInstance().GetRelationshipService()->GetNotifications(userInfo.getUid(), offset, limit);
 		co_return Utils::CreateSuccessJsonResp(200, 200, "success", data);
 	}
 	catch (const std::exception& e)
@@ -149,7 +147,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::MarkNotificationsR
 			}
 		}
 
-		size_t updated = co_await GET_RELATIONSHIP_SERVICE->MarkNotificationsRead(uid, ids);
+		size_t updated = co_await Container::GetInstance().GetRelationshipService()->MarkNotificationsRead(uid, ids);
 
 		Json::Value data;
 		data["updated"] = static_cast<int>(updated);
@@ -167,7 +165,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::GetPendingFriendRe
 	try
 	{
 		const auto& userInfo = req->getAttributes()->get<UserInfo>("visitor_info");
-		auto data = co_await GET_RELATIONSHIP_SERVICE->GetPendingFriendRequests(userInfo.getUid());
+		auto data = co_await Container::GetInstance().GetRelationshipService()->GetPendingFriendRequests(userInfo.getUid());
 		co_return Utils::CreateSuccessJsonResp(200, 200, "success", data);
 	}
 	catch (const std::exception& e)
@@ -194,7 +192,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::BlockUser(drogon::
 
 		try
 		{
-			co_await GET_RELATIONSHIP_SERVICE->BlockUser(operator_uid, target_uid);
+			co_await Container::GetInstance().GetRelationshipService()->BlockUser(operator_uid, target_uid);
 		}
 		catch (const std::invalid_argument& e)
 		{
@@ -226,7 +224,7 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::UnblockUser(drogon
 
 		try
 		{
-			co_await GET_RELATIONSHIP_SERVICE->UnblockUser(operator_uid, target_uid);
+			co_await Container::GetInstance().GetRelationshipService()->UnblockUser(operator_uid, target_uid);
 		}
 		catch (const std::invalid_argument& e)
 		{

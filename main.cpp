@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include "Utils.h"
+#include "Container.h"
 
 using namespace Utils;
 
@@ -153,8 +154,13 @@ int main()
 		.setDocumentRoot(documentRoot)
 		.setHomePage("index.html")
 		.setThreadNum(16);
-	LOG_INFO << "Server start!";
-	
+
+	drogon::app().registerBeginningAdvice([]() {
+		Container::GetInstance();   // 强制初始化 Container（DB建表 + Redis连接 + 所有 Service）
+		LOG_INFO << "Server is ready to accept requests";
+	});
+
+	LOG_INFO << "Server starting...";
 	drogon::app().run();
 
 	curl_global_cleanup();

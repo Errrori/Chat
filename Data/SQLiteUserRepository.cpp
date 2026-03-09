@@ -2,7 +2,6 @@
 #include "SQLiteUserRepository.h"
 #include "Common/User.h"
 #include "models/Users.h"
-#include "DbAccessor.h"
 
 using namespace drogon::orm;
 using Users = drogon_model::sqlite3::Users;
@@ -21,7 +20,7 @@ std::future<bool> SQLiteUserRepository::AddUser(const UserInfo& info)
 
 	auto promise = std::make_shared<std::promise<bool>>();
 
-	Mapper<Users> mapper(DbAccessor::GetDbClient());
+	Mapper<Users> mapper(_db);
 	mapper.insert(db_user_opt.value(),
 		[promise](const Users& user)
 		{
@@ -40,7 +39,7 @@ std::future<bool> SQLiteUserRepository::ModifyUserInfo(const UserInfo& info)
 {
 	auto promise = std::make_shared<std::promise<bool>>();
 
-	Mapper<Users> mapper(DbAccessor::GetDbClient());
+	Mapper<Users> mapper(_db);
 
 	Criteria criteria(Users::Cols::_uid,CompareOperator::EQ,info.getUid());
 
@@ -66,7 +65,7 @@ std::future<bool> SQLiteUserRepository::ModifyUserInfo(const UserInfo& info)
 std::future<bool> SQLiteUserRepository::DeleteUser(const std::string& uid)
 {
 	auto promise = std::make_shared<std::promise<bool>>();
-	Mapper<Users> mapper(DbAccessor::GetDbClient());
+	Mapper<Users> mapper(_db);
 	Criteria criteria(Users::Cols::_uid, CompareOperator::EQ, uid);
 	mapper.deleteBy(criteria,
 		[promise](size_t size)
@@ -89,7 +88,7 @@ std::future<bool> SQLiteUserRepository::DeleteUser(const std::string& uid)
 std::future<Json::Value> SQLiteUserRepository::GetUserInfoByUid(const std::string& uid) const noexcept(false)
 {
 	auto promise = std::make_shared<std::promise<Json::Value>>();
-	Mapper<Users> mapper(DbAccessor::GetDbClient());
+	Mapper<Users> mapper(_db);
 	Criteria criteria(Users::Cols::_uid, CompareOperator::EQ, uid);
 	mapper.findBy(criteria,
 		[promise](const std::vector<Users>& results)
@@ -110,7 +109,7 @@ std::future<Json::Value> SQLiteUserRepository::GetUserInfoByUid(const std::strin
 std::future<Json::Value> SQLiteUserRepository::GetUserInfoByAccount(const std::string& account) const noexcept(false)
 {
 	auto promise = std::make_shared<std::promise<Json::Value>>();
-	Mapper<Users> mapper(DbAccessor::GetDbClient());
+	Mapper<Users> mapper(_db);
 	Criteria criteria(Users::Cols::_account, CompareOperator::EQ, account);
 	mapper.findBy(criteria,
 		[promise](const std::vector<Users>& results)
@@ -132,7 +131,7 @@ drogon::Task<UserInfo> SQLiteUserRepository::GetUserInfo(const std::string& uid)
 {
 	try
 	{
-		CoroMapper<Users> mapper(DbAccessor::GetDbClient());
+		CoroMapper<Users> mapper(_db);
 		auto users = co_await mapper.findBy(Criteria(Users::Cols::_uid, CompareOperator::EQ, uid));
 
 		if (users.empty())
@@ -170,5 +169,57 @@ drogon::Task<UserInfo> SQLiteUserRepository::GetUserInfo(const std::string& uid)
 	{
 		LOG_ERROR << "Failed to get user info for uid: " << uid << " - " << e.what();
 		throw;
+	}
+}
+
+drogon::Task<Json::Value> SQLiteUserRepository::GetUserInfoByAccountCoro(const std::string& account) const
+{
+	try
+	{
+		CoroMapper<Users> mapper(_db);
+		auto users = co_await mapper.findBy(Criteria(Users::Cols::_account, CompareOperator::EQ, account));
+		if (users.empty())
+			co_return Json::nullValue;
+		co_return users[0].toJson();
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "GetUserInfoByAccountCoro error: " << e.what();
+		co_return Json::nullValue;
+	}
+}
+
+drogon::Task<bool> SQLiteUserRepository::AddUserCoro(const UserInfo& info)
+{
+	const auto db_user_opt = info.ToDbUsers();
+	if (!db_user_opt.has_value())
+		co_return false;
+	try
+	{
+		CoroMapper<Users> mapper(_db);
+		co_await mapper.insert(db_user_opt.value());
+		co_return true;
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "AddUserCoro error: " << e.what();
+		co_return false;
+	}
+}
+
+drogon::Task<Json::Value> SQLiteUserRepository::GetUserInfoByUidCoro(const std::string& uid) const
+{
+	try
+	{
+		CoroMapper<Users> mapper(_db);
+		auto users = co_await mapper.findBy(Criteria(Users::Cols::_uid, CompareOperator::EQ, uid));
+		if (users.empty())
+			co_return Json::nullValue;
+		co_return users[0].toJson();
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "GetUserInfoByUidCoro error: " << e.what();
+		co_return Json::nullValue;
 	}
 }

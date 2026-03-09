@@ -19,7 +19,7 @@ void TokenVerifyFilter::doFilter(const drogon::HttpRequestPtr& req, drogon::Filt
 	// 尝试从 Redis 缓存读取完整用户信息（同步方式：起动异步任务并等待）
 	try
 	{
-		auto redis = GET_REDIS_SERVICE;
+		auto redis = Container::GetInstance().GetRedisService();
 		if (redis)
 		{
 			// 异步查缓存——利用 drogon 协程将同步 filter 包装成异步任务
@@ -32,8 +32,17 @@ void TokenVerifyFilter::doFilter(const drogon::HttpRequestPtr& req, drogon::Filt
 					{
 						// cache hit: 用最新资料覆盖 JWT 中的注册时信息
 						auto full_info = UserInfo::FromJson(cached);
-						LOG_INFO << "[TokenFilter] cache hit for uid: " << full_info.getUid();
-						req->getAttributes()->insert("visitor_info", full_info);
+							if (!full_info.getUid().empty())
+							{
+								LOG_INFO << "[TokenFilter] cache hit for uid: " << full_info.getUid();
+								req->getAttributes()->insert("visitor_info", full_info);
+							}
+							else
+							{
+								LOG_WARN << "[TokenFilter] invalid cache payload for uid: " << info.getUid()
+									<< ", fallback to JWT payload";
+								req->getAttributes()->insert("visitor_info", info);
+							}
 					}
 					else
 					{
@@ -42,7 +51,7 @@ void TokenVerifyFilter::doFilter(const drogon::HttpRequestPtr& req, drogon::Filt
 						req->getAttributes()->insert("visitor_info", info);
 					}
 					fccb();
-				}()
+				}
 			);
 			return;
 		}

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SQLiteRelationshipRepository.h"
-#include "DbAccessor.h"
+
 
 #include "models/FriendRequests.h"
 #include "models/Friendships.h"
@@ -24,7 +24,7 @@ drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std
 {
 	try
 	{
-		auto trans = co_await DbAccessor::GetDbClient()->newTransactionCoro();
+		auto trans = co_await _db->newTransactionCoro();
 		if (trans == nullptr)
 			throw std::runtime_error("fail to create transaction");
 
@@ -33,8 +33,8 @@ drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std
 		std::string uid2 = (requester_uid < acceptor_uid) ? acceptor_uid : requester_uid;
 		Criteria criteria(Criteria(Friendships::Cols::_uid1,CompareOperator::EQ,uid1)
 			&&Criteria(Friendships::Cols::_uid2,CompareOperator::EQ,uid2));
-		const auto& result = co_await friendship_mapper.limit(1).findBy(criteria);
-		if (!result.empty())
+		auto friendship_rows = co_await friendship_mapper.limit(1).findBy(criteria);
+		if (!friendship_rows.empty())
 			throw std::invalid_argument("You are already friends with this user");
 
 		// Check if either user has blocked the other
@@ -50,35 +50,28 @@ drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std
 
 		CoroMapper<FriendRequests> req_mapper(trans);
 		//check if user has already sent a request before
-		const auto& record = co_await req_mapper.limit(1).
+		auto record = co_await req_mapper.limit(1).
 			findBy(Criteria(Criteria(FriendRequests::Cols::_requester_uid, CompareOperator::EQ, requester_uid)
 				&& Criteria(FriendRequests::Cols::_target_uid, CompareOperator::EQ, acceptor_uid)));
 		if (!record.empty() && record[0].getValueOfStatus() != static_cast<int>(FriendRequestStatus::Refused))
 			throw std::runtime_error("A pending request already exists or was accepted");
 
-		try
-		{
-			FriendRequests new_req;
-			new_req.setRequesterUid(requester_uid);
-			new_req.setTargetUid(acceptor_uid);
-			new_req.setStatus(static_cast<int>(FriendRequestStatus::Pending));
-			new_req.setPayload(payload);
-			co_await req_mapper.insert(new_req);
+		FriendRequests new_req;
+		new_req.setRequesterUid(requester_uid);
+		new_req.setTargetUid(acceptor_uid);
+		new_req.setStatus(static_cast<int>(FriendRequestStatus::Pending));
+		new_req.setPayload(payload);
+		co_await req_mapper.insert(new_req);
 
-			Notifications notice;
-			notice.setSenderUid(requester_uid);
-			notice.setRecipientUid(acceptor_uid);
-			notice.setType(static_cast<int>(NoticeType::RequestReceived));
-			notice.setPayload(payload);
+		Notifications notice;
+		notice.setSenderUid(requester_uid);
+		notice.setRecipientUid(acceptor_uid);
+		notice.setType(static_cast<int>(NoticeType::RequestReceived));
+		notice.setPayload(payload);
 
-			CoroMapper<Notifications> notice_mapper(trans);
-			const auto& result = co_await notice_mapper.insert(notice);
-			co_return result.getValueOfId();
-		}catch (const std::exception& e)
-		{
-			trans->rollback();
-			throw e;
-		}
+		CoroMapper<Notifications> notice_mapper(trans);
+		auto notice_result = co_await notice_mapper.insert(notice);
+		co_return notice_result.getValueOfId();
 	}
 	catch (const std::exception& e)
 	{
@@ -114,7 +107,7 @@ namespace
         // Create Thread (Private Chat)
         Threads new_thread;
         new_thread.setType(1); // 1 = private
-        const auto& thread_result = co_await thread_mapper.insert(new_thread);
+auto thread_result = co_await thread_mapper.insert(new_thread);
         int64_t threadId = thread_result.getValueOfThreadId();
 
         // Create Private Chat Entry
@@ -141,7 +134,7 @@ namespace
 drogon::Task<int64_t> SQLiteRelationshipRepository::ProcessRequest(const std::string& requester_uid,
                                                                    const std::string& acceptor_uid, int status)
 {
-    auto trans = co_await DbAccessor::GetDbClient()->newTransactionCoro();
+    auto trans = co_await _db->newTransactionCoro();
     if (!trans)
         throw std::runtime_error("Failed to create transaction");
 
@@ -209,21 +202,21 @@ drogon::Task<> SQLiteRelationshipRepository::WriteNotice(const std::string& acto
 	notice.setType(type);
 	notice.setPayload(payload);
 
-	CoroMapper<Notifications> mapper(DbAccessor::GetDbClient());
+	CoroMapper<Notifications> mapper(_db);
 	try
 	{
-		const auto& result = co_await mapper.insert(notice);
+		co_await mapper.insert(notice);
 	}
 	catch (const std::exception& e)
 	{
-		throw e;
+		throw;
 	}
 }
 
 drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetUnreadNotifications(
 	const std::string& uid)
 {
-	auto client = DbAccessor::GetDbClient();
+	auto client = _db;
 	auto result = co_await client->execSqlCoro(
 		"SELECT n.* FROM notifications n "
 		"LEFT JOIN block b ON (b.operator_uid = ? AND b.blocked_uid = n.sender_uid) "
@@ -241,7 +234,7 @@ drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetUnread
 drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetNotifications(
 	const std::string& uid, int offset, int limit)
 {
-	auto client = DbAccessor::GetDbClient();
+	auto client = _db;
 	auto result = co_await client->execSqlCoro(
 		"SELECT n.* FROM notifications n "
 		"LEFT JOIN block b ON (b.operator_uid = ? AND b.blocked_uid = n.sender_uid) "
@@ -259,7 +252,7 @@ drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetNotifi
 drogon::Task<size_t> SQLiteRelationshipRepository::MarkNotificationsRead(
 	const std::string& uid, const std::vector<int64_t>& ids)
 {
-	auto client = DbAccessor::GetDbClient();
+	auto client = _db;
 	drogon::orm::Result result(nullptr);
 
 	if (ids.empty())
@@ -290,7 +283,7 @@ drogon::Task<size_t> SQLiteRelationshipRepository::MarkNotificationsRead(
 drogon::Task<std::vector<FriendRequests>> SQLiteRelationshipRepository::GetPendingFriendRequests(
 	const std::string& uid)
 {
-	CoroMapper<FriendRequests> mapper(DbAccessor::GetDbClient());
+	CoroMapper<FriendRequests> mapper(_db);
 	auto result = co_await mapper
 		.orderBy(FriendRequests::Cols::_created_time, SortOrder::DESC)
 		.findBy(
@@ -307,7 +300,7 @@ drogon::Task<> SQLiteRelationshipRepository::BlockUser(const std::string& operat
 	if (already)
 		throw std::invalid_argument("User is already blocked");
 
-	auto client = DbAccessor::GetDbClient();
+	auto client = _db;
 	co_await client->execSqlCoro(
 		"INSERT INTO block (operator_uid, blocked_uid) VALUES (?, ?)",
 		operator_uid, blocked_uid
@@ -320,7 +313,7 @@ drogon::Task<> SQLiteRelationshipRepository::UnblockUser(const std::string& oper
 	if (!exists)
 		throw std::invalid_argument("No block relationship found");
 
-	auto client = DbAccessor::GetDbClient();
+	auto client = _db;
 	co_await client->execSqlCoro(
 		"DELETE FROM block WHERE operator_uid = ? AND blocked_uid = ?",
 		operator_uid, blocked_uid
@@ -329,7 +322,7 @@ drogon::Task<> SQLiteRelationshipRepository::UnblockUser(const std::string& oper
 
 drogon::Task<bool> SQLiteRelationshipRepository::IsBlocked(const std::string& uid_a, const std::string& uid_b)
 {
-	CoroMapper<Block> mapper(DbAccessor::GetDbClient());
+	CoroMapper<Block> mapper(_db);
 	auto result = co_await mapper.limit(1).findBy(
 		(Criteria(Block::Cols::_operator_uid, CompareOperator::EQ, uid_a) &&
 		 Criteria(Block::Cols::_blocked_uid, CompareOperator::EQ, uid_b)) ||
@@ -341,7 +334,7 @@ drogon::Task<bool> SQLiteRelationshipRepository::IsBlocked(const std::string& ui
 
 drogon::Task<bool> SQLiteRelationshipRepository::HasBlocked(const std::string& operator_uid, const std::string& target_uid)
 {
-	CoroMapper<Block> mapper(DbAccessor::GetDbClient());
+	CoroMapper<Block> mapper(_db);
 	auto result = co_await mapper.limit(1).findBy(
 		Criteria(Block::Cols::_operator_uid, CompareOperator::EQ, operator_uid) &&
 		Criteria(Block::Cols::_blocked_uid, CompareOperator::EQ, target_uid)

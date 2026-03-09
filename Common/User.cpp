@@ -6,6 +6,73 @@
 UserInfo UserInfo::FromJson(const Json::Value& json)
 {
 	UserInfo info{};
+	auto readIntField = [](const Json::Value& src, const char* key, int& out)
+	{
+		if (!src.isMember(key) || src[key].isNull())
+			return;
+
+		const auto& value = src[key];
+		if (value.isInt())
+		{
+			out = value.asInt();
+			return;
+		}
+		if (value.isInt64() || value.isUInt() || value.isUInt64())
+		{
+			out = static_cast<int>(value.asInt64());
+			return;
+		}
+		if (value.isString())
+		{
+			try
+			{
+				out = std::stoi(value.asString());
+			}
+			catch (const std::exception&)
+			{
+				LOG_WARN << "invalid integer field: " << key << ", value=" << value.asString();
+			}
+			return;
+		}
+
+		LOG_WARN << "unexpected json type for integer field: " << key;
+	};
+
+	auto readInt64Field = [](const Json::Value& src, const char* key, int64_t& out, int64_t defaultVal = -1)
+	{
+		if (!src.isMember(key) || src[key].isNull())
+		{
+			if (defaultVal >= 0)
+				out = defaultVal;
+			return;
+		}
+
+		const auto& value = src[key];
+		if (value.isInt64() || value.isInt() || value.isUInt() || value.isUInt64())
+		{
+			out = value.asInt64();
+			return;
+		}
+		if (value.isString())
+		{
+			try
+			{
+				out = std::stoll(value.asString());
+			}
+			catch (const std::exception&)
+			{
+				LOG_WARN << "invalid int64 field: " << key << ", value=" << value.asString();
+				if (defaultVal >= 0)
+					out = defaultVal;
+			}
+			return;
+		}
+
+		LOG_WARN << "unexpected json type for int64 field: " << key;
+		if (defaultVal >= 0)
+			out = defaultVal;
+	};
+
 	try
 	{
 		if (json.isMember("username"))
@@ -16,30 +83,27 @@ UserInfo UserInfo::FromJson(const Json::Value& json)
 			info.email = json["email"].asString();
 		if (json.isMember("signature"))
 			info.signature = json["signature"].asString();
-		if (json.isMember("posts"))
-			info.posts = json["posts"].asInt();
-		if (json.isMember("followers"))
-			info.followers = json["followers"].asInt();
-		if (json.isMember("following"))
-			info.following = json["following"].asInt();
-		if (json.isMember("create_time"))
-			info.create_time = json["create_time"].asInt64();
-		else
-			info.create_time = Utils::GetCurrentTimeStamp();
-		if (json.isMember("last_login_time"))
-			info.last_login_time = json["last_login_time"].asInt64();
-		else
-			info.last_login_time = Utils::GetCurrentTimeStamp();
-		if (json.isMember("status"))
-			info.status = json["status"].asInt();
+
+		readIntField(json, "posts", info.posts);
+		readIntField(json, "followers", info.followers);
+		readIntField(json, "following", info.following);
+
+		auto currentTime = Utils::GetCurrentTimeStamp();
+		info.create_time = currentTime;
+		info.last_login_time = currentTime;
+		readInt64Field(json, "create_time", info.create_time, currentTime);
+		readInt64Field(json, "last_login_time", info.last_login_time, currentTime);
+
+		readIntField(json, "status", info.status);
+
 		if (json.isMember("uid"))
 			info.uid = json["uid"].asString();
 		if (json.isMember("account"))
 			info.account = json["account"].asString();
 		if (json.isMember("password"))
 			info.hashed_password = Utils::Authentication::PasswordHashed(json["password"].asString());
-		if (json.isMember("level"))
-			info.level = json["level"].asInt();
+
+		readIntField(json, "level", info.level);
 	}catch (const std::exception& e)
 	{
 		LOG_ERROR << "fail to build UsersInfo from json:"<<e.what();

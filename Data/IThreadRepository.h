@@ -33,6 +33,8 @@ public:
 	virtual drogon::Task<bool> IsThreadMember(int thread_id, const std::string& uid) = 0;
 	virtual drogon::Task<std::vector<std::string>> GetThreadMember(int thread_id) = 0;
 	virtual drogon::Task<ChatThread::ThreadType> GetThreadType(int thread_id) = 0;
+	// Returns thread type + member list in 2 DB ops instead of separate calls (3 ops)
+	virtual drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetMembersAndType(int thread_id) = 0;
 
     virtual ~IThreadRepository() = default;
 };

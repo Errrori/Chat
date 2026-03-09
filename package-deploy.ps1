@@ -58,6 +58,7 @@ if ($LASTEXITCODE -ne 0) {
 Copy-Item (Join-Path $ScriptDir "docker-compose.deploy.yml") (Join-Path $out "docker-compose.yml")
 Copy-Item (Join-Path $ScriptDir "config.json") (Join-Path $out "config.json")
 Copy-Item (Join-Path $ScriptDir "jwt_secret.json") (Join-Path $out "jwt_secret.json")
+Copy-Item (Join-Path $ScriptDir "database.db") (Join-Path $out "database.db")
 
 # Step 4: Create zip package
 $version = Get-Date -Format "yyyyMMdd_HHmm"

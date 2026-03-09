@@ -6,12 +6,14 @@
 
 class IRelationshipRepository;
 class ConnectionService;
+class UserService;
 
 class RelationshipService
 {
-	friend class Container;
 public:
 	RelationshipService(std::shared_ptr<IRelationshipRepository> repo, std::shared_ptr<ConnectionService> connService);
+
+	void SetUserService(std::shared_ptr<UserService> userService) { _user_service = std::move(userService); }
 
 	drogon::Task<> SendFriendRequest(const std::string& requester_uid,
 		const std::string& acceptor_uid, const std::string& message) const;
@@ -40,4 +42,5 @@ public:
 private:
 	std::shared_ptr<IRelationshipRepository> _relationship_repo;
 	std::shared_ptr<ConnectionService> _conn_service;
+	std::shared_ptr<UserService> _user_service;
 };

@@ -6,7 +6,6 @@
 #include "ThreadService.h"
 #include "Common/AIMessage.h"
 #include "Common/AIRequestMsg.h"
-#include "Container.h"
 #include "RelationshipService.h"
 #include "RedisService.h"
 
@@ -56,38 +55,58 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 		{
 			try
 			{
-				bool result = co_await _thread_service->ValidateMemberCoro(msg.getThreadId(),
-					msg.getSenderUid());
+				// MSVC coroutine state machine requires all variables to be declared
+				// before the first co_await, otherwise they appear as "undeclared".
+				const int thread_id = msg.getThreadId();
+				const std::string sender_uid = msg.getSenderUid();
+				int64_t msg_id = 0;
+				std::string serialized;
+				std::string block_target;
 
-				if (!result)
+				// Step 1: 1次联合查询获取 thread_type + members（2次 DB，替换原来的 9次）
+				auto thread_info = co_await _thread_service->GetMembersAndType(thread_id);
+				const ChatThread::ThreadType thread_type = thread_info.first;
+				std::vector<std::string> members = std::move(thread_info.second);
+
+				if (members.empty())
 				{
-					LOG_ERROR << "user is not in the thread!";
-					cb(Utils::GenErrorResponse("user is not in thread", ChatCode::NotPermission));
+					LOG_ERROR << "thread has no members, thread_id: " << thread_id;
+					cb(Utils::GenErrorResponse("invalid thread", ChatCode::NotPermission));
 					co_return;
 				}
 
-				// Private chat block check
-				auto thread_type = co_await _thread_service->GetThreadType(msg.getThreadId());
+				// Step 2: 成员校验（内存操作，0次 DB）
+			LOG_DEBUG << "Thread " << thread_id << " members check - sender_uid: [" << sender_uid << "], members count: " << members.size();
+			for (size_t i = 0; i < members.size(); ++i) {
+				LOG_DEBUG << "  member[" << i << "]: [" << members[i] << "]";
+			}
+			if (std::find(members.begin(), members.end(), sender_uid) == members.end())
+			{
+				LOG_ERROR << "user not in thread, tid=" << thread_id << " uid=" << sender_uid;
+				cb(Utils::GenErrorResponse("user is not in thread", ChatCode::NotPermission));
+				co_return;
+			}
+			LOG_DEBUG << "Member validation passed for uid: " << sender_uid;
+				// Step 3: block check for private threads (1 DB op)
 				if (thread_type == ChatThread::PRIVATE)
 				{
-					auto members = co_await _thread_service->GetThreadMember(msg.getThreadId());
-					std::string other_uid;
 					for (const auto& m : members)
 					{
-						if (m != msg.getSenderUid()) { other_uid = m; break; }
+						if (m != sender_uid) { block_target = m; break; }
 					}
-					if (!other_uid.empty())
+				}
+				if (!block_target.empty())
+				{
+					bool blocked = co_await _relationship_service->IsBlocked(sender_uid, block_target);
+					if (blocked)
 					{
-						bool blocked = co_await GET_RELATIONSHIP_SERVICE->IsBlocked(msg.getSenderUid(), other_uid);
-						if (blocked)
-						{
-							cb(Utils::GenErrorResponse("Cannot send message due to block relationship", ChatCode::NotPermission));
-							co_return;
-						}
+						cb(Utils::GenErrorResponse("Cannot send message due to block relationship", ChatCode::NotPermission));
+						co_return;
 					}
 				}
 
-				auto msg_id = co_await _msg_repo->RecordUserMessage(msg);
+				// Step 4: store message (1 DB write)
+				msg_id = co_await _msg_repo->RecordUserMessage(msg);
 				msg.setMessageId(msg_id);
 
 				if (!msg.IsValid())
@@ -96,25 +115,23 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 					cb(Utils::GenErrorResponse("message data is not valid", ChatCode::InvalidArg));
 					co_return;
 				}
-				auto members = co_await _thread_service->GetThreadMember(msg.getThreadId());
 
 				const auto json_msg = msg.ToMessage().value();
-
 				LOG_INFO << "send message: " << json_msg.toStyledString();
 
-				// 对在线用户直接广播，对离线用户写入 Redis 离线队列
-				const std::string serialized = json_msg.toStyledString();
+				// Step 5: push message (memory ops + optional offline queue, no DB)
+				serialized = json_msg.toStyledString();
 				for (const auto& target_uid : members)
 				{
-					bool online = co_await _conn_service->IsOnline(target_uid);
-					if (!online)
-					{
-						co_await _redis_service->PushOfflineMessage(target_uid, serialized);
-						LOG_INFO << "Queued offline message for: " << target_uid;
-					}
+					if (_conn_service->SendIfConnected(target_uid, json_msg))
+						continue;
+
+					if (target_uid == sender_uid)
+						continue;
+
+					co_await _redis_service->PushOfflineMessage(target_uid, serialized);
+					LOG_INFO << "Queued offline message for: " << target_uid;
 				}
-				// 对在线用户直接推送
-				_conn_service->Broadcast(members, json_msg);
 			}catch (const std::exception& e)
 			{
 				LOG_ERROR << "exception: " << e.what();

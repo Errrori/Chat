@@ -128,6 +128,19 @@ drogon::Task<bool> ThreadService::ValidateMemberCoro(int thread_id, const std::s
 	
 }
 
+drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>>
+ThreadService::GetMembersAndType(int thread_id) const
+{
+	try
+	{
+		co_return co_await _thread_repo->GetMembersAndType(thread_id);
+	}
+	catch (const std::exception& e)
+	{
+		throw;
+	}
+}
+
 
 
 

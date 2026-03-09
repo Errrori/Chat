@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "SQLiteMessageRepository.h"
 
-#include "DbAccessor.h"
+
 #include "Common/ChatMessage.h"
 #include "models/Messages.h"
 #include "models/AiContext.h"
@@ -52,8 +52,8 @@ drogon::Task<int64_t> SQLiteMessageRepository::RecordUserMessage(const ChatMessa
 		db_message.setUpdateTime(message.getUpdateTime());
 		db_message.setThreadId(message.getThreadId());
 
-		CoroMapper<Messages> mapper(DbAccessor::GetDbClient());
-		const auto& coro_msg = co_await mapper.insert(db_message);
+		CoroMapper<Messages> mapper(_db);
+		auto coro_msg = co_await mapper.insert(db_message);
 		co_return coro_msg.getValueOfMessageId();
 	}
 	catch (const std::exception& e)
@@ -96,7 +96,7 @@ drogon::Task<> SQLiteMessageRepository::RecordAIMessage(const AIMessage& message
 		db_message.setRole(AIMessage::RoleToString(message.getRole()));
 		db_message.setCreatedTime(message.getCreatedTime());
 
-		CoroMapper<AiContext> mapper(DbAccessor::GetDbClient());
+		CoroMapper<AiContext> mapper(_db);
 		co_await mapper.insert(db_message);
 	}
 	catch (const std::exception& e)
@@ -110,7 +110,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetMessageRecords(int thread_
 {
 	try
 	{
-		CoroMapper<Messages> mapper(DbAccessor::GetDbClient());
+		CoroMapper<Messages> mapper(_db);
 		Criteria criteria;
 		if (existed_id!=0)
 			criteria = Criteria(Messages::Cols::_thread_id, CompareOperator::EQ, thread_id)
@@ -143,7 +143,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetAIContext(int thread_id, i
 {
 	try
 	{
-		CoroMapper<AiContext> mapper(DbAccessor::GetDbClient());
+		CoroMapper<AiContext> mapper(_db);
 
 		Criteria criteria(Criteria(AiContext::Cols::_thread_id, CompareOperator::EQ, thread_id)
 			&& Criteria(AiContext::Cols::_created_time, CompareOperator::GT, timestamp));
@@ -177,7 +177,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetChatOverviews(int64_t exis
 		std::unordered_map<long long, std::string> thread_types; // ��¼�Ự����
 
 		// ��ȡ˽�ĻỰ
-		CoroMapper<drogon_model::sqlite3::PrivateChats> private_mapper(DbAccessor::GetDbClient());
+		CoroMapper<drogon_model::sqlite3::PrivateChats> private_mapper(_db);
 		Criteria private_criteria(
 			Criteria(PrivateChats::Cols::_uid1, CompareOperator::EQ, uid) ||
 			Criteria(PrivateChats::Cols::_uid2, CompareOperator::EQ, uid)
@@ -185,7 +185,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetChatOverviews(int64_t exis
 		auto private_chats = co_await private_mapper.findBy(private_criteria);
 
 		// ��ȡȺ�ĻỰ
-		CoroMapper<GroupMembers> group_mapper(DbAccessor::GetDbClient());
+		CoroMapper<GroupMembers> group_mapper(_db);
 		Criteria group_criteria(Criteria(GroupMembers::Cols::_user_uid, CompareOperator::EQ, uid));
 		auto groups = co_await group_mapper.findBy(group_criteria);
 
@@ -210,7 +210,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetChatOverviews(int64_t exis
 		}
 
 		// 2. ʹ�õ���SQL��ѯ��ȡ�����������
-		auto db_client = DbAccessor::GetDbClient();
+		auto db_client = _db;
 
 		// ����IN������ʵ��ֵ
 		std::string thread_ids_str;
@@ -267,7 +267,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetChatOverviews(int64_t exis
 			}
 
 			// ʹ��IN��ѯ������ȡȺ������
-			Mapper<GroupChats> group_info_mapper(DbAccessor::GetDbClient());
+			Mapper<GroupChats> group_info_mapper(_db);
 			Criteria group_info_criteria(GroupChats::Cols::_thread_id, CompareOperator::In, group_thread_ids);
 			const auto& group_details = group_info_mapper.findBy(group_info_criteria);
 

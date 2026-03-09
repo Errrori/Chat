@@ -84,7 +84,7 @@ RUN set -eux; \
     libsqlite3-0 \
     libcurl4 \
     libtrantor1 \
-    libhiredis0.14 \
+    libhiredis-dev \
     ca-certificates \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*  # 清理缓存

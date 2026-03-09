@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "RedisService.h"
-#include <json/json.h>
 
 // ──────────────────────────────────────────────
 // 私有工具
@@ -95,14 +94,18 @@ drogon::Task<Json::Value> RedisService::GetCachedUserInfo(const std::string& uid
         auto key = MakeKey(RedisKeys::UserInfoHash, uid);
         auto result = co_await _client->execCommandCoro("HGETALL %s", key.c_str());
 
-        if (result.isNil() || result.size() == 0)
+        if (result.isNil())
+            co_return Json::nullValue;
+
+        auto arr = result.asArray();
+        if (arr.empty())
             co_return Json::nullValue;
 
         Json::Value json;
         // HGETALL 返回 field1, value1, field2, value2 ...
-        for (size_t i = 0; i + 1 < result.size(); i += 2)
+        for (size_t i = 0; i + 1 < arr.size(); i += 2)
         {
-            json[result[i].asString()] = result[i + 1].asString();
+            json[arr[i].asString()] = arr[i + 1].asString();
         }
         co_return json;
     }
@@ -155,8 +158,8 @@ drogon::Task<std::vector<std::string>> RedisService::PopAllOfflineMessages(const
         auto result = co_await _client->execCommandCoro("LRANGE %s 0 -1", key.c_str());
         if (!result.isNil())
         {
-            for (size_t i = 0; i < result.size(); ++i)
-                messages.push_back(result[i].asString());
+            for (const auto& item : result.asArray())
+                messages.push_back(item.asString());
         }
 
         if (!messages.empty())

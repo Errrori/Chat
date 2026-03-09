@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "RelationshipService.h"
 
-#include "Container.h"
 #include "UserService.h"
 #include "Data/IRelationshipRepository.h"
 #include "Service/ConnectionService.h"
@@ -26,7 +25,7 @@ drogon::Task<> RelationshipService::SendFriendRequest(const std::string& request
 			requester_uid, acceptor_uid, message);
 		if (event_id < 0)
 			throw std::runtime_error("Friend request already exists or you are already friends");
-		auto user_info = co_await GET_USER_SERVICE->GetUserInfo(requester_uid);
+		auto user_info = co_await _user_service->GetUserInfo(requester_uid);
 
 		// 2. Build Notification Object
 		Notice notice;
@@ -43,7 +42,7 @@ drogon::Task<> RelationshipService::SendFriendRequest(const std::string& request
 		_conn_service->PostNotice(acceptor_uid, json_notice);
 	}catch (const std::exception& e)
 	{
-		throw e;
+		throw;
 	}
 
 }
@@ -55,7 +54,7 @@ drogon::Task<int64_t> RelationshipService::ProcessFriendRequest(const std::strin
     try
     {
 		// When accepting a request, the sender of the notice is the one who accepted it.
-		auto acceptor_info = co_await GET_USER_SERVICE->GetUserInfo(acceptor_uid);
+		auto acceptor_info = co_await _user_service->GetUserInfo(acceptor_uid);
 
 		int64_t thread_id = co_await _relationship_repo->ProcessRequest(requester_uid, acceptor_uid, status);
 		if (thread_id < 0)
@@ -79,7 +78,7 @@ drogon::Task<int64_t> RelationshipService::ProcessFriendRequest(const std::strin
     {
         // It's better to log the error and decide if we should re-throw
         LOG_ERROR << "Error while preparing acceptance notification: " << e.what();
-		throw e;
+		throw;
     }
 
 
