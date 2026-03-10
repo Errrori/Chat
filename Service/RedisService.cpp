@@ -171,3 +171,84 @@ drogon::Task<std::vector<std::string>> RedisService::PopAllOfflineMessages(const
     }
     co_return messages;
 }
+
+// ──────────────────────────────────────────────
+// D. Refresh Token 会话（单端 + 轮换）
+// ──────────────────────────────────────────────
+
+drogon::Task<> RedisService::StoreRefreshSession(const std::string& uid,
+                                                  const std::string& jti,
+                                                  int ttl_seconds)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::RefreshSession, uid);
+        // SET key jti EX ttl — 覆盖旧 session（单端策略）
+        co_await _client->execCommandCoro("SET %s %s EX %d",
+                                          key.c_str(), jti.c_str(), ttl_seconds);
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::StoreRefreshSession error: " << e.what();
+    }
+}
+
+drogon::Task<bool> RedisService::ValidateRefreshSession(const std::string& uid,
+                                                         const std::string& jti)
+{
+    try
+    {
+        auto key    = MakeKey(RedisKeys::RefreshSession, uid);
+        auto result = co_await _client->execCommandCoro("GET %s", key.c_str());
+        if (result.isNil())
+            co_return false;
+        co_return result.asString() == jti;
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::ValidateRefreshSession error: " << e.what();
+        co_return false;
+    }
+}
+
+drogon::Task<bool> RedisService::RotateRefreshSession(const std::string& uid,
+                                                       const std::string& old_jti,
+                                                       const std::string& new_jti,
+                                                       int ttl_seconds)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::RefreshSession, uid);
+
+        // 校验旧 jti
+        auto stored = co_await _client->execCommandCoro("GET %s", key.c_str());
+        if (stored.isNil() || stored.asString() != old_jti)
+        {
+            LOG_WARN << "[RedisService] RotateRefreshSession: jti mismatch for uid=" << uid;
+            co_return false;
+        }
+
+        // 写入新 jti（覆盖）
+        co_await _client->execCommandCoro("SET %s %s EX %d",
+                                          key.c_str(), new_jti.c_str(), ttl_seconds);
+        co_return true;
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::RotateRefreshSession error: " << e.what();
+        co_return false;
+    }
+}
+
+drogon::Task<> RedisService::RevokeRefreshSession(const std::string& uid)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::RefreshSession, uid);
+        co_await _client->execCommandCoro("DEL %s", key.c_str());
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::RevokeRefreshSession error: " << e.what();
+    }
+}

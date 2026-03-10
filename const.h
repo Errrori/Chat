@@ -46,10 +46,10 @@ namespace DataBase
 		"FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE,"
 		"FOREIGN KEY (user_uid) REFERENCES users(uid) ON DELETE CASCADE,"
 		"PRIMARY KEY (thread_id,user_uid),"
-		"UNIQUE (thread_id, user_uid)" // 防止重复加入群聊
+		"UNIQUE (thread_id, user_uid)" // Prevent duplicate joins
 		");";
 
-	// 消息表 - 包含用户信息冗余以提高查询性能
+	// Messages table - includes user info redundancy for better query performance
 	const static std::string MESSAGE_TABLE = "CREATE TABLE IF NOT EXISTS messages("
 		"message_id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"thread_id INTEGER NOT NULL,"
@@ -57,7 +57,7 @@ namespace DataBase
 		"sender_name TEXT NOT NULL,"
 		"sender_avatar TEXT NOT NULL,"
 		"content TEXT,"
-		"attachment TEXT," // JSON格式存储附件信息
+		"attachment TEXT," // JSON format for attachment info
 		"status INTEGER NOT NULL DEFAULT 1,"
 		"create_time INTEGER DEFAULT (strftime('%s','now')),"
 		"update_time INTEGER DEFAULT (strftime('%s','now')),"

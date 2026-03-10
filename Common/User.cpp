@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "User.h"
-
 #include "models/Users.h"
 
 UserInfo UserInfo::FromJson(const Json::Value& json)
@@ -93,7 +92,6 @@ UserInfo UserInfo::FromJson(const Json::Value& json)
 		info.last_login_time = currentTime;
 		readInt64Field(json, "create_time", info.create_time, currentTime);
 		readInt64Field(json, "last_login_time", info.last_login_time, currentTime);
-
 		readIntField(json, "status", info.status);
 
 		if (json.isMember("uid"))
@@ -109,6 +107,7 @@ UserInfo UserInfo::FromJson(const Json::Value& json)
 		LOG_ERROR << "fail to build UsersInfo from json:"<<e.what();
 		return UserInfo{};
 	}
+
 	return info;
 }
 
@@ -118,14 +117,11 @@ std::optional<drogon_model::sqlite3::Users> UserInfo::ToDbUsers() const
 		return std::nullopt;
 
 	drogon_model::sqlite3::Users user;
-	
-	// 设置必填字段
 	user.setUsername(username);
 	user.setUid(uid);
 	user.setAccount(account);
 	user.setPassword(hashed_password);
-	
-	// 设置可选字段
+
 	if (!avatar.empty())
 		user.setAvatar(avatar);
 	if (!email.empty())
@@ -141,7 +137,6 @@ std::optional<drogon_model::sqlite3::Users> UserInfo::ToDbUsers() const
 	else
 		user.setLastLoginTime(Utils::GetCurrentTimeStamp());
 
-	// 设置数值字段
 	if (posts>0)
 		user.setPosts(static_cast<int64_t>(posts));
 	if (followers>0)
@@ -150,9 +145,9 @@ std::optional<drogon_model::sqlite3::Users> UserInfo::ToDbUsers() const
 		user.setFollowing(static_cast<int64_t>(following));
 	if (level>0)
 		user.setLevel(static_cast<int64_t>(level));
-	if (status>0)//如果后面字段的枚举值有变动，这里的逻辑也要修改
+	if (status>0)
 		user.setStatus(static_cast<int64_t>(status));
-	
+
 	return user;
 }
 
@@ -188,8 +183,6 @@ Json::Value UserInfo::ToJson() const
 	json["email"] = email;
 	json["signature"] = signature;
 	json["status"] = status;
-	
-	// 只有非默认值才放入JSON
 	if (posts != DefaultVal) {
 		json["posts"] = posts;
 	}
@@ -199,17 +192,17 @@ Json::Value UserInfo::ToJson() const
 	if (following != DefaultVal) {
 		json["following"] = following;
 	}
+
 	if (level != DefaultVal) {
 		json["level"] = level;
 	}
-	
+
 	if (create_time>0) {
 		json["create_time"] = (Json::Value::Int64)create_time;
 	}
 	if (last_login_time>0) {
 		json["last_login_time"] = (Json::Value::Int64)last_login_time;
 	}
-	
 	return json;
 }
 

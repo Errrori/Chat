@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # 添加当前目录及子目录到包含路径
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/auth
     ${CMAKE_CURRENT_SOURCE_DIR}/controllers
     ${CMAKE_CURRENT_SOURCE_DIR}/filter
     ${CMAKE_CURRENT_SOURCE_DIR}/middleware
@@ -29,6 +30,13 @@ set(SOURCES
     utils.cpp
     pch.cpp
     Container.cpp
+
+    # Auth module
+    auth/SecretProvider.cpp
+    auth/TokenService.cpp
+    auth/TokenFactory.cpp
+    auth/PasswordService.cpp
+    auth/AccountValidator.cpp
     
     # Controllers
     controllers/Authentication.cpp

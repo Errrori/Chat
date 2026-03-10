@@ -7,14 +7,15 @@
 
 // Redis key 前缀常量
 namespace RedisKeys {
-    constexpr auto OnlineUser   = "online:{}";        // SET  online:{uid} 1 EX ttl
-    constexpr auto UserInfoHash = "user:info:{}";     // HASH user:info:{uid}
-    constexpr auto OfflineQueue = "offline:{}";       // LIST offline:{uid}
+    constexpr auto OnlineUser    = "online:{}";        // SET  online:{uid} 1 EX ttl
+    constexpr auto UserInfoHash  = "user:info:{}";     // HASH user:info:{uid}
+    constexpr auto OfflineQueue  = "offline:{}";       // LIST offline:{uid}
+    constexpr auto RefreshSession = "auth:refresh:{}"; // STRING auth:refresh:{uid} = jti
 
     // TTL（秒）
-    constexpr int OnlineTTL      = 86400;   // 1 天
-    constexpr int UserInfoTTL    = 300;     // 5 分钟
-    constexpr int OfflineQueueTTL = 604800; // 7 天
+    constexpr int OnlineTTL       = 86400;   // 1 天
+    constexpr int UserInfoTTL     = 300;     // 5 分钟
+    constexpr int OfflineQueueTTL = 604800;  // 7 天
 }
 
 /**
@@ -69,6 +70,25 @@ public:
 
     /// 取出并清空该用户所有离线消息（用户上线时调用）
     drogon::Task<std::vector<std::string>> PopAllOfflineMessages(const std::string& uid);
+
+    // ──────────────────────────────────────────────
+    // D. Refresh Token 会话（单端登录 + 轮换策略）
+    //    Key: auth:refresh:{uid}  Value: jti 字符串
+    //    单端语义：新登录直接覆盖旧 session
+    // ──────────────────────────────────────────────
+
+    /// 登录时写入 refresh session（覆盖旧session，实现单端登录）
+    drogon::Task<> StoreRefreshSession(const std::string& uid, const std::string& jti, int ttl_seconds);
+
+    /// 校验传入的 jti 是否与已存储的一致
+    drogon::Task<bool> ValidateRefreshSession(const std::string& uid, const std::string& jti);
+
+    /// 轮换：校验旧 jti，成功则原子写入新 jti。失败返回 false
+    drogon::Task<bool> RotateRefreshSession(const std::string& uid, const std::string& old_jti,
+                                            const std::string& new_jti, int ttl_seconds);
+
+    /// 登出：删除当前设备 refresh session
+    drogon::Task<> RevokeRefreshSession(const std::string& uid);
 
 private:
     drogon::nosql::RedisClientPtr _client;

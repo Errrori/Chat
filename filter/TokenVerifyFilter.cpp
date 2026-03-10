@@ -3,16 +3,19 @@
 #include "Common/User.h"
 #include "Container.h"
 #include "Service/RedisService.h"
+#include "auth/TokenService.h"
 
 void TokenVerifyFilter::doFilter(const drogon::HttpRequestPtr& req, drogon::FilterCallback&& fcb,
 	drogon::FilterChainCallback&& fccb)
 {
-	auto token = Utils::Authentication::GetToken(req);
+	auto token = Auth::TokenService::GetInstance().ExtractFromRequest(req);
 
 	UserInfo info;
-	if (token.empty() || !Utils::Authentication::VerifyJWT(token, info))
+	std::string jti;
+	if (token.empty() || !Auth::TokenService::GetInstance().Verify(
+		    token, Auth::TokenType::Access, info, jti))
 	{
-		fcb(Utils::CreateErrorResponse(400, 400, "can not verify token"));
+		fcb(Utils::CreateErrorResponse(401, 401, "invalid or expired access token"));
 		return;
 	}
 

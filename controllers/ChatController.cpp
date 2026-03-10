@@ -2,7 +2,6 @@
 #include "ChatController.h"
 #include "Service/ConnectionService.h"
 #include "models/AiChats.h"
-
 #include "Container.h"
 #include "Common/ChatMessage.h"
 #include "Service/MessageService.h"

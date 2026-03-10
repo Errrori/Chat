@@ -136,6 +136,11 @@
     <ClCompile Include="controllers\UserController.cpp" />
     <ClCompile Include="Data\SQLiteRelationshipRepository.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="auth\AccountValidator.cpp" />
+    <ClCompile Include="auth\PasswordService.cpp" />
+    <ClCompile Include="auth\SecretProvider.cpp" />
+    <ClCompile Include="auth\TokenFactory.cpp" />
+    <ClCompile Include="auth\TokenService.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\AIMessage.h" />
@@ -184,6 +189,12 @@
     <ClInclude Include="Service\RelationshipService.h" />
     <ClInclude Include="Service\ThreadService.h" />
     <ClInclude Include="Service\UserService.h" />
+    <ClInclude Include="auth\AccountValidator.h" />
+    <ClInclude Include="auth\PasswordService.h" />
+    <ClInclude Include="auth\SecretProvider.h" />
+    <ClInclude Include="auth\TokenConstants.h" />
+    <ClInclude Include="auth\TokenFactory.h" />
+    <ClInclude Include="auth\TokenService.h" />
     <ClInclude Include="Data\SQLiteThreadRepository.h" />
     <ClInclude Include="Data\SQLiteMessageRepository.h" />
     <ClInclude Include="controllers\UserController.h" />

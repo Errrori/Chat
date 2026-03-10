@@ -1,12 +1,15 @@
 #pragma once
 #include <string>
+#include "auth/TokenConstants.h"
+
 class UserInfo;
 
 namespace Utils
 {
-    constexpr unsigned EffectiveTime = 30 * 24 * 60 * 60;
-    constexpr unsigned SecretLength = 32;
-    const std::string SecretFilePath = "jwt_secret.json";
+    // Backward compatible aliases (new code should use Auth::AccessTokenTTL / Auth::RefreshTokenTTL directly)
+    constexpr unsigned EffectiveTime = Auth::AccessTokenTTL;
+    constexpr unsigned SecretLength  = Auth::SecretLength;
+    inline const std::string& SecretFilePath = Auth::SecretFilePath;
 
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message);
     drogon::HttpResponsePtr CreateSuccessResp(int statusCode, int code, const std::string& message);
@@ -20,17 +23,32 @@ namespace Utils
     std::string GetCurrentTimeStr();
     int64_t GetCurrentTimeStamp();
 
-	namespace Authentication
-	{
-        bool IsValidAccount(const std::string& account);
+    namespace Authentication
+    {
+        // UUID / Secret generation utilities
         std::string GenerateUid();
-        std::string GenerateSecret(size_t len = SecretLength);
-        std::string GetJwtSecret();
+        std::string GenerateSecret(size_t len = Auth::SecretLength);
+
+        // Password hashing (delegates to Auth::PasswordService)
         std::string PasswordHashed(const std::string& password);
-        std::string LoadJwtSecret(const std::string& file_path = SecretFilePath);
+
+        // Account validation (delegates to Auth::AccountValidator)
+        bool IsValidAccount(const std::string& account);
+
+        // Secret management (delegates to Auth::SecretProvider)
+        std::string GetJwtSecret();
+        std::string LoadJwtSecret(const std::string& file_path = Auth::SecretFilePath);
+
+        // Token generation (delegates to Auth::TokenFactory)
+        // Backward compatible: generates access token (new code should use Auth::TokenFactory::GeneratePair)
         std::string GenerateJWT(const UserInfo& info);
+
+        // Token verification (delegates to Auth::TokenService)
+        // Backward compatible: verifies access token only
         bool VerifyJWT(const std::string& token, UserInfo& info);
+
+        // Extract token string from request (delegates to Auth::TokenService)
         std::string GetToken(const drogon::HttpRequestPtr& req);
-	}
+    }
 };
 

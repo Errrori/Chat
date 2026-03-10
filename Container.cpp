@@ -3,7 +3,7 @@
 #include <drogon/nosql/RedisClient.h>
 #include <cstring>
 
-// 平台特定的网络头文件
+// Platform-specific network headers
 #ifdef _WIN32
     #include <winsock2.h>
     #include <ws2tcpip.h>
@@ -28,7 +28,7 @@
 #include "const.h"
 
 namespace {
-	// 跨平台安全的环境变量获取函数
+	// Cross-platform safe environment variable getter
 	std::string SafeGetEnv(const char* name) {
 #ifdef _WIN32
 		char* value = nullptr;
