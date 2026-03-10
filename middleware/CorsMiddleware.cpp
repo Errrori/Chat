@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "CORSMiddleware.h"
+#include "CorsMiddleware.h"
 #include <drogon/drogon.h>
 
 void CORSMiddleware::doFilter(const drogon::HttpRequestPtr& req,
