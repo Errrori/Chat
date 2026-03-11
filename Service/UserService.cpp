@@ -10,6 +10,29 @@
 
 using namespace Utils::Authentication;
 
+namespace
+{
+    constexpr const char* kRefreshTokenCookieName = "refresh_token";
+
+    drogon::Cookie BuildRefreshTokenCookie(const std::string& token, unsigned ttl_seconds)
+    {
+        drogon::Cookie cookie(kRefreshTokenCookieName, token);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(static_cast<int>(ttl_seconds));
+        return cookie;
+    }
+
+    drogon::Cookie BuildClearedRefreshTokenCookie()
+    {
+        drogon::Cookie cookie(kRefreshTokenCookieName, "");
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        return cookie;
+    }
+}
+
 drogon::Task<drogon::HttpResponsePtr> UserService::UserRegister(const UserInfo& info) const
 {
     const auto& username = info.getUsername();
@@ -79,7 +102,9 @@ drogon::Task<drogon::HttpResponsePtr> UserService::UserLogin(const UserInfo& inf
 
         co_await _redis_service->CacheUserInfo(user_record.getUid(), user_record.ToJson());
 
-        co_return Utils::CreateSuccessJsonResp(200, 200, "success login", data);
+        auto resp = Utils::CreateSuccessJsonResp(200, 200, "success login", data);
+        resp->addCookie(BuildRefreshTokenCookie(pair.refresh.value, pair.refresh.ttl));
+        co_return resp;
     }catch (const std::exception& e)
     {
         LOG_ERROR << "UserLogin exception: " << e.what();
@@ -297,7 +322,9 @@ drogon::Task<drogon::HttpResponsePtr> UserService::RefreshToken(
     data["access_expires_in"] = new_access.ttl;
     data["refresh_expires_in"] = new_refresh.ttl;
     data["token_type"] = "Bearer";
-    co_return Utils::CreateSuccessJsonResp(200, 200, "token refreshed", data);
+    auto resp = Utils::CreateSuccessJsonResp(200, 200, "token refreshed", data);
+    resp->addCookie(BuildRefreshTokenCookie(new_refresh.value, new_refresh.ttl));
+    co_return resp;
 }
 
 drogon::Task<drogon::HttpResponsePtr> UserService::Logout(
@@ -309,12 +336,16 @@ drogon::Task<drogon::HttpResponsePtr> UserService::Logout(
     if (!Auth::TokenService::GetInstance().Verify(
         refresh_token, Auth::TokenType::Refresh, info, jti))
     {
-        co_return Utils::CreateSuccessResp(200, 200, "logged out");
+        auto resp = Utils::CreateSuccessResp(200, 200, "logged out");
+        resp->addCookie(BuildClearedRefreshTokenCookie());
+        co_return resp;
     }
 
     // Revoke refresh session if user exists
     if (!info.getUid().empty())
         co_await _redis_service->RevokeRefreshSession(info.getUid());
 
-    co_return Utils::CreateSuccessResp(200, 200, "logged out");
+    auto resp = Utils::CreateSuccessResp(200, 200, "logged out");
+    resp->addCookie(BuildClearedRefreshTokenCookie());
+    co_return resp;
 }

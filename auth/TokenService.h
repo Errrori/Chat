@@ -58,6 +58,9 @@ public:
     /// Extract token string from HTTP request (supports Bearer header / JWT header / query param)
     std::string ExtractFromRequest(const drogon::HttpRequestPtr& req);
 
+    /// Extract refresh token from request (cookie first, then body/header/query)
+    std::string ExtractRefreshToken(const drogon::HttpRequestPtr& req);
+
 private:
     TokenService() = default;
     TokenService(const TokenService&) = delete;

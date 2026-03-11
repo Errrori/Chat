@@ -4,6 +4,7 @@
 #include "Common/User.h"
 #include "Container.h"
 #include "Service/UserService.h"
+#include "auth/TokenService.h"
 
 namespace
 {
@@ -82,13 +83,7 @@ drogon::Task<drogon::HttpResponsePtr> AuthController::OnLogin(drogon::HttpReques
 // Handle token refresh request
 drogon::Task<drogon::HttpResponsePtr> AuthController::OnRefresh(drogon::HttpRequestPtr req)
 {
-    std::string refresh_token;
-
-    // Extract refresh token from JSON body or request headers/parameters
-    if (auto json = req->getJsonObject(); json && json->isMember("refresh_token"))
-        refresh_token = (*json)["refresh_token"].asString();
-    else
-        refresh_token = Utils::Authentication::GetToken(req);
+    auto refresh_token = Auth::TokenService::GetInstance().ExtractRefreshToken(req);
 
     if (refresh_token.empty())
         co_return Utils::CreateErrorResponse(400, 400, "refresh_token is required");
@@ -99,13 +94,7 @@ drogon::Task<drogon::HttpResponsePtr> AuthController::OnRefresh(drogon::HttpRequ
 // Handle user logout request
 drogon::Task<drogon::HttpResponsePtr> AuthController::OnLogout(drogon::HttpRequestPtr req)
 {
-    std::string refresh_token;
-
-    // Extract refresh token from JSON body or request headers/parameters
-    if (auto json = req->getJsonObject(); json && json->isMember("refresh_token"))
-        refresh_token = (*json)["refresh_token"].asString();
-    else
-        refresh_token = Utils::Authentication::GetToken(req);
+    auto refresh_token = Auth::TokenService::GetInstance().ExtractRefreshToken(req);
 
     if (refresh_token.empty())
         co_return Utils::CreateErrorResponse(400, 400, "refresh_token is required");

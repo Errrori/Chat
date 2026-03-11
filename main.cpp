@@ -17,14 +17,30 @@ void SignalHandler(int signals)
 	drogon::app().quit();
 }
 
+void AddCorsHeaders(const drogon::HttpRequestPtr& req, const drogon::HttpResponsePtr& resp)
+{
+	const auto origin = req->getHeader("Origin");
+	if (!origin.empty())
+	{
+		resp->addHeader("Access-Control-Allow-Origin", origin);
+		resp->addHeader("Vary", "Origin");
+	}
+	else
+	{
+		resp->addHeader("Access-Control-Allow-Origin", "*");
+	}
+
+	resp->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+	resp->addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+	resp->addHeader("Access-Control-Allow-Credentials", "true");
+	resp->addHeader("Access-Control-Max-Age", "3600");
+}
+
 void HandleOptions(const drogon::HttpRequestPtr& req,
 	std::function<void(const drogon::HttpResponsePtr&)>&& callback)
 {
 	auto resp = drogon::HttpResponse::newHttpResponse();
-	resp->addHeader("Access-Control-Allow-Origin", "*");
-	resp->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-	resp->addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-	resp->addHeader("Access-Control-Max-Age", "3600");
+	AddCorsHeaders(req, resp);
 	resp->setStatusCode(drogon::k204NoContent);
 	callback(resp);
 }
@@ -36,6 +52,12 @@ void AddOptionHandle()
 		&HandleOptions,
 		{ drogon::Options });
 	drogon::app().registerHandler("/auth/login",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/auth/refresh",
+		&HandleOptions,
+		{ drogon::Options });
+	drogon::app().registerHandler("/auth/logout",
 		&HandleOptions,
 		{ drogon::Options });
 
@@ -154,6 +176,12 @@ int main()
 		.setDocumentRoot(documentRoot)
 		.setHomePage("index.html")
 		.setThreadNum(16);
+
+	drogon::app().registerPostHandlingAdvice([](const drogon::HttpRequestPtr& req,
+		const drogon::HttpResponsePtr& resp)
+	{
+		AddCorsHeaders(req, resp);
+	});
 
 	drogon::app().registerBeginningAdvice([]() {
 		Container::GetInstance();   // 强制初始化 Container（DB建表 + Redis连接 + 所有 Service）

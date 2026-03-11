@@ -156,4 +156,19 @@ std::string TokenService::ExtractFromRequest(const drogon::HttpRequestPtr& req)
     return {};
 }
 
+std::string TokenService::ExtractRefreshToken(const drogon::HttpRequestPtr& req)
+{
+    // 1. HttpOnly cookie is the primary carrier for refresh token.
+    auto refresh_from_cookie = req->getCookie("refresh_token");
+    if (!refresh_from_cookie.empty())
+        return refresh_from_cookie;
+
+    // 2. Backward compatibility: JSON body { "refresh_token": "..." }
+    if (auto json = req->getJsonObject(); json && json->isMember("refresh_token"))
+        return (*json)["refresh_token"].asString();
+
+    // 3. Legacy fallback: Authorization/body(token)/query(token)
+    return ExtractFromRequest(req);
+}
+
 } // namespace Auth

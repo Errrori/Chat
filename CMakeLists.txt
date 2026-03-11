@@ -48,7 +48,7 @@ set(SOURCES
     
     # Filters
     filter/TokenVerifyFilter.cpp
-        middleware/CorsMiddleware.cpp
+    middleware/CORSMiddleware.cpp
     
     # Common layer
     Common/User.cpp
