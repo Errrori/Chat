@@ -92,7 +92,7 @@
   <ItemGroup>
     <ClCompile Include="Common\AIMessage.cpp" />
     <ClCompile Include="HttpClient.cpp" />
-      <ClCompile Include="middleware\CorsMiddleware.cpp" />
+      <ClCompile Include="middleware\CORSMiddleware.cpp" />
     <ClCompile Include="models\AiContext.cc" />
     <ClCompile Include="Common\ChatMessage.cpp" />
     <ClCompile Include="Common\ChatThread.cpp" />
@@ -147,7 +147,7 @@
     <ClInclude Include="Common\Enums.h" />
     <ClInclude Include="Data\IRelationshipRepository.h" />
     <ClInclude Include="HttpClient.h" />
-      <ClInclude Include="middleware\CorsMiddleware.h" />
+      <ClInclude Include="middleware\CORSMiddleware.h" />
     <ClInclude Include="middleware\cors.h" />
     <ClInclude Include="models\AiContext.h" />
     <ClInclude Include="Common\ChatMessage.h" />

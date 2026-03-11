@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="middleware\CorsMiddleware.cpp" />
+    <ClCompile Include="middleware\CORSMiddleware.cpp" />
     <ClCompile Include="Common\ChatMessage.cpp" />
     <ClCompile Include="Common\ChatThread.cpp" />
     <ClCompile Include="Container.cpp" />
@@ -51,7 +51,7 @@
     <ClCompile Include="auth\TokenService.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="middleware\CorsMiddleware.h" />
+    <ClInclude Include="middleware\CORSMiddleware.h" />
     <ClInclude Include="Common\ChatMessage.h" />
     <ClInclude Include="Common\ChatThread.h" />
     <ClInclude Include="Common\Convert.h" />
