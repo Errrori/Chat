@@ -7,10 +7,10 @@ class AuthController:public drogon::HttpController<AuthController>
 {
 	public:
 		METHOD_LIST_BEGIN
-		ADD_METHOD_TO(AuthController::OnRegister, "/auth/register", drogon::Post, "CORSMiddleware");
-		ADD_METHOD_TO(AuthController::OnLogin,    "/auth/login",    drogon::Post, "CORSMiddleware");
-		ADD_METHOD_TO(AuthController::OnRefresh,  "/auth/refresh",  drogon::Post, "CORSMiddleware");
-		ADD_METHOD_TO(AuthController::OnLogout,   "/auth/logout",   drogon::Post, "CORSMiddleware");
+		ADD_METHOD_TO(AuthController::OnRegister, "/auth/register", drogon::Post);
+		ADD_METHOD_TO(AuthController::OnLogin,    "/auth/login",    drogon::Post);
+		ADD_METHOD_TO(AuthController::OnRefresh,  "/auth/refresh",  drogon::Post);
+		ADD_METHOD_TO(AuthController::OnLogout,   "/auth/logout",   drogon::Post);
 		METHOD_LIST_END
 
 		drogon::Task<drogon::HttpResponsePtr> OnRegister(drogon::HttpRequestPtr req);

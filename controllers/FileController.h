@@ -5,7 +5,7 @@ class FileController:public drogon::HttpController<FileController>
 {
 public:
 	METHOD_LIST_BEGIN
-		ADD_METHOD_TO(FileController::UploadImage,"/file/upload/image",drogon::Post, "CORSMiddleware");
+		ADD_METHOD_TO(FileController::UploadImage,"/file/upload/image",drogon::Post);
 		
 	METHOD_LIST_END
 

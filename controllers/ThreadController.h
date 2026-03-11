@@ -4,15 +4,15 @@ class ThreadController:public drogon::HttpController<ThreadController>
 {
 public:
     METHOD_LIST_BEGIN
-        ADD_METHOD_TO(ThreadController::CreatePrivateThread, "/thread/create/private-chat", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
-        ADD_METHOD_TO(ThreadController::CreateGroupThread, "/thread/create/group-chat", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
-        ADD_METHOD_TO(ThreadController::CreateAIThread, "/thread/create/ai-chat", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
-        ADD_METHOD_TO(ThreadController::QueryThreadInfo, "/thread/info/query", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
-		ADD_METHOD_TO(ThreadController::AddThreadMember, "/thread/group/add-member", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
-		ADD_METHOD_TO(ThreadController::JoinThread, "/thread/group/join", drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
-		ADD_METHOD_TO(ThreadController::GetAIContext, "/thread/record/ai", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
-		ADD_METHOD_TO(ThreadController::GetUserChatRecords, "/thread/record/user", drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
-        ADD_METHOD_TO(ThreadController::GetChatOverviews,"/thread/record/overview",drogon::Get, "CORSMiddleware", "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::CreatePrivateThread, "/thread/create/private-chat", drogon::Post,  "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::CreateGroupThread, "/thread/create/group-chat", drogon::Post,  "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::CreateAIThread, "/thread/create/ai-chat", drogon::Post,  "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::QueryThreadInfo, "/thread/info/query", drogon::Get,  "TokenVerifyFilter");
+		ADD_METHOD_TO(ThreadController::AddThreadMember, "/thread/group/add-member", drogon::Post,  "TokenVerifyFilter");
+		ADD_METHOD_TO(ThreadController::JoinThread, "/thread/group/join", drogon::Post,  "TokenVerifyFilter");
+		ADD_METHOD_TO(ThreadController::GetAIContext, "/thread/record/ai", drogon::Get,  "TokenVerifyFilter");
+		ADD_METHOD_TO(ThreadController::GetUserChatRecords, "/thread/record/user", drogon::Get,  "TokenVerifyFilter");
+        ADD_METHOD_TO(ThreadController::GetChatOverviews,"/thread/record/overview",drogon::Get,  "TokenVerifyFilter");
 
 	METHOD_LIST_END
 

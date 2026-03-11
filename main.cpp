@@ -141,7 +141,7 @@ int main()
 	signal(SIGTERM, SignalHandler);
 
 	// 注册跨域支持
-	AddOptionHandle();
+	//AddOptionHandle();
 
 	std::string configPath = "config.json";
 	for (const auto& candidate : {
@@ -177,11 +177,11 @@ int main()
 		.setHomePage("index.html")
 		.setThreadNum(16);
 
-	drogon::app().registerPostHandlingAdvice([](const drogon::HttpRequestPtr& req,
-		const drogon::HttpResponsePtr& resp)
-	{
-		AddCorsHeaders(req, resp);
-	});
+	//drogon::app().registerPostHandlingAdvice([](const drogon::HttpRequestPtr& req,
+	//	const drogon::HttpResponsePtr& resp)
+	//{
+	//	AddCorsHeaders(req, resp);
+	//});
 
 	drogon::app().registerBeginningAdvice([]() {
 		Container::GetInstance();   // 强制初始化 Container（DB建表 + Redis连接 + 所有 Service）

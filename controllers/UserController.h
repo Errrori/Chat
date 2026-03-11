@@ -4,7 +4,7 @@ class UserController :public drogon::HttpController<UserController>
 public:
     METHOD_LIST_BEGIN
         ADD_METHOD_TO(UserController::GetUser,"/user/get-user",drogon::Get);
-        ADD_METHOD_TO(UserController::ModifyUserInfo,"/user/modify/info",drogon::Post, "CORSMiddleware", "TokenVerifyFilter");
+        ADD_METHOD_TO(UserController::ModifyUserInfo,"/user/modify/info",drogon::Post, "TokenVerifyFilter");
     METHOD_LIST_END
 
 	drogon::Task<drogon::HttpResponsePtr> GetUser(drogon::HttpRequestPtr req);
