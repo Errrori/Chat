@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ChatController.h"
 #include "Service/ConnectionService.h"
+#include "Service/UserService.h"
 #include "models/AiChats.h"
 #include "Container.h"
 #include "Common/ChatMessage.h"
@@ -15,6 +16,12 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         if (msg.empty())
             return;
 
+        if (type != drogon::WebSocketMessageType::Text)
+        {
+	        //暂时跳过非文本消息
+			LOG_WARN << "Received non-text message, ignoring.";
+            return;
+        }
         Json::Value msg_data;
         Json::Reader reader;
         if (!reader.parse(msg, msg_data))
@@ -77,21 +84,34 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
         return;
     }
 
-    //after verify,write user info
-    const auto& conn_service = Container::GetInstance().GetConnectionService();
+    // Token carries uid only; resolve full profile from cache/DB before storing.
+    drogon::async_run(
+        [conn, uid = info.getUid()]() mutable -> drogon::Task<>
+        {
+            auto full_info = co_await Container::GetInstance().GetUserService()->GetUserInfo(uid);
+            if (full_info.getUid().empty())
+            {
+                Utils::SendJson(conn, Utils::GenErrorResponse("user not found", ChatCode::NotPermission));
+                conn->shutdown();
+                co_return;
+            }
 
-    const auto username = info.getUsername();
-    if (!conn_service->AddConnection(conn, std::move(info)))
-    {
-        Utils::SendJson(conn, Utils::GenErrorResponse("can not add connection", ChatCode::FailAddConn));
-        conn->shutdown();
-        LOG_ERROR << "can not add connection!";
-    }
-    else
-    {
-        LOG_INFO << "add new connection: " << username;
-    }
+            const auto& conn_service = Container::GetInstance().GetConnectionService();
+            const auto username = full_info.getUsername();
+            if (!conn_service->AddConnection(conn, std::move(full_info)))
+            {
+                Utils::SendJson(conn, Utils::GenErrorResponse("can not add connection", ChatCode::FailAddConn));
+                conn->shutdown();
+                LOG_ERROR << "can not add connection!";
+            }
+            else
+            {
+                LOG_INFO << "add new connection: " << username;
+            }
+        }
+    );
 }
+
 
 void ChatController::handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn)
 {
