@@ -90,7 +90,6 @@ drogon::Task<drogon::HttpResponsePtr> UserService::UserLogin(const UserInfo& inf
 
         auto pair = Auth::TokenFactory::GeneratePair(user_record);
         data["access_token"] = pair.access.value;
-        data["refresh_token"] = pair.refresh.value;
         data["access_expires_in"] = pair.access.ttl;
         data["refresh_expires_in"] = pair.refresh.ttl;
         data["token_type"] = "Bearer";
@@ -318,7 +317,6 @@ drogon::Task<drogon::HttpResponsePtr> UserService::RefreshToken(
     // Build response with new tokens
     Json::Value data;
     data["access_token"] = new_access.value;
-    data["refresh_token"] = new_refresh.value;
     data["access_expires_in"] = new_access.ttl;
     data["refresh_expires_in"] = new_refresh.ttl;
     data["token_type"] = "Bearer";
