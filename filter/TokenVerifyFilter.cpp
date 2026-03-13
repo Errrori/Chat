@@ -13,59 +13,38 @@ void TokenVerifyFilter::doFilter(const drogon::HttpRequestPtr& req, drogon::Filt
 	UserInfo info;
 	std::string jti;
 	if (token.empty() || !Auth::TokenService::GetInstance().Verify(
-		    token, Auth::TokenType::Access, info, jti))
+		token, Auth::TokenType::Access, info, jti))
 	{
 		fcb(Utils::CreateErrorResponse(401, 401, "invalid or expired access token"));
 		return;
 	}
 
-	// 尝试从 Redis 缓存读取完整用户信息（同步方式：起动异步任务并等待）
-	try
+	// Token is valid — info.uid is populated.
+	// Try to enrich with fresh profile data from Redis cache.
+	auto redis = Container::GetInstance().GetRedisService();
+	if (!redis)
 	{
-		auto redis = Container::GetInstance().GetRedisService();
-		if (redis)
-		{
-			// 异步查缓存——利用 drogon 协程将同步 filter 包装成异步任务
-			drogon::async_run(
-				[this, req, fcb = std::move(fcb), fccb = std::move(fccb),
-				 info = std::move(info), redis]() mutable -> drogon::Task<>
-				{
-					auto cached = co_await redis->GetCachedUserInfo(info.getUid());
-					if (cached != Json::nullValue)
-					{
-						// cache hit: 用最新资料覆盖 JWT 中的注册时信息
-						auto full_info = UserInfo::FromJson(cached);
-							if (!full_info.getUid().empty())
-							{
-								LOG_INFO << "[TokenFilter] cache hit for uid: " << full_info.getUid();
-								req->getAttributes()->insert("visitor_info", full_info);
-							}
-							else
-							{
-								LOG_WARN << "[TokenFilter] invalid cache payload for uid: " << info.getUid()
-									<< ", fallback to JWT payload";
-								req->getAttributes()->insert("visitor_info", info);
-							}
-					}
-					else
-					{
-						// cache miss: JWT payload 带的基础信息仍可用
-						LOG_INFO << "[TokenFilter] cache miss for uid: " << info.getUid();
-						req->getAttributes()->insert("visitor_info", info);
-					}
-					fccb();
-				}
-			);
-			return;
-		}
-	}
-	catch (const std::exception& e)
-	{
-		LOG_WARN << "[TokenFilter] Redis lookup failed, fallback to JWT payload: " << e.what();
+		req->getAttributes()->insert("visitor_info", info);
+		fccb();
+		return;
 	}
 
-	// 如果 Redis 不可用，降级到仅用 JWT payload
-	LOG_INFO << "visitor: " << info.ToString();
-	req->getAttributes()->insert("visitor_info", info);
-	fccb();
+	drogon::async_run(
+		[req, fcb = std::move(fcb), fccb = std::move(fccb),
+		 info = std::move(info), redis]() mutable -> drogon::Task<>
+		{
+			auto cached = co_await redis->GetCachedUserInfo(info.getUid());
+			if (!cached.getUid().empty())
+			{
+				req->getAttributes()->insert("visitor_info", cached);
+				fccb();
+				co_return;
+			}
+			// Cache miss: store uid-only info; controllers that need full profile
+			// should call UserService::GetUserInfo(uid).
+			LOG_INFO << "[TokenFilter] cache miss for uid: " << info.getUid();
+			req->getAttributes()->insert("visitor_info", info);
+			fccb();
+		}
+	);
 }

@@ -15,9 +15,6 @@ TokenService& TokenService::GetInstance()
 }
 
 std::string TokenService::Sign(const std::string& uid,
-                               const std::string& account,
-                               const std::string& username,
-                               const std::string& avatar,
                                TokenType type,
                                unsigned ttl_seconds,
                                const std::string& jti)
@@ -38,25 +35,15 @@ std::string TokenService::Sign(const std::string& uid,
             ? AccessTokenType
             : RefreshTokenType;
 
-        auto builder = jwt::create()
+        return jwt::create()
             .set_type("JWT")
             .set_algorithm("HS256")
             .set_issued_at(now)
             .set_expires_at(expiry)
             .set_id(jti)
-            .set_payload_claim("uid",  jwt::claim(uid))
-            .set_payload_claim("typ",  jwt::claim(std::string(typ_str)));
-
-        // Access token 携带完整业务 claims；refresh token 仅携带 uid 和 typ
-        if (type == TokenType::Access)
-        {
-            builder = std::move(builder)
-                .set_payload_claim("account",  jwt::claim(account))
-                .set_payload_claim("username", jwt::claim(username))
-                .set_payload_claim("avatar",   jwt::claim(avatar));
-        }
-
-        return builder.sign(jwt::algorithm::hs256{ secret });
+            .set_payload_claim("uid", jwt::claim(uid))
+            .set_payload_claim("typ", jwt::claim(std::string(typ_str)))
+            .sign(jwt::algorithm::hs256{ secret });
     }
     catch (const std::exception& e)
     {
@@ -79,14 +66,12 @@ bool TokenService::Verify(const std::string& token,
             .allow_algorithm(jwt::algorithm::hs256{ secret });
         verifier.verify(decoded);
 
-        // 检查过期
         if (decoded.get_expires_at() < std::chrono::system_clock::now())
         {
             LOG_WARN << "[TokenService] Token expired";
             return false;
         }
 
-        // 检查 typ claim
         const char* expected_typ = (expected_type == TokenType::Access)
             ? AccessTokenType
             : RefreshTokenType;
@@ -98,18 +83,8 @@ bool TokenService::Verify(const std::string& token,
             return false;
         }
 
-        // 提取 jti
         out_jti = decoded.has_id() ? decoded.get_id() : "";
-
-        // 提取用户信息
         out_info.setUid(decoded.get_payload_claim("uid").as_string());
-
-        if (expected_type == TokenType::Access)
-        {
-            out_info.setAccount( decoded.get_payload_claim("account").as_string());
-            out_info.setUsername(decoded.get_payload_claim("username").as_string());
-            out_info.setAvatar(  decoded.get_payload_claim("avatar").as_string());
-        }
 
         return true;
     }

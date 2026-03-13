@@ -4,7 +4,7 @@
   "dbname": "",
   "user": "",
   "passwd": "",
-  "tables": ["notifications"],
+  "tables": ["users"],
   "relationships": {
     "enabled": false,
     "items": []

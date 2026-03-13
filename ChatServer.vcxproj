@@ -92,7 +92,7 @@
   <ItemGroup>
     <ClCompile Include="Common\AIMessage.cpp" />
     <ClCompile Include="HttpClient.cpp" />
-      <ClCompile Include="middleware\CORSMiddleware.cpp" />
+    <ClCompile Include="middleware\CORSMiddleware.cpp" />
     <ClCompile Include="models\AiContext.cc" />
     <ClCompile Include="Common\ChatMessage.cpp" />
     <ClCompile Include="Common\ChatThread.cpp" />
@@ -106,6 +106,8 @@
     <ClCompile Include="models\Notifications.cc" />
     <ClCompile Include="models\RelationshipEvent.cc" />
     <ClCompile Include="Common\Notice.cpp" />
+    <ClCompile Include="Common\OutboundMessage.cpp" />
+    <ClCompile Include="Common\WebMessageCodec.cpp" />
     <ClCompile Include="controllers\RelationshipController.cpp" />
     <ClCompile Include="Service\MessageService.cpp" />
     <ClCompile Include="Service\FileService.cpp" />
@@ -144,10 +146,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\AIMessage.h" />
+    <ClInclude Include="Common\ConnectionContext.h" />
     <ClInclude Include="Common\Enums.h" />
     <ClInclude Include="Data\IRelationshipRepository.h" />
     <ClInclude Include="HttpClient.h" />
-      <ClInclude Include="middleware\CORSMiddleware.h" />
+    <ClInclude Include="middleware\CORSMiddleware.h" />
     <ClInclude Include="middleware\cors.h" />
     <ClInclude Include="models\AiContext.h" />
     <ClInclude Include="Common\ChatMessage.h" />
@@ -168,6 +171,8 @@
     <ClInclude Include="models\Notifications.h" />
     <ClInclude Include="models\RelationshipEvent.h" />
     <ClInclude Include="Common\Notice.h" />
+    <ClInclude Include="Common\OutboundMessage.h" />
+    <ClInclude Include="Common\WebMessageCodec.h" />
     <ClInclude Include="controllers\RelationshipController.h" />
     <ClInclude Include="Service\MessageService.h" />
     <ClInclude Include="Service\FileService.h" />

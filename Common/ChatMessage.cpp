@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ChatMessage.h"
 #include "models/Messages.h"
+#include "WebMessageCodec.h"
 
 ChatMessage ChatMessage::FromJson(const Json::Value& data)
 {
@@ -25,7 +26,7 @@ ChatMessage ChatMessage::FromJson(const Json::Value& data)
 		if (data.isMember("sender_avatar"))
 			message._sender_avatar = data["sender_avatar"].asString();
 		if (data.isMember("status"))
-			message._status = data["status"].asInt64();
+			message._status = data["status"].asInt();
 		if (data.isMember("create_time"))
 			message._create_time = data["create_time"].asInt64();
 		else
@@ -105,22 +106,7 @@ std::optional<Json::Value> ChatMessage::ToMessage() const
 		LOG_ERROR << "invalid message data";
 		return std::nullopt;
 	}
-	Json::Value msg_data;
-	msg_data["thread_id"] = _thread_id;
-	msg_data["message_id"] = (Json::Value::Int64)_message_id;
-	msg_data["content"] = _content;
-	msg_data["attachment"] = _attachment;
-	msg_data["sender_uid"] = _sender_uid;
-	msg_data["sender_name"] = _sender_name;
-	msg_data["sender_avatar"] = _sender_avatar;
-	msg_data["status"] = _status;
-	msg_data["create_time"] = (Json::Value::Int64)_create_time;
-	msg_data["update_time"] = (Json::Value::Int64)_update_time;
-
-	Json::Value msg;
-	msg["type"] = 1;
-	msg["data"] = msg_data;
-	return msg;
+	return ChatCodec::EncodeChatEnvelope(*this);
 }
 
 bool ChatMessage::IsValid() const

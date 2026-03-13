@@ -84,13 +84,7 @@ namespace DataBase
 		"avatar TEXT DEFAULT 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',"
 		"create_time INTEGER DEFAULT (strftime('%s','now')),"
 		"signature TEXT,"
-		"last_login_time INTEGER DEFAULT (strftime('%s','now')),"
-		"posts INTEGER DEFAULT 0,"
-		"level INTEGER DEFAULT 0,"
-		"status INTEGER DEFAULT 0,"
-		"email TEXT,"
-		"followers INTEGER DEFAULT 0,"
-		"following INTEGER DEFAULT 0 "
+		"email TEXT"
 		");";
 
 

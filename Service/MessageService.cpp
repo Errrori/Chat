@@ -60,7 +60,6 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 				const int thread_id = msg.getThreadId();
 				const std::string sender_uid = msg.getSenderUid();
 				int64_t msg_id = 0;
-				std::string serialized;
 				std::string block_target;
 
 				// Step 1: 1次联合查询获取 thread_type + members（2次 DB，替换原来的 9次）
@@ -119,18 +118,18 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 				const auto json_msg = msg.ToMessage().value();
 				LOG_INFO << "send message: " << json_msg.toStyledString();
 
-				// Step 5: push message (memory ops + optional offline queue, no DB)
-				serialized = json_msg.toStyledString();
+				// Step 5: unified delivery (online send + optional offline queue)
 				for (const auto& target_uid : members)
 				{
-					if (_conn_service->SendIfConnected(target_uid, json_msg))
-						continue;
+					auto outbound = ChatDelivery::OutboundMessage::Chat(
+						msg,
+						target_uid == sender_uid
+							? ChatDelivery::DeliveryPolicy::OnlineOnly
+							: ChatDelivery::DeliveryPolicy::PreferOnline);
 
-					if (target_uid == sender_uid)
-						continue;
-
-					co_await _redis_service->PushOfflineMessage(target_uid, serialized);
-					LOG_INFO << "Queued offline message for: " << target_uid;
+					auto result = co_await _conn_service->DeliverToUser(target_uid, outbound);
+					if (result.state == ChatDelivery::DeliveryState::Queued)
+						LOG_INFO << "Queued offline message for: " << target_uid;
 				}
 			}catch (const std::exception& e)
 			{

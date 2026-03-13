@@ -1,6 +1,8 @@
 #pragma once
 #include <drogon/drogon.h>
 #include <drogon/nosql/RedisClient.h>
+#include "Common/User.h"
+#include "Common/OutboundMessage.h"
 #include <string>
 #include <vector>
 
@@ -9,7 +11,9 @@
 namespace RedisKeys {
     constexpr auto OnlineUser    = "online:{}";        // SET  online:{uid} 1 EX ttl
     constexpr auto UserInfoHash  = "user:info:{}";     // HASH user:info:{uid}
-    constexpr auto OfflineQueue  = "offline:{}";       // LIST offline:{uid}
+    constexpr auto OfflineQueueLegacy  = "offline:{}";      // LIST offline:{uid}
+    constexpr auto OfflineQueueMessage = "offline:msg:{}";  // LIST offline:msg:{uid}
+    constexpr auto OfflineQueueNotice  = "offline:notice:{}"; // LIST offline:notice:{uid}
     constexpr auto RefreshSession = "auth:refresh:{}"; // STRING auth:refresh:{uid} = jti
 
     // TTL（秒）
@@ -52,11 +56,11 @@ public:
     // B. 用户信息缓存（Hash 类型）
     // ──────────────────────────────────────────────
 
-    /// 将 UserInfo JSON 写入 Redis Hash，TTL = UserInfoTTL
-    drogon::Task<> CacheUserInfo(const std::string& uid, const Json::Value& user_json);
+    /// 将 UserInfo 写入 Redis Hash，TTL = UserInfoTTL
+    drogon::Task<> CacheUserInfo(const std::string& uid, const UserInfo& user_info);
 
-    /// 从缓存读取用户信息；cache miss 返回 Json::nullValue
-    drogon::Task<Json::Value> GetCachedUserInfo(const std::string& uid);
+    /// 从缓存读取用户信息；cache miss 返回空 UserInfo（uid 为空）
+    drogon::Task<UserInfo> GetCachedUserInfo(const std::string& uid);
 
     /// 使缓存失效（用户修改资料时调用）
     drogon::Task<> InvalidateUserInfo(const std::string& uid);
@@ -68,8 +72,22 @@ public:
     /// 将序列化消息推入离线队列尾部
     drogon::Task<> PushOfflineMessage(const std::string& uid, const std::string& message_json);
 
+    /// 将通知推入离线通知队列尾部
+    drogon::Task<> PushOfflineNotice(const std::string& uid, const std::string& notice_json);
+
+    /// 通用离线队列写入接口（按消息通道）
+    drogon::Task<> PushOfflinePacket(const std::string& uid, const std::string& packet_json,
+                                     ChatDelivery::OfflineChannel channel);
+
     /// 取出并清空该用户所有离线消息（用户上线时调用）
     drogon::Task<std::vector<std::string>> PopAllOfflineMessages(const std::string& uid);
+
+    /// 取出并清空该用户所有离线通知
+    drogon::Task<std::vector<std::string>> PopAllOfflineNotices(const std::string& uid);
+
+    /// 通用离线队列读取接口（按消息通道）
+    drogon::Task<std::vector<std::string>> PopAllOfflinePackets(const std::string& uid,
+                                                                ChatDelivery::OfflineChannel channel);
 
     // ──────────────────────────────────────────────
     // D. Refresh Token 会话（单端登录 + 轮换策略）
@@ -95,4 +113,5 @@ private:
 
     // 格式化 key：将 {} 替换为 uid
     static std::string MakeKey(const char* pattern, const std::string& uid);
+    static const char* GetOfflineQueuePattern(ChatDelivery::OfflineChannel channel);
 };

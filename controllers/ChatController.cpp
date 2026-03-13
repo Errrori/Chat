@@ -7,6 +7,8 @@
 #include "Common/ChatMessage.h"
 #include "Service/MessageService.h"
 #include "Common/User.h"
+#include "Common/ConnectionContext.h"
+#include <drogon/utils/coroutine.h>
 
 void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn, std::string&& msg,
     const drogon::WebSocketMessageType& type)
@@ -18,7 +20,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 
         if (type != drogon::WebSocketMessageType::Text)
         {
-	        //ÔÝÊ±Ìø¹ý·ÇÎÄ±¾ÏûÏ¢
+	        //ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½Ï¢
 			LOG_WARN << "Received non-text message, ignoring.";
             return;
         }
@@ -52,17 +54,33 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             return;
         }
 
-        auto message = ChatMessage::FromJson(msg_data);
-
-        message.setSenderUid(conn_info->getUid());
-        message.setSenderName(conn_info->getUsername());
-        message.setSenderAvatar(conn_info->getAvatar());
-        Container::GetInstance().GetMessageService()->ProcessUserMsg(std::move(message), [conn](const Json::Value& error)
+        const auto uid = conn_info->uid;
+        auto msg_copy = msg_data;
+        drogon::async_run(
+            [conn, uid, msg_copy = std::move(msg_copy)]() mutable -> drogon::Task<>
             {
-                if (conn && conn->connected())
-                    Utils::SendJson(conn, error);
-                LOG_ERROR << "process message error: " << error.toStyledString();
-            });
+                auto full_info = co_await Container::GetInstance().GetUserService()->GetUserInfo(uid);
+                if (full_info.getUid().empty())
+                {
+                    if (conn && conn->connected())
+                        Utils::SendJson(conn, Utils::GenErrorResponse("user not found", ChatCode::NotPermission));
+                    co_return;
+                }
+
+                auto message = ChatMessage::FromJson(msg_copy);
+                message.setSenderUid(uid);
+                message.setSenderName(full_info.getUsername());
+                message.setSenderAvatar(full_info.getAvatar());
+
+                Container::GetInstance().GetMessageService()->ProcessUserMsg(std::move(message), [conn](const Json::Value& error)
+                    {
+                        if (conn && conn->connected())
+                            Utils::SendJson(conn, error);
+                        LOG_ERROR << "process message error: " << error.toStyledString();
+                    });
+                co_return;
+            }
+        );
     }
     catch (const std::exception& e)
     {
@@ -84,40 +102,33 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
         return;
     }
 
-    // Token carries uid only; resolve full profile from cache/DB before storing.
-    drogon::async_run(
-        [conn, uid = info.getUid()]() mutable -> drogon::Task<>
-        {
-            auto full_info = co_await Container::GetInstance().GetUserService()->GetUserInfo(uid);
-            if (full_info.getUid().empty())
-            {
-                Utils::SendJson(conn, Utils::GenErrorResponse("user not found", ChatCode::NotPermission));
-                conn->shutdown();
-                co_return;
-            }
+    const auto uid = info.getUid();
+    if (uid.empty())
+    {
+        conn->send("Invalid token claims");
+        conn->shutdown();
+        return;
+    }
 
-            const auto& conn_service = Container::GetInstance().GetConnectionService();
-            const auto username = full_info.getUsername();
-            if (!conn_service->AddConnection(conn, std::move(full_info)))
-            {
-                Utils::SendJson(conn, Utils::GenErrorResponse("can not add connection", ChatCode::FailAddConn));
-                conn->shutdown();
-                LOG_ERROR << "can not add connection!";
-            }
-            else
-            {
-                LOG_INFO << "add new connection: " << username;
-            }
-        }
-    );
+    const auto& conn_service = Container::GetInstance().GetConnectionService();
+    if (!conn_service->AddConnection(conn, uid))
+    {
+        Utils::SendJson(conn, Utils::GenErrorResponse("can not add connection", ChatCode::FailAddConn));
+        conn->shutdown();
+        LOG_ERROR << "can not add connection!";
+    }
+    else
+    {
+        LOG_INFO << "add new connection: " << uid;
+    }
 }
 
 
 void ChatController::handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn)
 {
-    const auto& info_ptr = conn->getContext<UserInfo>();
+    const auto& info_ptr = conn->getContext<ConnectionContext>();
     if (info_ptr) {
-        LOG_INFO << "username: " << info_ptr->getUsername() << "  connection close";
+        LOG_INFO << "uid: " << info_ptr->uid << "  connection close";
     }
     Container::GetInstance().GetConnectionService()->RemoveConnection(conn);
 }

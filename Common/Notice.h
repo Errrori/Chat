@@ -22,7 +22,7 @@ public:
 	const std::string& getSenderAvatar() const { return _sender_avatar; }
 	const std::string& getMessage() const { return _message; }
 	int64_t getCreatedTime() const { return _created_time; }
-	int64_t getEventId() const { return _event_id; }
+	int64_t getNoticeId() const { return _notice_id; }
 	ChatEnums::NoticeType getType() const { return _type; }
 
 	// Setters
@@ -31,7 +31,7 @@ public:
 	void setSenderAvatar(const std::string& avatar) { _sender_avatar = avatar; }
 	void setMessage(const std::string& msg) { _message = msg; }
 	void setCreatedTime(int64_t time) { _created_time = time; }
-	void setEventId(int64_t event_id) { _event_id = event_id; }
+	void setNoticeId(int64_t event_id) { _notice_id = event_id; }
 	void setType(ChatEnums::NoticeType type) { _type = type; }
 
 private:
@@ -40,6 +40,6 @@ private:
 	std::string _sender_avatar;
 	std::string _message;
 	int64_t _created_time = -1;
-	int64_t _event_id = -1;
+	int64_t _notice_id = -1;
 	ChatEnums::NoticeType _type = ChatEnums::NoticeType::RequestReceived;
 };

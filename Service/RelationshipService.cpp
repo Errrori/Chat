@@ -34,12 +34,18 @@ drogon::Task<> RelationshipService::SendFriendRequest(const std::string& request
 		notice.setSenderAvatar(user_info.getAvatar());
 		notice.setMessage(message);
 		notice.setCreatedTime(Utils::GetCurrentTimeStamp());
-		notice.setEventId(event_id);
+		notice.setNoticeId(event_id);
 		notice.setType(NoticeType::RequestReceived);
 
 		Json::Value json_notice = notice.ToJson();
-
-		_conn_service->PostNotice(acceptor_uid, json_notice);
+		auto result = co_await _conn_service->DeliverToUser(
+			acceptor_uid,
+			ChatDelivery::OutboundMessage::Envelope(
+				json_notice,
+				ChatDelivery::DeliveryPolicy::MustDeliver,
+				ChatDelivery::OfflineChannel::Notice));
+		if (result.state == ChatDelivery::DeliveryState::Queued)
+			LOG_INFO << "queued friend request notice for offline user: " << acceptor_uid;
 	}catch (const std::exception& e)
 	{
 		throw;
@@ -70,7 +76,14 @@ drogon::Task<int64_t> RelationshipService::ProcessFriendRequest(const std::strin
         else if (status == static_cast<int>(FriendRequestStatus::Refused))
 			notice.setType(NoticeType::RequestRejected);
 
-		_conn_service->PostNotice(requester_uid, notice.ToJson());
+		auto result = co_await _conn_service->DeliverToUser(
+			requester_uid,
+			ChatDelivery::OutboundMessage::Envelope(
+				notice.ToJson(),
+				ChatDelivery::DeliveryPolicy::MustDeliver,
+				ChatDelivery::OfflineChannel::Notice));
+		if (result.state == ChatDelivery::DeliveryState::Queued)
+			LOG_INFO << "queued process-request notice for offline user: " << requester_uid;
     	
     	co_return thread_id;
     }

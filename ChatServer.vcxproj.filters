@@ -43,6 +43,8 @@
     <ClCompile Include="Data\SQLiteRelationshipRepository.cpp" />
     <ClCompile Include="Service\RelationshipService.cpp" />
     <ClCompile Include="Common\Notice.cpp" />
+    <ClCompile Include="Common\OutboundMessage.cpp" />
+    <ClCompile Include="Common\WebMessageCodec.cpp" />
     <ClCompile Include="Service\RedisService.cpp" />
     <ClCompile Include="auth\AccountValidator.cpp" />
     <ClCompile Include="auth\PasswordService.cpp" />
@@ -100,6 +102,8 @@
     <ClInclude Include="Data\SQLiteRelationshipRepository.h" />
     <ClInclude Include="Service\RelationshipService.h" />
     <ClInclude Include="Common\Notice.h" />
+    <ClInclude Include="Common\OutboundMessage.h" />
+    <ClInclude Include="Common\WebMessageCodec.h" />
     <ClInclude Include="Common\Enums.h" />
     <ClInclude Include="Service\RedisService.h" />
     <ClInclude Include="auth\AccountValidator.h" />

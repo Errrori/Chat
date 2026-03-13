@@ -57,6 +57,8 @@ set(SOURCES
     Common/AIMessage.cpp
     Common/AIRequestMsg.cpp
     Common/Notice.cpp
+    Common/OutboundMessage.cpp
+    Common/WebMessageCodec.cpp
     
     # Service layer
     Service/UserService.cpp

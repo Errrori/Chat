@@ -1,6 +1,14 @@
 #include "pch.h"
 #include "RedisService.h"
 
+namespace
+{
+    constexpr const char* kFieldUid = "uid";
+    constexpr const char* kFieldUsername = "username";
+    constexpr const char* kFieldAccount = "account";
+    constexpr const char* kFieldAvatar = "avatar";
+}
+
 // ──────────────────────────────────────────────
 // 私有工具
 // ──────────────────────────────────────────────
@@ -12,6 +20,18 @@ std::string RedisService::MakeKey(const char* pattern, const std::string& uid)
     if (pos != std::string::npos)
         key.replace(pos, 2, uid);
     return key;
+}
+
+const char* RedisService::GetOfflineQueuePattern(ChatDelivery::OfflineChannel channel)
+{
+    switch (channel)
+    {
+    case ChatDelivery::OfflineChannel::Notice:
+        return RedisKeys::OfflineQueueNotice;
+    case ChatDelivery::OfflineChannel::Message:
+    default:
+        return RedisKeys::OfflineQueueMessage;
+    }
 }
 
 // ──────────────────────────────────────────────
@@ -63,22 +83,21 @@ drogon::Task<bool> RedisService::IsOnline(const std::string& uid)
 // B. 用户信息缓存
 // ──────────────────────────────────────────────
 
-drogon::Task<> RedisService::CacheUserInfo(const std::string& uid, const Json::Value& user_json)
+drogon::Task<> RedisService::CacheUserInfo(const std::string& uid, const UserInfo& user_info)
 {
     try
     {
         auto key = MakeKey(RedisKeys::UserInfoHash, uid);
-        // 将 Json::Value 各字段写入 Hash
-        for (const auto& field_name : user_json.getMemberNames())
-        {
-            const auto& val = user_json[field_name];
-            std::string str_val = val.isString() ? val.asString() : val.toStyledString();
-            // 去掉 toStyledString 末尾的换行
-            if (!str_val.empty() && str_val.back() == '\n')
-                str_val.pop_back();
-            co_await _client->execCommandCoro("HSET %s %s %s",
-                key.c_str(), field_name.c_str(), str_val.c_str());
-        }
+
+        co_await _client->execCommandCoro("HSET %s %s %s",
+            key.c_str(), kFieldUid, user_info.getUid().c_str());
+        co_await _client->execCommandCoro("HSET %s %s %s",
+            key.c_str(), kFieldUsername, user_info.getUsername().c_str());
+        co_await _client->execCommandCoro("HSET %s %s %s",
+            key.c_str(), kFieldAccount, user_info.getAccount().c_str());
+        co_await _client->execCommandCoro("HSET %s %s %s",
+            key.c_str(), kFieldAvatar, user_info.getAvatar().c_str());
+
         co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::UserInfoTTL);
     }
     catch (const std::exception& e)
@@ -87,7 +106,7 @@ drogon::Task<> RedisService::CacheUserInfo(const std::string& uid, const Json::V
     }
 }
 
-drogon::Task<Json::Value> RedisService::GetCachedUserInfo(const std::string& uid)
+drogon::Task<UserInfo> RedisService::GetCachedUserInfo(const std::string& uid)
 {
     try
     {
@@ -95,24 +114,38 @@ drogon::Task<Json::Value> RedisService::GetCachedUserInfo(const std::string& uid
         auto result = co_await _client->execCommandCoro("HGETALL %s", key.c_str());
 
         if (result.isNil())
-            co_return Json::nullValue;
+            co_return UserInfo{};
 
         auto arr = result.asArray();
         if (arr.empty())
-            co_return Json::nullValue;
+            co_return UserInfo{};
 
-        Json::Value json;
+        std::unordered_map<std::string, std::string> fields;
         // HGETALL 返回 field1, value1, field2, value2 ...
         for (size_t i = 0; i + 1 < arr.size(); i += 2)
         {
-            json[arr[i].asString()] = arr[i + 1].asString();
+            fields[arr[i].asString()] = arr[i + 1].asString();
         }
-        co_return json;
+
+        UserInfo info;
+        if (auto it = fields.find(kFieldUid); it != fields.end())
+            info.setUid(it->second);
+        if (auto it = fields.find(kFieldUsername); it != fields.end())
+            info.setUsername(it->second);
+        if (auto it = fields.find(kFieldAccount); it != fields.end())
+            info.setAccount(it->second);
+        if (auto it = fields.find(kFieldAvatar); it != fields.end())
+            info.setAvatar(it->second);
+
+        if (info.getUid().empty())
+            co_return UserInfo{};
+
+        co_return info;
     }
     catch (const std::exception& e)
     {
         LOG_ERROR << "RedisService::GetCachedUserInfo error: " << e.what();
-        co_return Json::nullValue;
+        co_return UserInfo{};
     }
 }
 
@@ -135,24 +168,67 @@ drogon::Task<> RedisService::InvalidateUserInfo(const std::string& uid)
 
 drogon::Task<> RedisService::PushOfflineMessage(const std::string& uid, const std::string& message_json)
 {
+    co_await PushOfflinePacket(uid, message_json, ChatDelivery::OfflineChannel::Message);
+}
+
+drogon::Task<> RedisService::PushOfflineNotice(const std::string& uid, const std::string& notice_json)
+{
+    co_await PushOfflinePacket(uid, notice_json, ChatDelivery::OfflineChannel::Notice);
+}
+
+drogon::Task<> RedisService::PushOfflinePacket(const std::string& uid,
+                                               const std::string& packet_json,
+                                               ChatDelivery::OfflineChannel channel)
+{
     try
     {
-        auto key = MakeKey(RedisKeys::OfflineQueue, uid);
-        co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), message_json.c_str());
+        auto key = MakeKey(GetOfflineQueuePattern(channel), uid);
+        co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), packet_json.c_str());
         co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
     }
     catch (const std::exception& e)
     {
-        LOG_ERROR << "RedisService::PushOfflineMessage error: " << e.what();
+        LOG_ERROR << "RedisService::PushOfflinePacket error: " << e.what();
     }
 }
 
 drogon::Task<std::vector<std::string>> RedisService::PopAllOfflineMessages(const std::string& uid)
 {
+    auto messages = co_await PopAllOfflinePackets(uid, ChatDelivery::OfflineChannel::Message);
+
+    try
+    {
+        auto legacy_key = MakeKey(RedisKeys::OfflineQueueLegacy, uid);
+        auto legacy_result = co_await _client->execCommandCoro("LRANGE %s 0 -1", legacy_key.c_str());
+        if (!legacy_result.isNil())
+        {
+            for (const auto& item : legacy_result.asArray())
+                messages.push_back(item.asString());
+        }
+
+        if (!messages.empty())
+            co_await _client->execCommandCoro("DEL %s", legacy_key.c_str());
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::PopAllOfflineMessages legacy fallback error: " << e.what();
+    }
+
+    co_return messages;
+}
+
+drogon::Task<std::vector<std::string>> RedisService::PopAllOfflineNotices(const std::string& uid)
+{
+    co_return co_await PopAllOfflinePackets(uid, ChatDelivery::OfflineChannel::Notice);
+}
+
+drogon::Task<std::vector<std::string>> RedisService::PopAllOfflinePackets(
+    const std::string& uid, ChatDelivery::OfflineChannel channel)
+{
     std::vector<std::string> messages;
     try
     {
-        auto key = MakeKey(RedisKeys::OfflineQueue, uid);
+        auto key = MakeKey(GetOfflineQueuePattern(channel), uid);
 
         // 先 LRANGE 取全部，再 DEL（原子性通过管道或 Lua 更好，此处简化处理）
         auto result = co_await _client->execCommandCoro("LRANGE %s 0 -1", key.c_str());
@@ -167,7 +243,7 @@ drogon::Task<std::vector<std::string>> RedisService::PopAllOfflineMessages(const
     }
     catch (const std::exception& e)
     {
-        LOG_ERROR << "RedisService::PopAllOfflineMessages error: " << e.what();
+        LOG_ERROR << "RedisService::PopAllOfflinePackets error: " << e.what();
     }
     co_return messages;
 }

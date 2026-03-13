@@ -1,7 +1,8 @@
 #pragma once
 #include <unordered_map>
 #include <drogon/WebSocketConnection.h>
-class ChatMessage;
+#include "Common/ConnectionContext.h"
+#include "Common/OutboundMessage.h"
 class RedisService;
 
 class ConnectionService
@@ -18,11 +19,15 @@ public:
 
 	drogon::Task<bool> IsOnline(const std::string& uid);
 
-	bool AddConnection(const drogon::WebSocketConnectionPtr& conn, UserInfo info);
+	bool AddConnection(const drogon::WebSocketConnectionPtr& conn, const std::string& uid);
 	bool RemoveConnection(const std::string& uid);
 	bool RemoveConnection(const drogon::WebSocketConnectionPtr& conn);
+	drogon::Task<ChatDelivery::DeliveryResult> DeliverToUser(
+		const std::string& uid,
+		const ChatDelivery::OutboundMessage& message);
 
-	std::shared_ptr<UserInfo> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
+	std::shared_ptr<ConnectionContext> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
+	// Legacy wrappers
 	bool SendIfConnected(const std::string& uid, const Json::Value& message);
 	void PostNotice(const std::string& receiver_uid, const Json::Value& notice);
 	void Broadcast(const std::vector<std::string>& targets, const Json::Value& message);
@@ -30,6 +35,8 @@ public:
 	~ConnectionService() = default;
 
 private:
+	bool SendEnvelopeOnline(const std::string& uid, const Json::Value& envelope);
+
 	//id to connection
 	std::unordered_map<std::string, drogon::WebSocketConnectionPtr> _conn_to_id_map;
 	std::recursive_mutex _mutex;
