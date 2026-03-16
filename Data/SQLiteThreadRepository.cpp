@@ -75,8 +75,6 @@ drogon::Task<int> SQLiteThreadRepository::CreateGroupThread(GroupThread info)
 		if (!info.IsDataValid())
 			throw std::invalid_argument("info is not valid");
 
-		_db->newTransaction();
-
 		auto trans = co_await _db->newTransactionCoro();
 		if (trans == nullptr)
 			throw std::runtime_error("fail to create transaction");
@@ -143,8 +141,6 @@ drogon::Task<int> SQLiteThreadRepository::CreateAIThread(AIThread info)
 	{
 		if (!info.IsDataValid())
 			throw std::invalid_argument("info is not valid");
-
-		_db->newTransaction();
 
 		auto trans = co_await _db->newTransactionCoro();
 		if (trans == nullptr)

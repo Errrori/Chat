@@ -241,7 +241,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetChatOverviews(int64_t exis
 		// ע�⣺Drogon��execSqlSync��֧��vector��������Ҫ�������
 		// ����������Ҫ���¹�����ѯ�Ա��⶯̬������������
 		// ��ʱʹ�ü򻯵Ĳ�ѯ��ʽ
-		const auto& result = db_client->execSqlSync(sql);
+		auto result = co_await db_client->execSqlCoro(sql);
 
 		// 3. һ���Ի�ȡ����thread����ϸ��Ϣ
 		std::unordered_map<long long, Json::Value> private_infos;
@@ -267,9 +267,9 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetChatOverviews(int64_t exis
 			}
 
 			// ʹ��IN��ѯ������ȡȺ������
-			Mapper<GroupChats> group_info_mapper(_db);
+			CoroMapper<GroupChats> group_info_mapper(_db);
 			Criteria group_info_criteria(GroupChats::Cols::_thread_id, CompareOperator::In, group_thread_ids);
-			const auto& group_details = group_info_mapper.findBy(group_info_criteria);
+			auto group_details = co_await group_info_mapper.findBy(group_info_criteria);
 
 			for (const auto& detail : group_details) {
 				Json::Value info = detail.toJson();
