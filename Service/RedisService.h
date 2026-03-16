@@ -1,5 +1,6 @@
 #pragma once
 #include <drogon/drogon.h>
+#include <drogon/utils/coroutine.h>
 #include <drogon/nosql/RedisClient.h>
 #include "Common/User.h"
 #include "Common/OutboundMessage.h"
@@ -10,10 +11,9 @@
 // Redis key 前缀常量
 namespace RedisKeys {
     constexpr auto OnlineUser    = "online:{}";        // SET  online:{uid} 1 EX ttl
-    constexpr auto UserInfoHash  = "user:info:{}";     // HASH user:info:{uid}
-    constexpr auto OfflineQueueLegacy  = "offline:{}";      // LIST offline:{uid}
-    constexpr auto OfflineQueueMessage = "offline:msg:{}";  // LIST offline:msg:{uid}
-    constexpr auto OfflineQueueNotice  = "offline:notice:{}"; // LIST offline:notice:{uid}
+    constexpr auto UserDisplayHash = "user:display:{}"; // HASH user:display:{uid}
+    constexpr auto OfflineMessageQueue = "offline:message:{}"; // LIST offline:message:{uid}
+    constexpr auto OfflineNoticeQueue  = "offline:notice:{}";  // LIST offline:notice:{uid}
     constexpr auto RefreshSession = "auth:refresh:{}"; // STRING auth:refresh:{uid} = jti
 
     // TTL（秒）
@@ -27,8 +27,8 @@ namespace RedisKeys {
  *
  * 三大职责：
  *   A. 用户在线状态：SetOnline / SetOffline / IsOnline
- *   B. 用户信息缓存：CacheUserInfo / GetCachedUserInfo / InvalidateUserInfo
- *   C. 离线消息队列：PushOfflineMessage / PopAllOfflineMessages
+ *   B. 展示资料缓存：CacheDisplayProfile / GetCachedDisplayProfile / InvalidateDisplayProfile
+ *   C. 离线消息队列：PushOfflinePacket / PopAllOfflineMessages / PopAllOfflineNotices
  */
 class RedisService
 {
@@ -53,17 +53,17 @@ public:
     drogon::Task<bool> IsOnline(const std::string& uid);
 
     // ──────────────────────────────────────────────
-    // B. 用户信息缓存（Hash 类型）
+    // B. 展示资料缓存（Hash 类型）
     // ──────────────────────────────────────────────
 
-    /// 将 UserInfo 写入 Redis Hash，TTL = UserInfoTTL
-    drogon::Task<> CacheUserInfo(const std::string& uid, const UserInfo& user_info);
+    /// 将展示资料写入 Redis Hash，TTL = UserInfoTTL
+    drogon::Task<> CacheDisplayProfile(const std::string& uid, const UsersInfo& profile);
 
-    /// 从缓存读取用户信息；cache miss 返回空 UserInfo（uid 为空）
-    drogon::Task<UserInfo> GetCachedUserInfo(const std::string& uid);
+    /// 从缓存读取展示资料；cache miss 返回空 UsersInfo
+    drogon::Task<UsersInfo> GetCachedDisplayProfile(const std::string& uid);
 
     /// 使缓存失效（用户修改资料时调用）
-    drogon::Task<> InvalidateUserInfo(const std::string& uid);
+    drogon::Task<> InvalidateDisplayProfile(const std::string& uid);
 
     // ──────────────────────────────────────────────
     // C. 离线消息队列（List 类型）
@@ -72,10 +72,10 @@ public:
     /// 将序列化消息推入离线队列尾部
     drogon::Task<> PushOfflineMessage(const std::string& uid, const std::string& message_json);
 
-    /// 将通知推入离线通知队列尾部
+    /// 将序列化通知推入离线队列尾部
     drogon::Task<> PushOfflineNotice(const std::string& uid, const std::string& notice_json);
 
-    /// 通用离线队列写入接口（按消息通道）
+    /// 按业务通道推入离线包
     drogon::Task<> PushOfflinePacket(const std::string& uid, const std::string& packet_json,
                                      ChatDelivery::OfflineChannel channel);
 
@@ -84,10 +84,6 @@ public:
 
     /// 取出并清空该用户所有离线通知
     drogon::Task<std::vector<std::string>> PopAllOfflineNotices(const std::string& uid);
-
-    /// 通用离线队列读取接口（按消息通道）
-    drogon::Task<std::vector<std::string>> PopAllOfflinePackets(const std::string& uid,
-                                                                ChatDelivery::OfflineChannel channel);
 
     // ──────────────────────────────────────────────
     // D. Refresh Token 会话（单端登录 + 轮换策略）
@@ -113,5 +109,4 @@ private:
 
     // 格式化 key：将 {} 替换为 uid
     static std::string MakeKey(const char* pattern, const std::string& uid);
-    static const char* GetOfflineQueuePattern(ChatDelivery::OfflineChannel channel);
 };

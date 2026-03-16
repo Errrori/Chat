@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <mutex>
 
 namespace Auth {
 
@@ -25,6 +26,7 @@ private:
     SecretProvider& operator=(const SecretProvider&) = delete;
 
     std::string _cached_secret;
+    std::once_flag _load_once;
 
     static std::string LoadFromFile(const std::string& file_path);
 };

@@ -11,11 +11,22 @@ public:
 	// Returns hashed password for the given account (login use only)
 	virtual drogon::Task<std::string> GetHashedPassword(const std::string& account) const = 0;
 
-	// Returns user public info (uid/username/account/avatar) by uid or account
-	virtual drogon::Task<UserInfo> GetUserByUid(const std::string& uid) const = 0;
-	virtual drogon::Task<UserInfo> GetUserByAccount(const std::string& account) const = 0;
+	// Returns auth/login related identity by account.
+	virtual drogon::Task<UserInfo> GetAuthUserByAccount(const std::string& account) const = 0;
+
+	// Returns the hot-path display projection used by chat/notice flows.
+	virtual drogon::Task<UsersInfo> GetDisplayProfileByUid(const std::string& uid) const = 0;
+
+	// Returns the full externally visible profile by uid.
+	virtual drogon::Task<UsersInfo> GetUserProfileByUid(const std::string& uid) const = 0;
+
+	// Returns the search card projection used by account lookup.
+	virtual drogon::Task<UsersInfo> FindUserByAccount(const std::string& account) const = 0;
 
 	// Persists a new user (requires hashed_password set on info)
 	virtual drogon::Task<bool> AddUserCoro(const UserInfo& info) = 0;
+
+	// Updates mutable user profile fields by uid.
+	virtual drogon::Task<bool> UpdateUserProfile(const std::string& uid, const UsersInfo& update_info) = 0;
 };
 

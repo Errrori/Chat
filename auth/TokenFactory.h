@@ -1,8 +1,6 @@
 #pragma once
 #include <string>
 
-class UserInfo;
-
 namespace Auth {
 
 struct AccessToken
@@ -31,8 +29,8 @@ struct TokenPair
 class TokenFactory
 {
 public:
-    /// Login: generate access + refresh pair (needs UserInfo for uid)
-    static TokenPair    GeneratePair(const UserInfo& user);
+    /// Login: generate access + refresh pair from uid.
+    static TokenPair    GeneratePair(const std::string& uid);
 
     /// Refresh: generate new access token by uid
     static AccessToken  GenerateAccess(const std::string& uid);

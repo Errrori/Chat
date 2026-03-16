@@ -17,8 +17,13 @@ SecretProvider& SecretProvider::GetInstance()
 
 const std::string& SecretProvider::GetJwtSecret()
 {
-    if (_cached_secret.empty())
+    std::call_once(_load_once, [this]() {
         _cached_secret = LoadFromFile(SecretFilePath);
+        if (_cached_secret.empty())
+        {
+            LOG_ERROR << "[SecretProvider] JWT secret is empty after load";
+        }
+    });
     return _cached_secret;
 }
 

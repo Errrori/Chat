@@ -69,7 +69,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -79,7 +79,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -89,7 +89,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <Midl>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -99,7 +99,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <Midl>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>

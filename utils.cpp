@@ -73,14 +73,13 @@ namespace Utils {
 
     	std::string GenerateJWT(const UserInfo& info)
         {
-            auto pair = Auth::TokenFactory::GeneratePair(info);
-            return pair.access.value;
+                return Auth::TokenFactory::GenerateAccess(info.getUid()).value;
         }
 
-        bool VerifyJWT(const std::string& token, UserInfo& info)
+            bool VerifyJWT(const std::string& token, std::string& uid)
         {
             std::string jti;
-            return Auth::TokenService::GetInstance().Verify(token, Auth::TokenType::Access, info, jti);
+                return Auth::TokenService::GetInstance().Verify(token, Auth::TokenType::Access, uid, jti);
         }
 
         std::string GetToken(const drogon::HttpRequestPtr& req)

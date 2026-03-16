@@ -8,6 +8,25 @@
 
 namespace
 {
+    int64_t NowMs()
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+    }
+
+    std::string ResolveClientIp(const drogon::HttpRequestPtr& req)
+    {
+        auto real_ip = req->getHeader("X-Real-IP");
+        if (!real_ip.empty())
+            return real_ip;
+
+        auto forwarded = req->getHeader("X-Forwarded-For");
+        if (!forwarded.empty())
+            return forwarded;
+
+        return "unknown";
+    }
+
     // Parse authentication request body (support JSON body or query parameters)
     Json::Value ParseAuthBody(const drogon::HttpRequestPtr& req)
     {
@@ -58,46 +77,82 @@ namespace
 // Handle user registration request
 drogon::Task<drogon::HttpResponsePtr> AuthController::OnRegister(drogon::HttpRequestPtr req)
 {
+    const auto t0 = NowMs();
+    LOG_INFO << "[AuthController] OnRegister begin ip=" << ResolveClientIp(req);
+
     const auto req_body = ParseAuthBody(req);
     if (req_body.empty())
+    {
+        LOG_WARN << "[AuthController] OnRegister invalid request body cost_ms=" << (NowMs() - t0);
         co_return Utils::CreateErrorResponse(400, 400, "request body is not valid");
+    }
 
     auto user_info = UserInfo::FromJson(req_body);
     user_info.setUid(Utils::Authentication::GenerateUid());
 
-    co_return co_await Container::GetInstance().GetUserService()->UserRegister(user_info);
+    auto resp = co_await Container::GetInstance().GetUserService()->UserRegister(user_info);
+    LOG_INFO << "[AuthController] OnRegister end status=" << static_cast<int>(resp->statusCode())
+             << " cost_ms=" << (NowMs() - t0);
+    co_return resp;
 }
 
 // Handle user login request
 drogon::Task<drogon::HttpResponsePtr> AuthController::OnLogin(drogon::HttpRequestPtr req)
 {
+    const auto t0 = NowMs();
+    LOG_INFO << "[AuthController] OnLogin begin ip=" << ResolveClientIp(req);
+
     const auto req_body = ParseAuthBody(req);
     if (req_body.empty())
+    {
+        LOG_WARN << "[AuthController] OnLogin invalid request body cost_ms=" << (NowMs() - t0);
         co_return Utils::CreateErrorResponse(400, 400, "can not login");
+    }
 
     const auto info = UserInfo::FromJson(req_body);
 
-    co_return co_await Container::GetInstance().GetUserService()->UserLogin(info);
+    auto resp = co_await Container::GetInstance().GetUserService()->UserLogin(info);
+    LOG_INFO << "[AuthController] OnLogin end status=" << static_cast<int>(resp->statusCode())
+             << " cost_ms=" << (NowMs() - t0);
+    co_return resp;
 }
 
 // Handle token refresh request
 drogon::Task<drogon::HttpResponsePtr> AuthController::OnRefresh(drogon::HttpRequestPtr req)
 {
+    const auto t0 = NowMs();
+    LOG_INFO << "[AuthController] OnRefresh begin ip=" << ResolveClientIp(req);
+
     auto refresh_token = Auth::TokenService::GetInstance().ExtractRefreshToken(req);
 
     if (refresh_token.empty())
+    {
+        LOG_WARN << "[AuthController] OnRefresh missing refresh token cost_ms=" << (NowMs() - t0);
         co_return Utils::CreateErrorResponse(400, 400, "refresh_token is required");
+    }
 
-    co_return co_await Container::GetInstance().GetUserService()->RefreshToken(refresh_token);
+    auto resp = co_await Container::GetInstance().GetUserService()->RefreshToken(refresh_token);
+    LOG_INFO << "[AuthController] OnRefresh end status=" << static_cast<int>(resp->statusCode())
+             << " cost_ms=" << (NowMs() - t0);
+    co_return resp;
 }
 
 // Handle user logout request
 drogon::Task<drogon::HttpResponsePtr> AuthController::OnLogout(drogon::HttpRequestPtr req)
 {
+    const auto t0 = NowMs();
+    LOG_INFO << "[AuthController] OnLogout begin ip=" << ResolveClientIp(req);
+
     auto refresh_token = Auth::TokenService::GetInstance().ExtractRefreshToken(req);
 
     if (refresh_token.empty())
+    {
+        LOG_WARN << "[AuthController] OnLogout missing refresh token cost_ms=" << (NowMs() - t0);
         co_return Utils::CreateErrorResponse(400, 400, "refresh_token is required");
+    }
 
-    co_return co_await Container::GetInstance().GetUserService()->Logout(refresh_token);
+    auto resp = co_await Container::GetInstance().GetUserService()->Logout(refresh_token);
+    LOG_INFO << "[AuthController] OnLogout end status=" << static_cast<int>(resp->statusCode())
+             << " cost_ms=" << (NowMs() - t0);
+    co_return resp;
 }

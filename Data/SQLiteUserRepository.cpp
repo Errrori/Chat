@@ -8,7 +8,7 @@ using Users = drogon_model::sqlite3::Users;
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-static UserInfo UserInfoFromRow(const Users& row)
+static UserInfo AuthUserFromRow(const Users& row)
 {
 	UserInfo info;
 	info.setUid(row.getValueOfUid());
@@ -16,6 +16,33 @@ static UserInfo UserInfoFromRow(const Users& row)
 	info.setAccount(row.getValueOfAccount());
 	info.setAvatar(row.getValueOfAvatar());
 	return info;
+}
+
+static UsersInfo DisplayProfileFromRow(const Users& row)
+{
+	return UserInfoBuilder::BuildCached(
+		row.getValueOfUsername(),
+		row.getAvatar() ? row.getValueOfAvatar() : "");
+}
+
+static UsersInfo UserProfileFromRow(const Users& row)
+{
+	return UserInfoBuilder::BuildProfile(
+		row.getValueOfUsername(),
+		row.getAvatar() ? row.getValueOfAvatar() : "",
+		row.getValueOfAccount(),
+		row.getValueOfUid(),
+		row.getSignature() ? row.getValueOfSignature() : "");
+}
+
+static UsersInfo SearchCardFromRow(const Users& row)
+{
+	return UserInfoBuilder::BuildProfile(
+		row.getValueOfUsername(),
+		row.getAvatar() ? row.getValueOfAvatar() : "",
+		row.getValueOfAccount(),
+		row.getValueOfUid(),
+		row.getSignature() ? row.getValueOfSignature() : "");
 }
 
 // ─── interface implementations ──────────────────────────────────────────────
@@ -38,25 +65,7 @@ drogon::Task<std::string> SQLiteUserRepository::GetHashedPassword(const std::str
 	}
 }
 
-drogon::Task<UserInfo> SQLiteUserRepository::GetUserByUid(const std::string& uid) const
-{
-	try
-	{
-		CoroMapper<Users> mapper(_db);
-		auto result = co_await mapper.limit(1).findBy(
-			Criteria(Users::Cols::_uid, CompareOperator::EQ, uid));
-		if (result.empty())
-			co_return UserInfo{};
-		co_return UserInfoFromRow(result[0]);
-	}
-	catch (const std::exception& e)
-	{
-		LOG_ERROR << "GetUserByUid error: " << e.what();
-		co_return UserInfo{};
-	}
-}
-
-drogon::Task<UserInfo> SQLiteUserRepository::GetUserByAccount(const std::string& account) const
+drogon::Task<UserInfo> SQLiteUserRepository::GetAuthUserByAccount(const std::string& account) const
 {
 	try
 	{
@@ -65,12 +74,66 @@ drogon::Task<UserInfo> SQLiteUserRepository::GetUserByAccount(const std::string&
 			Criteria(Users::Cols::_account, CompareOperator::EQ, account));
 		if (result.empty())
 			co_return UserInfo{};
-		co_return UserInfoFromRow(result[0]);
+		co_return AuthUserFromRow(result[0]);
 	}
 	catch (const std::exception& e)
 	{
-		LOG_ERROR << "GetUserByAccount error: " << e.what();
+		LOG_ERROR << "GetAuthUserByAccount error: " << e.what();
 		co_return UserInfo{};
+	}
+}
+
+drogon::Task<UsersInfo> SQLiteUserRepository::GetDisplayProfileByUid(const std::string& uid) const
+{
+	try
+	{
+		CoroMapper<Users> mapper(_db);
+		auto result = co_await mapper.limit(1).findBy(
+			Criteria(Users::Cols::_uid, CompareOperator::EQ, uid));
+		if (result.empty())
+			co_return UsersInfo{};
+		co_return DisplayProfileFromRow(result[0]);
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "GetDisplayProfileByUid error: " << e.what();
+		co_return UsersInfo{};
+	}
+}
+
+drogon::Task<UsersInfo> SQLiteUserRepository::GetUserProfileByUid(const std::string& uid) const
+{
+	try
+	{
+		CoroMapper<Users> mapper(_db);
+		auto result = co_await mapper.limit(1).findBy(
+			Criteria(Users::Cols::_uid, CompareOperator::EQ, uid));
+		if (result.empty())
+			co_return UsersInfo{};
+		co_return UserProfileFromRow(result[0]);
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "GetUserProfileByUid error: " << e.what();
+		co_return UsersInfo{};
+	}
+}
+
+drogon::Task<UsersInfo> SQLiteUserRepository::FindUserByAccount(const std::string& account) const
+{
+	try
+	{
+		CoroMapper<Users> mapper(_db);
+		auto result = co_await mapper.limit(1).findBy(
+			Criteria(Users::Cols::_account, CompareOperator::EQ, account));
+		if (result.empty())
+			co_return UsersInfo{};
+		co_return SearchCardFromRow(result[0]);
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "FindUserByAccount error: " << e.what();
+		co_return UsersInfo{};
 	}
 }
 
@@ -88,6 +151,35 @@ drogon::Task<bool> SQLiteUserRepository::AddUserCoro(const UserInfo& info)
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "AddUserCoro error: " << e.what();
+		co_return false;
+	}
+}
+
+drogon::Task<bool> SQLiteUserRepository::UpdateUserProfile(const std::string& uid, const UsersInfo& update_info)
+{
+	if (!update_info.HasUpdates())
+		co_return false;
+
+	const char* sql =
+		"UPDATE users SET "
+		"username = COALESCE(?, username), "
+		"avatar = COALESCE(?, avatar), "
+		"signature = COALESCE(?, signature) "
+		"WHERE uid = ?";
+
+	try
+	{
+		auto result = co_await _db->execSqlCoro(
+			sql,
+			update_info.GetUsername().has_value() ? update_info.GetUsername()->c_str() : nullptr,
+			update_info.GetAvatar().has_value() ? update_info.GetAvatar()->c_str() : nullptr,
+			update_info.GetSignature().has_value() ? update_info.GetSignature()->c_str() : nullptr,
+			uid);
+		co_return result.affectedRows() > 0;
+	}
+	catch (const std::exception& e)
+	{
+		LOG_ERROR << "UpdateUserProfile error: " << e.what();
 		co_return false;
 	}
 }

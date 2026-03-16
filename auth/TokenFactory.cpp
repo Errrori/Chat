@@ -2,16 +2,14 @@
 #include "TokenFactory.h"
 #include "TokenService.h"
 #include "TokenConstants.h"
-#include "Common/User.h"
 
 namespace Utils { namespace Authentication { std::string GenerateUid(); } }
 
 namespace Auth {
 
 // static
-TokenPair TokenFactory::GeneratePair(const UserInfo& user)
+TokenPair TokenFactory::GeneratePair(const std::string& uid)
 {
-    const auto& uid   = user.getUid();
     const auto  jti_a = Utils::Authentication::GenerateUid();
     const auto  jti_r = Utils::Authentication::GenerateUid();
 

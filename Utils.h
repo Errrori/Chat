@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "auth/TokenConstants.h"
+#include "Common/User.h"
 
 class UserInfo;
 
@@ -45,7 +46,7 @@ namespace Utils
 
         // Token verification (delegates to Auth::TokenService)
         // Backward compatible: verifies access token only
-        bool VerifyJWT(const std::string& token, UserInfo& info);
+        bool VerifyJWT(const std::string& token, std::string& uid);
 
         // Extract token string from request (delegates to Auth::TokenService)
         std::string GetToken(const drogon::HttpRequestPtr& req);

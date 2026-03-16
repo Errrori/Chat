@@ -25,13 +25,13 @@ drogon::Task<> RelationshipService::SendFriendRequest(const std::string& request
 			requester_uid, acceptor_uid, message);
 		if (event_id < 0)
 			throw std::runtime_error("Friend request already exists or you are already friends");
-		auto user_info = co_await _user_service->GetUserInfo(requester_uid);
+		auto user_info = co_await _user_service->GetDisplayProfileByUid(requester_uid);
 
 		// 2. Build Notification Object
 		Notice notice;
 		notice.setSenderUid(requester_uid);
-		notice.setSenderName(user_info.getUsername());
-		notice.setSenderAvatar(user_info.getAvatar());
+		notice.setSenderName(user_info.GetUsername().value_or(""));
+		notice.setSenderAvatar(user_info.GetAvatar().value_or(""));
 		notice.setMessage(message);
 		notice.setCreatedTime(Utils::GetCurrentTimeStamp());
 		notice.setNoticeId(event_id);
@@ -60,7 +60,7 @@ drogon::Task<int64_t> RelationshipService::ProcessFriendRequest(const std::strin
     try
     {
 		// When accepting a request, the sender of the notice is the one who accepted it.
-		auto acceptor_info = co_await _user_service->GetUserInfo(acceptor_uid);
+		auto acceptor_info = co_await _user_service->GetDisplayProfileByUid(acceptor_uid);
 
 		int64_t thread_id = co_await _relationship_repo->ProcessRequest(requester_uid, acceptor_uid, status);
 		if (thread_id < 0)
@@ -68,8 +68,8 @@ drogon::Task<int64_t> RelationshipService::ProcessFriendRequest(const std::strin
 
 		Notice notice;
 		notice.setSenderUid(acceptor_uid);
-		notice.setSenderName(acceptor_info.getUsername());
-		notice.setSenderAvatar(acceptor_info.getAvatar());
+		notice.setSenderName(acceptor_info.GetUsername().value_or(""));
+		notice.setSenderAvatar(acceptor_info.GetAvatar().value_or(""));
 		notice.setCreatedTime(Utils::GetCurrentTimeStamp());
         if (status == static_cast<int>(FriendRequestStatus::Accepted)) // Accepted
             notice.setType(NoticeType::RequestAccepted);

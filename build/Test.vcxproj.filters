@@ -16,6 +16,21 @@
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Container.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\SecretProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\TokenService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\TokenFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\PasswordService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\AccountValidator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\controllers\Authentication.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -56,6 +71,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Common\Notice.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Common\OutboundMessage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Common\WebMessageCodec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Service\UserService.cpp">

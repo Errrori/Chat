@@ -87,7 +87,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /external:I "C:/vcpkg/installed/x64-windows/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -111,10 +111,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -149,7 +149,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /external:I "C:/vcpkg/installed/x64-windows/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -174,10 +174,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -212,7 +212,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /external:I "C:/vcpkg/installed/x64-windows/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -237,10 +237,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -275,7 +275,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /external:I "C:/vcpkg/installed/x64-windows/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -299,10 +299,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Repository0428\ChatServer\ChatServer;C:\Repository0428\ChatServer\ChatServer\auth;C:\Repository0428\ChatServer\ChatServer\controllers;C:\Repository0428\ChatServer\ChatServer\filter;C:\Repository0428\ChatServer\ChatServer\middleware;C:\Repository0428\ChatServer\ChatServer\models;C:\Repository0428\ChatServer\ChatServer\Common;C:\Repository0428\ChatServer\ChatServer\Service;C:\Repository0428\ChatServer\ChatServer\Data;C:\Repository0428\ChatServer\ChatServer\static;C:\Repository0428\ChatServer\ChatServer\third_party\jwt-cpp\include;C:\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -398,6 +398,11 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\utils.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\pch.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Container.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\SecretProvider.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\TokenService.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\TokenFactory.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\PasswordService.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\auth\AccountValidator.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\controllers\Authentication.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\controllers\RelationshipController.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\controllers\ThreadController.cpp" />
@@ -412,6 +417,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Common\AIMessage.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Common\AIRequestMsg.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Common\Notice.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Common\OutboundMessage.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Common\WebMessageCodec.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Service\UserService.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Service\MessageService.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Service\ThreadService.cpp" />

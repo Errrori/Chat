@@ -2,7 +2,6 @@
 #include <string>
 #include <memory>
 
-class UserInfo;
 namespace drogon { class HttpRequest; using HttpRequestPtr = std::shared_ptr<HttpRequest>; }
 
 namespace Auth {
@@ -27,10 +26,10 @@ public:
                      unsigned ttl_seconds,
                      const std::string& jti);
 
-    /// Verify JWT; on success populates out_info.uid and out_jti.
+    /// Verify JWT; on success populates out_uid and out_jti.
     bool Verify(const std::string& token,
                 TokenType expected_type,
-                UserInfo& out_info,
+                std::string& out_uid,
                 std::string& out_jti);
 
     /// Extract access token from HTTP request (Bearer header / JWT header / query param).

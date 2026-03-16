@@ -48,11 +48,11 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::CreateGroupThread(drogon
         if (!req_body)
             co_return Utils::CreateErrorResponse(400, 400, "can not get request data");
 
-        const auto& user_info = req->getAttributes()->get<UserInfo>("visitor_info");
+        const auto& uid = req->getAttributes()->get<std::string>("uid");
         auto thread_info = GroupThread::FromJson(*req_body);
-        thread_info.SetOwnerUid(user_info.getUid());
+        thread_info.SetOwnerUid(uid);
 
-        LOG_INFO << "owner uid: " << user_info.getUid();
+    	    LOG_INFO << "owner uid: " << uid;
         LOG_INFO << "thread info: " << thread_info.ToJson().toStyledString();
 
         if (!thread_info.IsDataValid())
@@ -85,8 +85,8 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::CreateAIThread(drogon::H
 
 
         auto thread_info = AIThread::FromJson(*req_body);
-        const auto& user_info = req->getAttributes()->get<UserInfo>("visitor_info");
-        thread_info.SetCreatorUid(user_info.getUid());
+        const auto& uid = req->getAttributes()->get<std::string>("uid");
+        thread_info.SetCreatorUid(uid);
 
         if (!thread_info.IsDataValid())
             co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
@@ -136,10 +136,10 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::AddThreadMember(drogon::
         if (!json_data.isMember("thread_id") || !json_data.isMember("user_uid"))
             co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
 
-        const auto& visitor_info = req->getAttributes()->get<UserInfo>("visitor_info");
+        const auto& uid = req->getAttributes()->get<std::string>("uid");
         auto member_data = MemberData::FromJson(json_data);
 
-		auto result = co_await Container::GetInstance().GetThreadService()->ValidateMemberCoro(member_data.GetThreadId(), visitor_info.getUid());
+		auto result = co_await Container::GetInstance().GetThreadService()->ValidateMemberCoro(member_data.GetThreadId(), uid);
 
         if (!result)
 			co_return Utils::CreateErrorResponse(400, 400, "not access to operate");
@@ -172,10 +172,10 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::JoinThread(drogon::HttpR
         if (!json_data.isMember("thread_id"))
             co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
 
-        const auto& user_info = req->getAttributes()->get<UserInfo>("visitor_info");
+        const auto& uid = req->getAttributes()->get<std::string>("uid");
 
         auto member_data = MemberData::FromJson(json_data);
-        member_data.SetUserUid(user_info.getUid());
+        member_data.SetUserUid(uid);
 
         auto result = co_await Container::GetInstance().GetThreadService()->AddThreadMember(member_data);
         if (result)
@@ -196,12 +196,12 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetAIContext(drogon::Htt
     {
         auto thread_id = req->getOptionalParameter<int>("thread_id");
         auto existed_time = req->getOptionalParameter<int64_t>("existed_time");
-        const auto& user_info = req->getAttributes()->get<UserInfo>("visitor_info");
+        const auto& uid = req->getAttributes()->get<std::string>("uid");
 
         if (!thread_id.has_value()||!existed_time.has_value())
             co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
 
-        if (! co_await Container::GetInstance().GetThreadService()->ValidateMemberCoro(thread_id.value(), user_info.getUid()))
+        if (! co_await Container::GetInstance().GetThreadService()->ValidateMemberCoro(thread_id.value(), uid))
             co_return Utils::CreateErrorResponse(400, 400, "not in thread");
     
 		auto records = co_await Container::GetInstance().GetMessageService()->GetAIRecords(thread_id.value(),existed_time.value());
@@ -221,7 +221,7 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetChatRecords(drogon::H
         auto thread_id = req->getOptionalParameter<int>("thread_id");
         auto existed_time = req->getOptionalParameter<int64_t>("existing_id");
 		auto num = req->getOptionalParameter<int>("num");
-        auto user_info = req->getAttributes()->get<UserInfo>("visitor_info");
+        const auto& uid = req->getAttributes()->get<std::string>("uid");
 
         LOG_INFO << "GetChatRecords params: thread_id=" << (thread_id.has_value() ? thread_id.value() : -1)
                  << ", existing_id=" << (existed_time.has_value() ? existed_time.value() : -1)
@@ -234,7 +234,7 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetChatRecords(drogon::H
         if (num.has_value() && num.value() <= 0)
             co_return Utils::CreateErrorResponse(400, 400, "invalid parameter value");
 
-        if (!co_await Container::GetInstance().GetThreadService()->ValidateMemberCoro(thread_id.value(), user_info.getUid()))
+        if (!co_await Container::GetInstance().GetThreadService()->ValidateMemberCoro(thread_id.value(), uid))
         {
             LOG_ERROR << "user is not in thread: " << thread_id.value();
             co_return Utils::CreateErrorResponse(400, 400, "not in thread");
@@ -262,9 +262,9 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetChatOverviews(drogon:
             co_return Utils::CreateErrorResponse(400, 400, "Missing field");
         }
 
-        const auto& info = req->getAttributes()->get<UserInfo>("visitor_info");
+        const auto& uid = req->getAttributes()->get<std::string>("uid");
 
-        auto overview = co_await Container::GetInstance().GetMessageService()->GetChatOverviews(existing_id.value(), info.getUid());
+		auto overview = co_await Container::GetInstance().GetMessageService()->GetChatOverviews(existing_id.value(), uid);
 
         if (overview == Json::nullValue)
         {
@@ -286,7 +286,7 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetUserChatRecords(drogo
         auto thread_id = req->getOptionalParameter<int>("thread_id");
         auto existed_id = req->getOptionalParameter<int64_t>("existing_id");
         auto num = req->getOptionalParameter<int>("num");
-        const auto& user_info = req->getAttributes()->get<UserInfo>("visitor_info");
+        const auto& uid = req->getAttributes()->get<std::string>("uid");
 
         if (!thread_id.has_value() || !existed_id.has_value())
             co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
@@ -294,7 +294,7 @@ drogon::Task<drogon::HttpResponsePtr> ThreadController::GetUserChatRecords(drogo
             (existed_id.has_value()&&existed_id < 0))
             co_return Utils::CreateErrorResponse(400, 400, "invalid argument");
 
-        if (!co_await Container::GetInstance().GetThreadService()->ValidateMemberCoro(thread_id.value(), user_info.getUid()))
+        if (!co_await Container::GetInstance().GetThreadService()->ValidateMemberCoro(thread_id.value(), uid))
             co_return Utils::CreateErrorResponse(400, 400, "not in thread");
 
         auto records = co_await Container::GetInstance().GetMessageService()

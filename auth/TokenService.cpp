@@ -54,7 +54,7 @@ std::string TokenService::Sign(const std::string& uid,
 
 bool TokenService::Verify(const std::string& token,
                           TokenType expected_type,
-                          UserInfo& out_info,
+                          std::string& out_uid,
                           std::string& out_jti)
 {
     try
@@ -84,7 +84,17 @@ bool TokenService::Verify(const std::string& token,
         }
 
         out_jti = decoded.has_id() ? decoded.get_id() : "";
-        out_info.setUid(decoded.get_payload_claim("uid").as_string());
+        if (!decoded.has_payload_claim("uid"))
+        {
+            LOG_WARN << "[TokenService] Token missing uid claim";
+            return false;
+        }
+        out_uid = decoded.get_payload_claim("uid").as_string();
+        if (out_uid.empty())
+        {
+            LOG_WARN << "[TokenService] Token uid claim is empty";
+            return false;
+        }
 
         return true;
     }

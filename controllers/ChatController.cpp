@@ -59,8 +59,8 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         drogon::async_run(
             [conn, uid, msg_copy = std::move(msg_copy)]() mutable -> drogon::Task<>
             {
-                auto full_info = co_await Container::GetInstance().GetUserService()->GetUserInfo(uid);
-                if (full_info.getUid().empty())
+                auto display = co_await Container::GetInstance().GetUserService()->GetDisplayProfileByUid(uid);
+                if (!display.IsValid())
                 {
                     if (conn && conn->connected())
                         Utils::SendJson(conn, Utils::GenErrorResponse("user not found", ChatCode::NotPermission));
@@ -69,8 +69,8 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 
                 auto message = ChatMessage::FromJson(msg_copy);
                 message.setSenderUid(uid);
-                message.setSenderName(full_info.getUsername());
-                message.setSenderAvatar(full_info.getAvatar());
+                message.setSenderName(display.GetUsername().value_or(""));
+                message.setSenderAvatar(display.GetAvatar().value_or(""));
 
                 Container::GetInstance().GetMessageService()->ProcessUserMsg(std::move(message), [conn](const Json::Value& error)
                     {
@@ -94,15 +94,14 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
 {
     auto token = Utils::Authentication::GetToken(req);
 
-    UserInfo info;
-    if (!Utils::Authentication::VerifyJWT(token, info))
+    std::string uid;
+    if (!Utils::Authentication::VerifyJWT(token, uid))
     {
         conn->send("Failed to verify token");
         conn->shutdown();
         return;
     }
 
-    const auto uid = info.getUid();
     if (uid.empty())
     {
         conn->send("Invalid token claims");
