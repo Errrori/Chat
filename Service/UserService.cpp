@@ -47,11 +47,17 @@ drogon::Task<drogon::HttpResponsePtr> UserService::UserRegister(const UserInfo& 
     const auto& account = info.getAccount();
 
     // Check essential fields validation
-    if (username.empty() || password.empty() || account.empty() || !IsValidAccount(account))
+    if (username.empty() || password.empty() || account.empty())
     {
         LOG_ERROR << "UserRegister: lack of essential fields";
         co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
     }
+
+    if (!IsValidAccount(account))
+	{
+        LOG_ERROR << " account is not valid";
+        co_return Utils::CreateErrorResponse(400, 400, "account is not valid");
+	}
 
     try
     {

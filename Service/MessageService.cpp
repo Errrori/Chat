@@ -3,11 +3,13 @@
 #include "models/Messages.h"
 #include "Common/ChatMessage.h"
 #include "ConnectionService.h"
+#include "Container.h"
 #include "ThreadService.h"
 #include "Common/AIMessage.h"
 #include "Common/AIRequestMsg.h"
 #include "RelationshipService.h"
 #include "RedisService.h"
+#include "UserService.h"
 
 
 drogon::Task<Json::Value> MessageService::GetChatRecords(int thread_id, int num, int64_t existed_id)
@@ -63,7 +65,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 				std::string block_target;
 
 				// Step 1: 1次联合查询获取 thread_type + members（2次 DB，替换原来的 9次）
-				auto thread_info = co_await _thread_service->GetMembersAndType(thread_id);
+				auto thread_info = co_await _thread_service->GetTypeAndMembers(thread_id);
 				const ChatThread::ThreadType thread_type = thread_info.first;
 				std::vector<std::string> members = std::move(thread_info.second);
 
@@ -145,6 +147,70 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 
 }
 
+drogon::Task<MsgProcessedResult> MessageService::ProcessChatMsg(int thread_id, const std::string& sender_uid,
+                                                                std::optional<std::string> content,
+                                                                std::optional<Json::Value> attachment) const
+{
+	auto user_info = co_await Container::GetInstance().GetUserService()->GetDisplayProfileByUid(sender_uid);
+	if (!user_info.IsValid())
+		throw std::invalid_argument("can not get sender info");
+
+	auto thread_info = co_await _thread_service->GetTypeAndMembers(thread_id);
+	const ChatThread::ThreadType thread_type = thread_info.first;
+	std::vector<std::string> members = std::move(thread_info.second);
+	if (members.empty())
+		throw std::invalid_argument("thread has no members,thread id: " + std::to_string(thread_id));
+
+	if (std::find(members.begin(), members.end(), 
+		sender_uid) == members.end())
+		throw std::invalid_argument("user is not in thread");
+
+	
+	if (thread_type == ChatThread::PRIVATE)
+	{
+		std::string block_target = (members[0] == sender_uid) ? members[1] : members[0];
+
+		if (!block_target.empty())
+		{
+			bool blocked = co_await _relationship_service->IsBlocked(sender_uid, block_target);
+			if (blocked)
+				co_return { .success = false, .error = "can not send message due to be blocked" };
+		}
+	}
+
+	ChatMessage message;
+	message.setThreadId(thread_id);
+	if (attachment)
+		message.setAttachment(*attachment);
+	if (content)
+		message.setContent(*content);
+	message.setSenderUid(sender_uid);
+	message.setSenderAvatar(*user_info.GetAvatar());
+	message.setSenderName(*user_info.GetUsername());
+
+	auto msg_id = co_await _msg_repo->RecordUserMessage(message);
+	message.setMessageId(msg_id);
+
+	if (!message.IsValid())
+	{
+		LOG_ERROR << "message to delivered is not valid";
+		throw std::invalid_argument("message is not valid");
+	}
+
+	// Step 5: unified delivery (online send + optional offline queue)
+	for (const auto& target_uid : members)
+	{
+		auto outbound = ChatDelivery::OutboundMessage::Chat(
+			message,
+			target_uid == sender_uid
+			? ChatDelivery::DeliveryPolicy::OnlineOnly
+			: ChatDelivery::DeliveryPolicy::PreferOnline);
+
+		auto result = co_await _conn_service->DeliverToUser(target_uid, outbound);
+	}
+
+	co_return{ .success = true };
+}
 
 
 void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnectionPtr conn) const

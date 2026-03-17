@@ -19,6 +19,12 @@ class ThreadService;
 class IMsgProcessor;
 class RequestMsg;
 
+struct MsgProcessedResult
+{
+	bool success;
+	std::string error;
+};
+
 class MessageService
 {
 public:
@@ -37,9 +43,16 @@ public:
 	drogon::Task<Json::Value> GetAIRecords(int thread_id, int64_t existed_time = 0);
 
 	void ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const;
+
+	drogon::Task<MsgProcessedResult> ProcessChatMsg(int thread_id, const std::string& sender_uid,
+	                                                std::optional<std::string> content,
+	                                                std::optional<Json::Value> attachment) const;
+
 	void ProcessAIRequest(Json::Value msg, drogon::WebSocketConnectionPtr conn) const;
 	void ProcessRequest(const std::string& url, const std::string& token, int thread_id,
 	                    const RequestMsg& req_msg, drogon::WebSocketConnectionPtr conn) const;
+
+
 
 	drogon::Task<Json::Value> GetChatOverviews(int64_t existing_id, const std::string& uid) const;
 

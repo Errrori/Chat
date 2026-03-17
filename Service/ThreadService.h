@@ -23,7 +23,7 @@ public:
 
 	drogon::Task<bool> ValidateMemberCoro(int thread_id, const std::string& uid) const;
 	// Returns type + member list in a single combined call (2 DB ops)
-	drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetMembersAndType(int thread_id) const;
+	drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetTypeAndMembers(int thread_id) const;
 
 
 private:  

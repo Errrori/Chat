@@ -400,3 +400,9 @@ SQLiteThreadRepository::GetTypeAndMembers(int thread_id)
 		throw;
 	}
 }
+
+drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>>
+SQLiteThreadRepository::GetMembersAndType(int thread_id)
+{
+	co_return co_await GetTypeAndMembers(thread_id);
+}
