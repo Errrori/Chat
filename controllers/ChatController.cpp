@@ -20,7 +20,6 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 
         if (type != drogon::WebSocketMessageType::Text)
         {
-	        //��ʱ�������ı���Ϣ
 			LOG_WARN << "Received non-text message, ignoring.";
             return;
         }
@@ -41,12 +40,36 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             return;
         }
 
+        std::optional<std::string> content;
+        std::optional<Json::Value> attachment;
+        if (msg_data.isMember("content"))
+        {
+			const auto& msg_content = msg_data["content"].asString();
+	        if (!msg_content.empty())
+				content = msg_content;
+        }
+        if (msg_data.isMember("attachment"))
+        {
+        	const auto& msg_attachment = msg_data["attachment"];
+	        if (!msg_attachment.isNull())
+				attachment = msg_attachment;
+        }
+
+        if (!content && !attachment)
+        {
+            Utils::SendJson(conn, Utils::GenErrorResponse("can not send message without content and attachment",ChatCode::MissingField));
+            return;
+        }
+
+		int thread_id = msg_data["thread_id"].asInt();
+
         const auto& conn_info = Container::GetInstance().GetConnectionService()->GetConnInfo(conn);
         if (!conn_info)
         {
             Utils::SendJson(conn, Utils::GenErrorResponse("connection info not found", ChatCode::NotPermission));
             return;
         }
+        auto uid = conn_info->uid;
 
         if (msg_data.isMember("request_data"))
         {
@@ -54,33 +77,20 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             return;
         }
 
-        const auto uid = conn_info->uid;
-        auto msg_copy = msg_data;
-        drogon::async_run(
-            [conn, uid, msg_copy = std::move(msg_copy)]() mutable -> drogon::Task<>
-            {
-                auto display = co_await Container::GetInstance().GetUserService()->GetDisplayProfileByUid(uid);
-                if (!display.IsValid())
+		try
+        {
+            drogon::async_run(
+                [thread_id ,uid = std::move(uid), content = std::move(content), attachment = std::move(attachment)]
+					() mutable -> drogon::Task<>
                 {
-                    if (conn && conn->connected())
-                        Utils::SendJson(conn, Utils::GenErrorResponse("user not found", ChatCode::NotPermission));
-                    co_return;
+                    auto result = co_await Container::GetInstance().
+                		GetMessageService()->ProcessChatMsg(thread_id, uid, content, attachment);
                 }
-
-                auto message = ChatMessage::FromJson(msg_copy);
-                message.setSenderUid(uid);
-                message.setSenderName(display.GetUsername().value_or(""));
-                message.setSenderAvatar(display.GetAvatar().value_or(""));
-
-                Container::GetInstance().GetMessageService()->ProcessUserMsg(std::move(message), [conn](const Json::Value& error)
-                    {
-                        if (conn && conn->connected())
-                            Utils::SendJson(conn, error);
-                        LOG_ERROR << "process message error: " << error.toStyledString();
-                    });
-                co_return;
-            }
-        );
+            );
+        }catch (const std::exception& e)
+        {
+            Utils::SendJson(conn, Utils::GenErrorResponse(std::string("can not send message ")+ e.what(), ChatCode::InvalidArg));
+        }
     }
     catch (const std::exception& e)
     {

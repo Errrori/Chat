@@ -346,7 +346,7 @@ drogon::Task<ChatThread::ThreadType> SQLiteThreadRepository::GetThreadType(int t
 }
 
 drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>>
-SQLiteThreadRepository::GetMembersAndType(int thread_id)
+SQLiteThreadRepository::GetTypeAndMembers(int thread_id)
 {
 	try
 	{

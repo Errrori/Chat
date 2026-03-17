@@ -9,6 +9,7 @@
 #include "models/PrivateChats.h"
 #include "models/Block.h"
 #include "Common/Enums.h"
+#include "Common/Notice.h"
 
 using namespace drogon::orm;
 using namespace ChatEnums;
@@ -216,68 +217,32 @@ drogon::Task<> SQLiteRelationshipRepository::WriteNotice(const std::string& acto
 drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetUnreadNotifications(
 	const std::string& uid)
 {
-	auto client = _db;
-	auto result = co_await client->execSqlCoro(
-		"SELECT n.* FROM notifications n "
-		"LEFT JOIN block b ON (b.operator_uid = ? AND b.blocked_uid = n.sender_uid) "
-		"WHERE n.recipient_uid = ? AND n.is_read = 0 AND b.operator_uid IS NULL "
-		"ORDER BY n.created_time DESC",
-		uid, uid
-	);
-	std::vector<Notifications> items;
-	items.reserve(result.size());
-	for (const auto& row : result)
-		items.emplace_back(row, -1);
-	co_return items;
+	CoroMapper<Notifications> mapper(_db);
+	Criteria criteria(Criteria(Notifications::Cols::_recipient_uid, CompareOperator::EQ, uid) &&
+		Criteria(Notifications::Cols::_is_read, CompareOperator::EQ, 0));
+	co_return co_await mapper.findBy(criteria);
 }
 
 drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetNotifications(
 	const std::string& uid, int offset, int limit)
 {
-	auto client = _db;
-	auto result = co_await client->execSqlCoro(
-		"SELECT n.* FROM notifications n "
-		"LEFT JOIN block b ON (b.operator_uid = ? AND b.blocked_uid = n.sender_uid) "
-		"WHERE n.recipient_uid = ? AND b.operator_uid IS NULL "
-		"ORDER BY n.created_time DESC LIMIT ? OFFSET ?",
-		uid, uid, limit, offset
-	);
-	std::vector<Notifications> items;
-	items.reserve(result.size());
-	for (const auto& row : result)
-		items.emplace_back(row, -1);
-	co_return items;
+	CoroMapper<Notifications> mapper(_db);
+	Criteria criteria(Notifications::Cols::_recipient_uid, CompareOperator::EQ, uid);
+	co_return co_await mapper.findBy(criteria);
 }
 
 drogon::Task<size_t> SQLiteRelationshipRepository::MarkNotificationsRead(
 	const std::string& uid, const std::vector<int64_t>& ids)
 {
-	auto client = _db;
-	drogon::orm::Result result(nullptr);
-
-	if (ids.empty())
+	size_t affected_rows = 0;
+	CoroMapper<Notifications> mapper(_db);
+	for (auto id : ids)
 	{
-		// Mark all unread notifications for this user
-		result = co_await client->execSqlCoro(
-			"UPDATE notifications SET is_read = 1 WHERE recipient_uid = ? AND is_read = 0",
-			uid
-		);
+		Criteria criteria(Criteria(Notifications::Cols::_recipient_uid, CompareOperator::EQ, uid) &&
+			Criteria(Notifications::Cols::_id, CompareOperator::EQ, id));
+		affected_rows += co_await mapper.limit(1).updateBy({ Notifications::Cols::_is_read }, criteria, 1);
 	}
-	else
-	{
-			// ids are int64_t -> to_string, no injection risk
-		std::string id_list;
-		id_list.reserve(ids.size() * 8);
-		for (size_t i = 0; i < ids.size(); ++i)
-		{
-			if (i > 0) id_list += ',';
-			id_list += std::to_string(ids[i]);
-		}
-		std::string sql = "UPDATE notifications SET is_read = 1 WHERE recipient_uid = ? AND id IN (" + id_list + ")";
-		result = co_await client->execSqlCoro(sql, uid);
-	}
-
-	co_return static_cast<size_t>(result.affectedRows());
+	co_return affected_rows;
 }
 
 drogon::Task<std::vector<FriendRequests>> SQLiteRelationshipRepository::GetPendingFriendRequests(

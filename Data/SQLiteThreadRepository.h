@@ -20,7 +20,7 @@ public:
 	drogon::Task<ChatThread::ThreadType> GetThreadType(int thread_id) override;
 
 	drogon::Task<bool> IsThreadMember(int thread_id, const std::string& uid) override;
-	drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetMembersAndType(int thread_id) override;
+	drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetTypeAndMembers(int thread_id) override;
 
 private:
 	drogon::orm::DbClientPtr _db;

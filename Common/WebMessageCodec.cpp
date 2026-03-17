@@ -33,7 +33,7 @@ namespace ChatCodec
         data["sender_uid"] = notice.getSenderUid();
         data["sender_name"] = notice.getSenderName();
         data["sender_avatar"] = notice.getSenderAvatar();
-        data["message"] = notice.getMessage();
+        data["payload"] = notice.getMessage();
         data["created_time"] = notice.getCreatedTime();
         data["notice_id"] = notice.getNoticeId();
         data["type"] = static_cast<int>(notice.getType());
