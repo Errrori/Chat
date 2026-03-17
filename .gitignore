@@ -1,5 +1,9 @@
-.db-shm
-.db-wal
+/deploy-output/
+/uploads/
+*.vcxproj
+*.vcxproj.filters
+*.db-shm
+*.db-wal
 .yml
 client
 jwt_secret.json
