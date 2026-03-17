@@ -139,6 +139,9 @@ drogon::Task<Json::Value> RelationshipService::GetPendingFriendRequests(const st
 	for (const auto& req : items)
 		data["items"].append(req.toJson());
 	data["count"] = static_cast<int>(items.size());
+	//do return auto increment id,it is not necessary
+	for (int i = 0;i<data["count"].asInt();i++)
+		data["items"][i].removeMember("id");
 	co_return data;
 }
 
