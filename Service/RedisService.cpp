@@ -106,42 +106,30 @@ drogon::Task<> RedisService::InvalidateDisplayProfile(const std::string& uid)
     }
 }
 
-drogon::Task<> RedisService::PushOfflineMessage(const std::string& uid, const std::string& message_json)
-{
-    try
-    {
-        auto key = MakeKey(RedisKeys::OfflineMessageQueue, uid);
-        co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), message_json.c_str());
-        co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
-    }
-    catch (const std::exception& e)
-    {
-        LOG_ERROR << "RedisService::PushOfflineMessage error: " << e.what();
-    }
-}
-
-drogon::Task<> RedisService::PushOfflineNotice(const std::string& uid, const std::string& notice_json)
-{
-    try
-    {
-        auto key = MakeKey(RedisKeys::OfflineNoticeQueue, uid);
-        co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), notice_json.c_str());
-        co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
-    }
-    catch (const std::exception& e)
-    {
-        LOG_ERROR << "RedisService::PushOfflineNotice error: " << e.what();
-    }
-}
-
 drogon::Task<> RedisService::PushOfflinePacket(const std::string& uid,
-                                              const std::string& packet_json,
-                                              ChatDelivery::OfflineChannel channel)
+                                               const std::string& packet_json,
+                                               ChatDelivery::OfflineChannel channel)
 {
-    if (channel == ChatDelivery::OfflineChannel::Notice)
-        co_await PushOfflineNotice(uid, packet_json);
-    else
-        co_await PushOfflineMessage(uid, packet_json);
+
+    try
+    {
+        if (channel == ChatDelivery::OfflineChannel::Notice)
+        {
+            auto key = MakeKey(RedisKeys::OfflineNoticeQueue, uid);
+            co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), packet_json.c_str());
+            co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
+        }
+        else
+        {
+            auto key = MakeKey(RedisKeys::OfflineMessageQueue, uid);
+            co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), packet_json.c_str());
+            co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
+        }
+    }catch (const std::exception& e)
+    {
+        LOG_ERROR << "Redis push offline packet: " << e.what();
+    }
+    
 }
 
 drogon::Task<std::vector<std::string>> RedisService::PopAllOfflineMessages(const std::string& uid)

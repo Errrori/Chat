@@ -69,12 +69,6 @@ public:
     // C. 离线消息队列（List 类型）
     // ──────────────────────────────────────────────
 
-    /// 将序列化消息推入离线队列尾部
-    drogon::Task<> PushOfflineMessage(const std::string& uid, const std::string& message_json);
-
-    /// 将序列化通知推入离线队列尾部
-    drogon::Task<> PushOfflineNotice(const std::string& uid, const std::string& notice_json);
-
     /// 按业务通道推入离线包
     drogon::Task<> PushOfflinePacket(const std::string& uid, const std::string& packet_json,
                                      ChatDelivery::OfflineChannel channel);

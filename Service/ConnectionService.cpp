@@ -86,8 +86,6 @@ drogon::Task<> ConnectionService::OnUserConnected(std::string uid)
 	auto msgs = co_await _redis_service->PopAllOfflineMessages(uid);
 	if (!notices.empty() || !msgs.empty())
 	{
-		LOG_INFO << "Delivering offline packets to " << uid
-			<< " notice=" << notices.size() << " message=" << msgs.size();
 		std::lock_guard lock(_mutex);
 		auto it = _conn_to_id_map.find(uid);
 		if (it != _conn_to_id_map.end() && it->second && it->second->connected())
@@ -97,10 +95,6 @@ drogon::Task<> ConnectionService::OnUserConnected(std::string uid)
 			for (const auto& msg_str : msgs)
 				it->second->send(msg_str);
 		}
-	}
-	else
-	{
-		LOG_INFO << "you don't have offline message";
 	}
 }
 
@@ -196,38 +190,3 @@ std::shared_ptr<ConnectionContext> ConnectionService::GetConnInfo(const drogon::
 
 	return nullptr;
 }
-
-bool ConnectionService::SendIfConnected(const std::string& uid, const Json::Value& message)
-{
-	return SendEnvelopeOnline(uid, message);
-}
-
-void ConnectionService::PostNotice(const std::string& receiver_uid, const Json::Value& notice)
-{
-	drogon::async_run([this, receiver_uid, notice]() -> drogon::Task<>
-	{
-		co_await DeliverToUser(receiver_uid,
-			ChatDelivery::OutboundMessage::Envelope(
-				notice,
-				ChatDelivery::DeliveryPolicy::MustDeliver,
-				ChatDelivery::OfflineChannel::Notice));
-	});
-}
-
-void ConnectionService::Broadcast(const std::vector<std::string>& targets, const Json::Value& message)
-{
-	if (targets.empty())
-	{
-		LOG_INFO << "not target to send";
-		return;
-	}
-
-	int sent_count = 0;
-	for (const auto& uid : targets)
-	{
-		if (SendEnvelopeOnline(uid, message))
-			sent_count++;
-	}
-	LOG_INFO << "Broadcast complete: " << sent_count << "/" << targets.size() << " messages sent";
-}
-

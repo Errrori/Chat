@@ -14,9 +14,6 @@ public:
 	virtual drogon::Task<int64_t>
 		ProcessRequest(const std::string& requester_uid, const std::string& acceptor_uid, int status) = 0;
 
-	virtual drogon::Task<>
-		WriteNotice(const std::string& actor_uid,const std::string& reactor_uid,int type,const std::string& payload) = 0;
-
 	// Get unread notifications for a user (is_read == 0)
 	virtual drogon::Task<std::vector<drogon_model::sqlite3::Notifications>>
 		GetUnreadNotifications(const std::string& uid) = 0;

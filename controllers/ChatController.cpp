@@ -4,9 +4,7 @@
 #include "Service/UserService.h"
 #include "models/AiChats.h"
 #include "Container.h"
-#include "Common/ChatMessage.h"
 #include "Service/MessageService.h"
-#include "Common/User.h"
 #include "Common/ConnectionContext.h"
 #include <drogon/utils/coroutine.h>
 
@@ -23,6 +21,8 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 			LOG_WARN << "Received non-text message, ignoring.";
             return;
         }
+
+
         Json::Value msg_data;
         Json::Reader reader;
         if (!reader.parse(msg, msg_data))
@@ -32,11 +32,9 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             return;
         }
 
-        if ((!msg_data.isMember("content") && !msg_data.isMember("attachment"))
-            || !msg_data.isMember("thread_id"))
+        if (!msg_data.isMember("thread_id"))
         {
-            LOG_ERROR << "lack of essential field";
-            Utils::SendJson(conn, Utils::GenErrorResponse("lack of essential field", ChatCode::MissingField));
+            Utils::SendJson(conn, Utils::GenErrorResponse("lack of thread id", ChatCode::MissingField));
             return;
         }
 

@@ -27,10 +27,6 @@ public:
 		const ChatDelivery::OutboundMessage& message);
 
 	std::shared_ptr<ConnectionContext> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
-	// Legacy wrappers
-	bool SendIfConnected(const std::string& uid, const Json::Value& message);
-	void PostNotice(const std::string& receiver_uid, const Json::Value& notice);
-	void Broadcast(const std::vector<std::string>& targets, const Json::Value& message);
 
 	~ConnectionService() = default;
 

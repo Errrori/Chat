@@ -9,7 +9,6 @@
 #include "models/PrivateChats.h"
 #include "models/Block.h"
 #include "Common/Enums.h"
-#include "Common/Notice.h"
 
 using namespace drogon::orm;
 using namespace ChatEnums;
@@ -23,17 +22,16 @@ using Block = drogon_model::sqlite3::Block;
 drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std::string& requester_uid,
 	const std::string& acceptor_uid, const std::string& payload)
 {
-	try
-	{
-		auto trans = co_await _db->newTransactionCoro();
-		if (trans == nullptr)
-			throw std::runtime_error("fail to create transaction");
-
+	auto trans = co_await _db->newTransactionCoro();
+	if (trans == nullptr)
+		throw std::runtime_error("fail to create transaction");
+    try
+    {
 		CoroMapper<Friendships> friendship_mapper(trans);
 		std::string uid1 = (requester_uid < acceptor_uid) ? requester_uid : acceptor_uid;
 		std::string uid2 = (requester_uid < acceptor_uid) ? acceptor_uid : requester_uid;
-		Criteria criteria(Criteria(Friendships::Cols::_uid1,CompareOperator::EQ,uid1)
-			&&Criteria(Friendships::Cols::_uid2,CompareOperator::EQ,uid2));
+		Criteria criteria(Criteria(Friendships::Cols::_uid1, CompareOperator::EQ, uid1)
+			&& Criteria(Friendships::Cols::_uid2, CompareOperator::EQ, uid2));
 		auto friendship_rows = co_await friendship_mapper.limit(1).findBy(criteria);
 		if (!friendship_rows.empty())
 			throw std::invalid_argument("You are already friends with this user");
@@ -42,9 +40,9 @@ drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std
 		CoroMapper<Block> block_mapper(trans);
 		auto block_result = co_await block_mapper.limit(1).findBy(
 			(Criteria(Block::Cols::_operator_uid, CompareOperator::EQ, requester_uid) &&
-			 Criteria(Block::Cols::_blocked_uid, CompareOperator::EQ, acceptor_uid)) ||
+				Criteria(Block::Cols::_blocked_uid, CompareOperator::EQ, acceptor_uid)) ||
 			(Criteria(Block::Cols::_operator_uid, CompareOperator::EQ, acceptor_uid) &&
-			 Criteria(Block::Cols::_blocked_uid, CompareOperator::EQ, requester_uid))
+				Criteria(Block::Cols::_blocked_uid, CompareOperator::EQ, requester_uid))
 		);
 		if (!block_result.empty())
 			throw std::invalid_argument("Cannot send friend request due to block relationship");
@@ -56,6 +54,12 @@ drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std
 				&& Criteria(FriendRequests::Cols::_target_uid, CompareOperator::EQ, acceptor_uid)));
 		if (!record.empty() && record[0].getValueOfStatus() != static_cast<int>(FriendRequestStatus::Refused))
 			throw std::runtime_error("A pending request already exists or was accepted");
+		record = co_await req_mapper.limit(1).
+			findBy(Criteria(Criteria(FriendRequests::Cols::_target_uid, CompareOperator::EQ, requester_uid)
+				&& Criteria(FriendRequests::Cols::_requester_uid, CompareOperator::EQ, acceptor_uid)
+				&& Criteria(FriendRequests::Cols::_status, CompareOperator::EQ, 0)));
+		if (!record.empty())
+			throw std::invalid_argument("existed a pending request");
 
 		FriendRequests new_req;
 		new_req.setRequesterUid(requester_uid);
@@ -73,12 +77,12 @@ drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std
 		CoroMapper<Notifications> notice_mapper(trans);
 		auto notice_result = co_await notice_mapper.insert(notice);
 		co_return notice_result.getValueOfId();
-	}
-	catch (const std::exception& e)
-	{
-		LOG_ERROR << "Transaction failed in WriteFriendRequest: " << e.what();
-		throw; 
-	}
+    }catch (const std::exception& e)
+    {
+		trans->rollback();
+		throw;
+    }
+	
 }
 
 namespace
@@ -192,26 +196,6 @@ drogon::Task<int64_t> SQLiteRelationshipRepository::ProcessRequest(const std::st
     }
 
     co_return threadId;
-}
-
-drogon::Task<> SQLiteRelationshipRepository::WriteNotice(const std::string& actor_uid, const std::string& reactor_uid,
-	int type, const std::string& payload)
-{
-	Notifications notice;
-	notice.setSenderUid(actor_uid);
-	notice.setRecipientUid(reactor_uid);
-	notice.setType(type);
-	notice.setPayload(payload);
-
-	CoroMapper<Notifications> mapper(_db);
-	try
-	{
-		co_await mapper.insert(notice);
-	}
-	catch (const std::exception& e)
-	{
-		throw;
-	}
 }
 
 drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetUnreadNotifications(
