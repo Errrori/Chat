@@ -6,6 +6,8 @@
 #include "Service/UserService.h"
 #include <drogon/utils/coroutine.h>
 
+#include "Service/ConnectionService.h"
+
 drogon::Task<drogon::HttpResponsePtr> UserController::GetUserProfile(drogon::HttpRequestPtr req)
 {
     auto uidOpt = req->getOptionalParameter<std::string>("uid");
@@ -60,4 +62,17 @@ drogon::Task<drogon::HttpResponsePtr> UserController::UpdateUserProfile(drogon::
         co_return Utils::CreateErrorResponse(400, 400, "fail to modify user's info");
 
     co_return Utils::CreateSuccessJsonResp(200, 200, "success to modify user's info", user.ToJson());
+}
+
+drogon::Task<drogon::HttpResponsePtr> UserController::CloseUserConn(drogon::HttpRequestPtr req)
+{
+    auto json_body = req->getJsonObject();
+    if (!json_body)
+        co_return Utils::CreateErrorResponse(400, 400, "request format error");
+
+    const auto& uid = req->getAttributes()->get<std::string>("uid");
+
+    Container::GetInstance().GetConnectionService()->RemoveUserConn(uid);
+
+    co_return Utils::CreateSuccessJsonResp(200, 200, "success to remove",Json::nullValue);
 }

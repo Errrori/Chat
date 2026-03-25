@@ -2,15 +2,15 @@
   "db_clients": [
     {
       "name": "default",
-      "rdbms": "sqlite3",
-      "host": "",
-      "port": 0,
-      "dbname": "",
-      "user": "",
-      "passwd": "",
+      "rdbms": "postgresql",
+      "host": "127.0.0.1",
+      "port": 5432,
+      "dbname": "postgres",
+      "user": "postgres",
+      "passwd": "123456",
       "is_fast": false,
       "connection_number": 8,
-      "filename": "database.db"
+      "filename": ""
     }
   ],
   "file_types": [

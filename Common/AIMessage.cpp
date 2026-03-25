@@ -64,7 +64,7 @@ bool AIMessage::IsValid() const
 	// message_id.empty
 }
 
-std::optional<drogon_model::sqlite3::AiContext> AIMessage::ToDbObject() const
+std::optional<drogon_model::postgres::AiContext> AIMessage::ToDbObject() const
 {
 	if (!IsValid())
 	{
@@ -72,7 +72,7 @@ std::optional<drogon_model::sqlite3::AiContext> AIMessage::ToDbObject() const
 		return std::nullopt;
 	}
 
-	drogon_model::sqlite3::AiContext dbObject;
+	drogon_model::postgres::AiContext dbObject;
 
 	dbObject.setThreadId(static_cast<int64_t>(_thread_id));
 

@@ -2,7 +2,7 @@
 #include "IMessageRepository.h"
 #include <drogon/orm/DbClient.h>
 
-namespace drogon_model::sqlite3
+namespace drogon_model::postgres
 {
 	class Messages;
 	class AiContext;

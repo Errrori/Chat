@@ -26,7 +26,6 @@ target_include_directories(pch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 # 收集所有源文件
 set(SOURCES
     main.cpp
-    HttpClient.cpp
     utils.cpp
     pch.cpp
     Container.cpp
@@ -74,6 +73,8 @@ set(SOURCES
     Data/SQLiteMessageRepository.cpp
     Data/SQLiteThreadRepository.cpp
     Data/SQLiteRelationshipRepository.cpp
+    Data/SQLiteInitializer.cpp
+    Data/PostgreSQLInitializer.cpp
     
     # Models
     models/Users.cc

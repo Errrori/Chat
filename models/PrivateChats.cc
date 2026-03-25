@@ -12,17 +12,17 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string PrivateChats::Cols::_thread_id = "thread_id";
-const std::string PrivateChats::Cols::_uid1 = "uid1";
-const std::string PrivateChats::Cols::_uid2 = "uid2";
+const std::string PrivateChats::Cols::_thread_id = "\"thread_id\"";
+const std::string PrivateChats::Cols::_uid1 = "\"uid1\"";
+const std::string PrivateChats::Cols::_uid2 = "\"uid2\"";
 const std::string PrivateChats::primaryKeyName = "";
 const bool PrivateChats::hasPrimaryKey = false;
-const std::string PrivateChats::tableName = "private_chats";
+const std::string PrivateChats::tableName = "\"private_chats\"";
 
 const std::vector<typename PrivateChats::MetaData> PrivateChats::metaData_={
-{"thread_id","int64_t","integer",8,0,0,1},
+{"thread_id","int64_t","bigint",8,0,0,1},
 {"uid1","std::string","text",0,0,0,1},
 {"uid2","std::string","text",0,0,0,1}
 };

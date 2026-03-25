@@ -12,19 +12,19 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string Block::Cols::_operator_uid = "operator_uid";
-const std::string Block::Cols::_blocked_uid = "blocked_uid";
-const std::string Block::Cols::_created_time = "created_time";
+const std::string Block::Cols::_operator_uid = "\"operator_uid\"";
+const std::string Block::Cols::_blocked_uid = "\"blocked_uid\"";
+const std::string Block::Cols::_created_time = "\"created_time\"";
 const std::string Block::primaryKeyName = "";
 const bool Block::hasPrimaryKey = false;
-const std::string Block::tableName = "block";
+const std::string Block::tableName = "\"block\"";
 
 const std::vector<typename Block::MetaData> Block::metaData_={
 {"operator_uid","std::string","text",0,0,0,1},
 {"blocked_uid","std::string","text",0,0,0,1},
-{"created_time","int64_t","integer",8,0,0,0}
+{"created_time","int64_t","bigint",8,0,0,1}
 };
 const std::string &Block::getColumnName(size_t index) noexcept(false)
 {
@@ -257,11 +257,6 @@ const std::shared_ptr<int64_t> &Block::getCreatedTime() const noexcept
 void Block::setCreatedTime(const int64_t &pCreatedTime) noexcept
 {
     createdTime_ = std::make_shared<int64_t>(pCreatedTime);
-    dirtyFlag_[2] = true;
-}
-void Block::setCreatedTimeToNull() noexcept
-{
-    createdTime_.reset();
     dirtyFlag_[2] = true;
 }
 
@@ -637,7 +632,8 @@ bool Block::validJsonOfField(size_t index,
         case 2:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

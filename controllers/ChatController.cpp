@@ -8,12 +8,14 @@
 #include "Common/ConnectionContext.h"
 #include <drogon/utils/coroutine.h>
 
+#include "auth/TokenService.h"
+
 void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn, std::string&& msg,
-    const drogon::WebSocketMessageType& type)
+                                      const drogon::WebSocketMessageType& type)
 {
     try
     {
-        if (msg.empty())
+	    if (msg.empty())
             return;
 
         if (type != drogon::WebSocketMessageType::Text)
@@ -22,6 +24,18 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             return;
         }
 
+        const auto& conn_info = Container::GetInstance().GetConnectionService()->GetConnInfo(conn);
+        if (!conn_info)
+        {
+            Utils::SendJson(conn, Utils::GenErrorResponse("connection info not found", ChatCode::NotPermission));
+            return;
+        }
+
+        if (conn_info->expiry < std::chrono::system_clock::now())
+        {
+            conn->shutdown();
+            return;
+        }
 
         Json::Value msg_data;
         Json::Reader reader;
@@ -61,12 +75,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 
 		int thread_id = msg_data["thread_id"].asInt();
 
-        const auto& conn_info = Container::GetInstance().GetConnectionService()->GetConnInfo(conn);
-        if (!conn_info)
-        {
-            Utils::SendJson(conn, Utils::GenErrorResponse("connection info not found", ChatCode::NotPermission));
-            return;
-        }
+
         auto uid = conn_info->uid;
 
         if (msg_data.isMember("request_data"))
@@ -102,40 +111,30 @@ void ChatController::handleNewConnection(const drogon::HttpRequestPtr& req,
 {
     auto token = Utils::Authentication::GetToken(req);
 
-    std::string uid;
-    if (!Utils::Authentication::VerifyJWT(token, uid))
+    auto result = Auth::TokenService::GetInstance().
+		Verify(token, Auth::TokenType::Access);
+    if (!result)
     {
-        conn->send("Failed to verify token");
-        conn->shutdown();
-        return;
-    }
-
-    if (uid.empty())
-    {
-        conn->send("Invalid token claims");
+        Utils::SendJson(conn, Utils::GenErrorResponse("can not add connection", ChatCode::FailAddConn));
         conn->shutdown();
         return;
     }
 
     const auto& conn_service = Container::GetInstance().GetConnectionService();
-    if (!conn_service->AddConnection(conn, uid))
+    if (!conn_service->AddConnection(conn, result->uid,result->expire_at))
     {
         Utils::SendJson(conn, Utils::GenErrorResponse("can not add connection", ChatCode::FailAddConn));
-        conn->shutdown();
-        LOG_ERROR << "can not add connection!";
-    }
-    else
-    {
-        LOG_INFO << "add new connection: " << uid;
+		//shut down conn on AddConnection temporarily
     }
 }
 
 
 void ChatController::handleConnectionClosed(const drogon::WebSocketConnectionPtr& conn)
 {
-    const auto& info_ptr = conn->getContext<ConnectionContext>();
-    if (info_ptr) {
-        LOG_INFO << "uid: " << info_ptr->uid << "  connection close";
-    }
-    Container::GetInstance().GetConnectionService()->RemoveConnection(conn);
+    LOG_INFO << "connection closed";
+    if (conn->disconnected())
+        LOG_INFO << "connection is disconnected";
+    if (!conn->connected())
+        LOG_INFO << "connection is not connected";
+	Container::GetInstance().GetConnectionService()->RemoveConnection(conn);
 }

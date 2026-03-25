@@ -12,16 +12,16 @@ public:
 	drogon::Task<int64_t> ProcessRequest(const std::string& requester_uid,
 	                                     const std::string& acceptor_uid, int status) override;
 
-	drogon::Task<std::vector<drogon_model::sqlite3::Notifications>>
+	drogon::Task<std::vector<drogon_model::postgres::Notifications>>
 		GetUnreadNotifications(const std::string& uid) override;
 
-	drogon::Task<std::vector<drogon_model::sqlite3::Notifications>>
+	drogon::Task<std::vector<drogon_model::postgres::Notifications>>
 		GetNotifications(const std::string& uid, int offset, int limit) override;
 
 	drogon::Task<size_t>
 		MarkNotificationsRead(const std::string& uid, const std::vector<int64_t>& ids) override;
 
-	drogon::Task<std::vector<drogon_model::sqlite3::FriendRequests>>
+	drogon::Task<std::vector<drogon_model::postgres::FriendRequests>>
 		GetPendingFriendRequests(const std::string& uid) override;
 
 	drogon::Task<> BlockUser(const std::string& operator_uid, const std::string& blocked_uid) override;

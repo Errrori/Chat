@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-
+class IDbInitializer;
 class IMessageRepository;
 class MessageService;
 class ThreadService;
@@ -34,6 +34,7 @@ public:
 private:
 	Container();
 
+	std::shared_ptr<IDbInitializer> _db_initializer;
 	std::shared_ptr<IUserRepository> _user_repo;
 	std::shared_ptr<UserService> _user_service;
 	std::shared_ptr<IThreadRepository> _thread_repo;

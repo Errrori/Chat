@@ -36,7 +36,7 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace sqlite3
+namespace postgres
 {
 
 class Messages
@@ -112,7 +112,6 @@ class Messages
     const std::shared_ptr<int64_t> &getMessageId() const noexcept;
     ///Set the value of the column message_id
     void setMessageId(const int64_t &pMessageId) noexcept;
-    void setMessageIdToNull() noexcept;
 
     /**  For column thread_id  */
     ///Get the value of the column thread_id, returns the default value if the column is null
@@ -171,11 +170,11 @@ class Messages
 
     /**  For column status  */
     ///Get the value of the column status, returns the default value if the column is null
-    const int64_t &getValueOfStatus() const noexcept;
+    const int32_t &getValueOfStatus() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getStatus() const noexcept;
+    const std::shared_ptr<int32_t> &getStatus() const noexcept;
     ///Set the value of the column status
-    void setStatus(const int64_t &pStatus) noexcept;
+    void setStatus(const int32_t &pStatus) noexcept;
 
     /**  For column create_time  */
     ///Get the value of the column create_time, returns the default value if the column is null
@@ -184,7 +183,6 @@ class Messages
     const std::shared_ptr<int64_t> &getCreateTime() const noexcept;
     ///Set the value of the column create_time
     void setCreateTime(const int64_t &pCreateTime) noexcept;
-    void setCreateTimeToNull() noexcept;
 
     /**  For column update_time  */
     ///Get the value of the column update_time, returns the default value if the column is null
@@ -193,7 +191,6 @@ class Messages
     const std::shared_ptr<int64_t> &getUpdateTime() const noexcept;
     ///Set the value of the column update_time
     void setUpdateTime(const int64_t &pUpdateTime) noexcept;
-    void setUpdateTimeToNull() noexcept;
 
 
     static size_t getColumnNumber() noexcept {  return 10;  }
@@ -224,7 +221,7 @@ class Messages
     std::shared_ptr<std::string> senderAvatar_;
     std::shared_ptr<std::string> content_;
     std::shared_ptr<std::string> attachment_;
-    std::shared_ptr<int64_t> status_;
+    std::shared_ptr<int32_t> status_;
     std::shared_ptr<int64_t> createTime_;
     std::shared_ptr<int64_t> updateTime_;
     struct MetaData
@@ -242,13 +239,13 @@ class Messages
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where message_id = ?";
+        static const std::string sql="select * from " + tableName + " where message_id = $1";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where message_id = ?";
+        static const std::string sql="delete from " + tableName + " where message_id = $1";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -256,6 +253,8 @@ class Messages
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+            sql += "message_id,";
+            ++parametersCount;
         if(dirtyFlag_[1])
         {
             sql += "thread_id,";
@@ -286,33 +285,25 @@ class Messages
             sql += "attachment,";
             ++parametersCount;
         }
-        if(dirtyFlag_[7])
-        {
-            sql += "status,";
-            ++parametersCount;
-        }
+        sql += "status,";
+        ++parametersCount;
         if(!dirtyFlag_[7])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[8])
-        {
-            sql += "create_time,";
-            ++parametersCount;
-        }
+        sql += "create_time,";
+        ++parametersCount;
         if(!dirtyFlag_[8])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[9])
-        {
-            sql += "update_time,";
-            ++parametersCount;
-        }
+        sql += "update_time,";
+        ++parametersCount;
         if(!dirtyFlag_[9])
         {
             needSelection=true;
         }
+        needSelection=true;
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -321,59 +312,82 @@ class Messages
         else
             sql += ") values (";
 
+        int placeholder=1;
+        char placeholderStr[64];
+        size_t n=0;
+        sql +="default,";
         if(dirtyFlag_[1])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[2])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[3])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[4])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[5])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[6])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[7])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[8])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[9])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        sql.append(1, ')');
+        if(needSelection)
+        {
+            sql.append(") returning *");
+        }
+        else
+        {
+            sql.append(1, ')');
+        }
         LOG_TRACE << sql;
         return sql;
     }
 };
-} // namespace sqlite3
+} // namespace postgres
 } // namespace drogon_model

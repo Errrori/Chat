@@ -36,7 +36,7 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace sqlite3
+namespace postgres
 {
 
 class Notifications
@@ -109,15 +109,14 @@ class Notifications
     const std::shared_ptr<int64_t> &getId() const noexcept;
     ///Set the value of the column id
     void setId(const int64_t &pId) noexcept;
-    void setIdToNull() noexcept;
 
     /**  For column type  */
     ///Get the value of the column type, returns the default value if the column is null
-    const int64_t &getValueOfType() const noexcept;
+    const int32_t &getValueOfType() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getType() const noexcept;
+    const std::shared_ptr<int32_t> &getType() const noexcept;
     ///Set the value of the column type
-    void setType(const int64_t &pType) noexcept;
+    void setType(const int32_t &pType) noexcept;
 
     /**  For column sender_uid  */
     ///Get the value of the column sender_uid, returns the default value if the column is null
@@ -149,12 +148,11 @@ class Notifications
 
     /**  For column is_read  */
     ///Get the value of the column is_read, returns the default value if the column is null
-    const int64_t &getValueOfIsRead() const noexcept;
+    const int32_t &getValueOfIsRead() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getIsRead() const noexcept;
+    const std::shared_ptr<int32_t> &getIsRead() const noexcept;
     ///Set the value of the column is_read
-    void setIsRead(const int64_t &pIsRead) noexcept;
-    void setIsReadToNull() noexcept;
+    void setIsRead(const int32_t &pIsRead) noexcept;
 
     /**  For column created_time  */
     ///Get the value of the column created_time, returns the default value if the column is null
@@ -163,7 +161,6 @@ class Notifications
     const std::shared_ptr<int64_t> &getCreatedTime() const noexcept;
     ///Set the value of the column created_time
     void setCreatedTime(const int64_t &pCreatedTime) noexcept;
-    void setCreatedTimeToNull() noexcept;
 
 
     static size_t getColumnNumber() noexcept {  return 7;  }
@@ -188,11 +185,11 @@ class Notifications
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<int64_t> id_;
-    std::shared_ptr<int64_t> type_;
+    std::shared_ptr<int32_t> type_;
     std::shared_ptr<std::string> senderUid_;
     std::shared_ptr<std::string> recipientUid_;
     std::shared_ptr<std::string> payload_;
-    std::shared_ptr<int64_t> isRead_;
+    std::shared_ptr<int32_t> isRead_;
     std::shared_ptr<int64_t> createdTime_;
     struct MetaData
     {
@@ -209,13 +206,13 @@ class Notifications
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where id = ?";
+        static const std::string sql="select * from " + tableName + " where id = $1";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where id = ?";
+        static const std::string sql="delete from " + tableName + " where id = $1";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -223,6 +220,8 @@ class Notifications
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+            sql += "id,";
+            ++parametersCount;
         if(dirtyFlag_[1])
         {
             sql += "type,";
@@ -243,24 +242,19 @@ class Notifications
             sql += "payload,";
             ++parametersCount;
         }
-        if(dirtyFlag_[5])
-        {
-            sql += "is_read,";
-            ++parametersCount;
-        }
+        sql += "is_read,";
+        ++parametersCount;
         if(!dirtyFlag_[5])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[6])
-        {
-            sql += "created_time,";
-            ++parametersCount;
-        }
+        sql += "created_time,";
+        ++parametersCount;
         if(!dirtyFlag_[6])
         {
             needSelection=true;
         }
+        needSelection=true;
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -269,44 +263,63 @@ class Notifications
         else
             sql += ") values (";
 
+        int placeholder=1;
+        char placeholderStr[64];
+        size_t n=0;
+        sql +="default,";
         if(dirtyFlag_[1])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[2])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[3])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[4])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[5])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[6])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        sql.append(1, ')');
+        if(needSelection)
+        {
+            sql.append(") returning *");
+        }
+        else
+        {
+            sql.append(1, ')');
+        }
         LOG_TRACE << sql;
         return sql;
     }
 };
-} // namespace sqlite3
+} // namespace postgres
 } // namespace drogon_model

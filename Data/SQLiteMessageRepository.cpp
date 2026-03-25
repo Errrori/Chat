@@ -11,11 +11,11 @@
 #include "Common/AIMessage.h"
 
 using namespace drogon::orm;
-using Messages = drogon_model::sqlite3::Messages;
-using AiContext = drogon_model::sqlite3::AiContext;
-using PrivateChats = drogon_model::sqlite3::PrivateChats;
-using GroupChats = drogon_model::sqlite3::GroupChats;
-using GroupMembers = drogon_model::sqlite3::GroupMembers;
+using Messages = drogon_model::postgres::Messages;
+using AiContext = drogon_model::postgres::AiContext;
+using PrivateChats = drogon_model::postgres::PrivateChats;
+using GroupChats = drogon_model::postgres::GroupChats;
+using GroupMembers = drogon_model::postgres::GroupMembers;
 
 
 //�����߼�����Service�㣬��Ҫ��鷢�����Ƿ��ڸ�thread��
@@ -25,7 +25,7 @@ drogon::Task<int64_t> SQLiteMessageRepository::RecordUserMessage(const ChatMessa
 {
 	try
 	{
-		drogon_model::sqlite3::Messages db_message;
+		drogon_model::postgres::Messages db_message;
 
 		//message_id is auto-incremented in the database, so do not set it
 
@@ -79,7 +79,7 @@ drogon::Task<> SQLiteMessageRepository::RecordAIMessage(const AIMessage& message
 		{
 			throw std::invalid_argument("message id is empty");
 		}
-		drogon_model::sqlite3::AiContext db_message;
+		drogon_model::postgres::AiContext db_message;
 		if (!content.empty())
 			db_message.setContent(content);
 		if (!reasoning_content.empty())
@@ -177,7 +177,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetChatOverviews(int64_t exis
 		std::unordered_map<long long, std::string> thread_types; // ��¼�Ự����
 
 		// ��ȡ˽�ĻỰ
-		CoroMapper<drogon_model::sqlite3::PrivateChats> private_mapper(_db);
+		CoroMapper<drogon_model::postgres::PrivateChats> private_mapper(_db);
 		Criteria private_criteria(
 			Criteria(PrivateChats::Cols::_uid1, CompareOperator::EQ, uid) ||
 			Criteria(PrivateChats::Cols::_uid2, CompareOperator::EQ, uid)

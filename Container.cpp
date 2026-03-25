@@ -2,6 +2,7 @@
 #include "Container.h"
 #include <drogon/nosql/RedisClient.h>
 #include <cstring>
+#include "Data/IDbInitializer.h"
 
 // Platform-specific network headers
 #ifdef _WIN32
@@ -26,6 +27,8 @@
 #include "Service/RelationshipService.h"
 #include "Service/RedisService.h"
 #include "const.h"
+#include "Data/PostgreSQLInitializer.h"
+#include "Data/SQLiteInitializer.h"
 
 namespace {
 	// Cross-platform safe environment variable getter
@@ -95,20 +98,24 @@ Container::Container()
 {
 	{
 		auto db = drogon::app().getDbClient();
-		for (const auto& table : DataBase::db_table_list)
+		switch (db->type())
 		{
-			try
-			{
-				db->execSqlSync("PRAGMA journal_mode=WAL");
-				db->execSqlSync("PRAGMA busy_timeout=5000");
-				db->execSqlSync(DataBase::OPEN_FK);
-				db->execSqlSync(table);
-			}
-			catch (const std::exception& e)
-			{
-				LOG_ERROR << "Cannot create table: " << table << " , exception: " << e.what();
-			}
+		case drogon::orm::ClientType::PostgreSQL:
+			_db_initializer = std::make_shared<PostgreSQLInitializer>(db);
+			break;
+		case drogon::orm::ClientType::Sqlite3:
+			_db_initializer = std::make_shared<SQLiteInitializer>(db);
+			LOG_INFO << "Using SQLite initializer";
+			break;
+		case drogon::orm::ClientType::Mysql:
+		default:
+			LOG_WARN << "Current DbClient type is not implemented for dedicated initializer, fallback to SQLite initializer";
+			_db_initializer = std::make_shared<SQLiteInitializer>(db);
+			break;
 		}
+
+		_db_initializer->Initialize();
+		_db_initializer->Migrate();
 		LOG_INFO << "Database init success";
 	}
 

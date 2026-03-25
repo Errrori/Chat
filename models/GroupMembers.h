@@ -36,7 +36,7 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace sqlite3
+namespace postgres
 {
 
 class GroupMembers
@@ -118,11 +118,11 @@ class GroupMembers
 
     /**  For column role  */
     ///Get the value of the column role, returns the default value if the column is null
-    const int64_t &getValueOfRole() const noexcept;
+    const int32_t &getValueOfRole() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getRole() const noexcept;
+    const std::shared_ptr<int32_t> &getRole() const noexcept;
     ///Set the value of the column role
-    void setRole(const int64_t &pRole) noexcept;
+    void setRole(const int32_t &pRole) noexcept;
 
     /**  For column join_time  */
     ///Get the value of the column join_time, returns the default value if the column is null
@@ -131,7 +131,6 @@ class GroupMembers
     const std::shared_ptr<int64_t> &getJoinTime() const noexcept;
     ///Set the value of the column join_time
     void setJoinTime(const int64_t &pJoinTime) noexcept;
-    void setJoinTimeToNull() noexcept;
 
 
     static size_t getColumnNumber() noexcept {  return 4;  }
@@ -157,7 +156,7 @@ class GroupMembers
     void updateId(const uint64_t id);
     std::shared_ptr<int64_t> threadId_;
     std::shared_ptr<std::string> userUid_;
-    std::shared_ptr<int64_t> role_;
+    std::shared_ptr<int32_t> role_;
     std::shared_ptr<int64_t> joinTime_;
     struct MetaData
     {
@@ -174,13 +173,13 @@ class GroupMembers
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where thread_id = ? and user_uid = ?";
+        static const std::string sql="select * from " + tableName + " where thread_id = $1 and user_uid = $2";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where thread_id = ? and user_uid = ?";
+        static const std::string sql="delete from " + tableName + " where thread_id = $1 and user_uid = $2";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -198,20 +197,14 @@ class GroupMembers
             sql += "user_uid,";
             ++parametersCount;
         }
-        if(dirtyFlag_[2])
-        {
-            sql += "role,";
-            ++parametersCount;
-        }
+        sql += "role,";
+        ++parametersCount;
         if(!dirtyFlag_[2])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[3])
-        {
-            sql += "join_time,";
-            ++parametersCount;
-        }
+        sql += "join_time,";
+        ++parametersCount;
         if(!dirtyFlag_[3])
         {
             needSelection=true;
@@ -224,34 +217,52 @@ class GroupMembers
         else
             sql += ") values (";
 
+        int placeholder=1;
+        char placeholderStr[64];
+        size_t n=0;
         if(dirtyFlag_[0])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[1])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[2])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[3])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        sql.append(1, ')');
+        if(needSelection)
+        {
+            sql.append(") returning *");
+        }
+        else
+        {
+            sql.append(1, ')');
+        }
         LOG_TRACE << sql;
         return sql;
     }
 };
-} // namespace sqlite3
+} // namespace postgres
 } // namespace drogon_model

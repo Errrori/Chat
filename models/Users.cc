@@ -11,29 +11,29 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string Users::Cols::_id = "id";
-const std::string Users::Cols::_username = "username";
-const std::string Users::Cols::_account = "account";
-const std::string Users::Cols::_password = "password";
-const std::string Users::Cols::_uid = "uid";
-const std::string Users::Cols::_avatar = "avatar";
-const std::string Users::Cols::_create_time = "create_time";
-const std::string Users::Cols::_signature = "signature";
-const std::string Users::Cols::_email = "email";
+const std::string Users::Cols::_id = "\"id\"";
+const std::string Users::Cols::_username = "\"username\"";
+const std::string Users::Cols::_account = "\"account\"";
+const std::string Users::Cols::_password = "\"password\"";
+const std::string Users::Cols::_uid = "\"uid\"";
+const std::string Users::Cols::_avatar = "\"avatar\"";
+const std::string Users::Cols::_create_time = "\"create_time\"";
+const std::string Users::Cols::_signature = "\"signature\"";
+const std::string Users::Cols::_email = "\"email\"";
 const std::string Users::primaryKeyName = "id";
 const bool Users::hasPrimaryKey = true;
-const std::string Users::tableName = "users";
+const std::string Users::tableName = "\"users\"";
 
 const std::vector<typename Users::MetaData> Users::metaData_={
-{"id","int64_t","integer",8,1,1,0},
+{"id","int64_t","bigint",8,1,1,1},
 {"username","std::string","text",0,0,0,1},
 {"account","std::string","text",0,0,0,1},
 {"password","std::string","text",0,0,0,1},
 {"uid","std::string","text",0,0,0,1},
 {"avatar","std::string","text",0,0,0,0},
-{"create_time","int64_t","integer",8,0,0,0},
+{"create_time","int64_t","bigint",8,0,0,1},
 {"signature","std::string","text",0,0,0,0},
 {"email","std::string","text",0,0,0,0}
 };
@@ -470,11 +470,6 @@ void Users::setId(const int64_t &pId) noexcept
     id_ = std::make_shared<int64_t>(pId);
     dirtyFlag_[0] = true;
 }
-void Users::setIdToNull() noexcept
-{
-    id_.reset();
-    dirtyFlag_[0] = true;
-}
 const typename Users::PrimaryKeyType & Users::getPrimaryKey() const
 {
     assert(id_);
@@ -612,11 +607,6 @@ void Users::setCreateTime(const int64_t &pCreateTime) noexcept
     createTime_ = std::make_shared<int64_t>(pCreateTime);
     dirtyFlag_[6] = true;
 }
-void Users::setCreateTimeToNull() noexcept
-{
-    createTime_.reset();
-    dirtyFlag_[6] = true;
-}
 
 const std::string &Users::getValueOfSignature() const noexcept
 {
@@ -674,7 +664,6 @@ void Users::setEmailToNull() noexcept
 
 void Users::updateId(const uint64_t id)
 {
-    id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &Users::insertColumns() noexcept
@@ -1484,14 +1473,15 @@ bool Users::validJsonOfField(size_t index,
     switch(index)
     {
         case 0:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
             if(isForCreation)
             {
                 err="The automatic primary key cannot be set";
                 return false;
-            }
-            if(pJson.isNull())
-            {
-                return true;
             }
             if(!pJson.isInt64())
             {
@@ -1561,7 +1551,8 @@ bool Users::validJsonOfField(size_t index,
         case 6:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

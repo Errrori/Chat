@@ -1,12 +1,24 @@
 {
-  "rdbms": "sqlite3",
-  "filename": "database.db",
-  "dbname": "",
-  "user": "",
-  "passwd": "",
-  "tables": ["users"],
+  "rdbms": "postgresql",
+  "host": "127.0.0.1",
+  "port": 5432,
+  "dbname": "postgres",
+      "user": "postgres",
+  "passwd": "123456",
+  "tables": ["threads",
+  "users",
+  "ai_chats",
+  "private_chats",
+  "group_chats",
+  "group_members",
+  "messages",
+  "ai_context",
+  "notifications",
+  "friendships",
+  "friend_requests",
+  "block"],
   "relationships": {
-    "enabled": false,
-    "items": []
+      "enabled": false,
+      "items": []
   }
 }

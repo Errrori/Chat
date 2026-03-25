@@ -36,7 +36,7 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace sqlite3
+namespace postgres
 {
 
 class PrivateChats
@@ -201,29 +201,39 @@ class PrivateChats
         else
             sql += ") values (";
 
+        int placeholder=1;
+        char placeholderStr[64];
+        size_t n=0;
         if(dirtyFlag_[0])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[1])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[2])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        sql.append(1, ')');
+        if(needSelection)
+        {
+            sql.append(") returning *");
+        }
+        else
+        {
+            sql.append(1, ')');
+        }
         LOG_TRACE << sql;
         return sql;
     }
 };
-} // namespace sqlite3
+} // namespace postgres
 } // namespace drogon_model

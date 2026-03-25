@@ -45,14 +45,14 @@ ChatMessage ChatMessage::FromJson(const Json::Value& data)
 	
 }
 
-std::optional<drogon_model::sqlite3::Messages> ChatMessage::ToDbMessage() const
+std::optional<drogon_model::postgres::Messages> ChatMessage::ToDbMessage() const
 {
 	if (!IsValid()) {
 		LOG_ERROR << "invalid message data";
 		return std::nullopt;
 	}
 
-	drogon_model::sqlite3::Messages dbMessage;
+	drogon_model::postgres::Messages dbMessage;
 
 	dbMessage.setThreadId(static_cast<int64_t>(_thread_id));
 	//message_id is auto-incremented in the database, so do not set it

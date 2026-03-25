@@ -43,9 +43,9 @@ Json::Value PrivateThread::ToJson() const {
     return json;
 }
 
-drogon_model::sqlite3::Threads PrivateThread::ToDbThread() const {
+drogon_model::postgres::Threads PrivateThread::ToDbThread() const {
     
-    drogon_model::sqlite3::Threads thread;
+    drogon_model::postgres::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
     thread.setCreateTime(Utils::GetCurrentTimeStamp());
     return thread;
@@ -77,12 +77,12 @@ std::string PrivateThread::GetPeerUid(const std::string& current_uid) const {
     return "";  // 当前用户不在此私聊中
 }
 
-std::optional<drogon_model::sqlite3::PrivateChats> PrivateThread::ToDbPrivateChat() const {
+std::optional<drogon_model::postgres::PrivateChats> PrivateThread::ToDbPrivateChat() const {
     if (!IsDbValid()) {
         return std::nullopt;
     }
     
-    drogon_model::sqlite3::PrivateChats privateChat;
+    drogon_model::postgres::PrivateChats privateChat;
     if (thread_id_>0)
 		privateChat.setThreadId(thread_id_);
     privateChat.setUid1(_first_uid);
@@ -129,9 +129,9 @@ Json::Value GroupThread::ToJson() const {
     return json;
 }
 
-drogon_model::sqlite3::Threads GroupThread::ToDbThread() const {
+drogon_model::postgres::Threads GroupThread::ToDbThread() const {
 
-    drogon_model::sqlite3::Threads thread;
+    drogon_model::postgres::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
     thread.setCreateTime(Utils::GetCurrentTimeStamp());
     return thread;
@@ -150,12 +150,12 @@ std::string GroupThread::GetAvatar() const {
     return _avatar;
 }
 
-std::optional<drogon_model::sqlite3::GroupChats> GroupThread::ToDbGroupChat() const {
+std::optional<drogon_model::postgres::GroupChats> GroupThread::ToDbGroupChat() const {
     if (!IsDbValid()) {
         return std::nullopt;
     }
     
-    drogon_model::sqlite3::GroupChats groupChat;
+    drogon_model::postgres::GroupChats groupChat;
     groupChat.setThreadId(thread_id_);
     groupChat.setName(_name);
     groupChat.setDescription(_description);
@@ -163,13 +163,13 @@ std::optional<drogon_model::sqlite3::GroupChats> GroupThread::ToDbGroupChat() co
     return groupChat;
 }
 
-std::optional<drogon_model::sqlite3::GroupMembers> GroupThread::ToDbOwner() const
+std::optional<drogon_model::postgres::GroupMembers> GroupThread::ToDbOwner() const
 {
     if (_owner_uid.empty()||thread_id_<=0)
     {
         return std::nullopt;
     }
-    drogon_model::sqlite3::GroupMembers members;
+    drogon_model::postgres::GroupMembers members;
     members.setJoinTime(Utils::GetCurrentTimeStamp());
     members.setRole(GroupConstant::owner);
 	members.setUserUid(_owner_uid);
@@ -212,8 +212,8 @@ Json::Value AIThread::ToJson() const {
     return json;
 }
 
-drogon_model::sqlite3::Threads AIThread::ToDbThread() const {
-    drogon_model::sqlite3::Threads thread;
+drogon_model::postgres::Threads AIThread::ToDbThread() const {
+    drogon_model::postgres::Threads thread;
     thread.setType(static_cast<int64_t>(GetThreadType()));
     thread.setCreateTime(Utils::GetCurrentTimeStamp());
     return thread;
@@ -227,12 +227,12 @@ std::string AIThread::GetAvatar() const {
     return _avatar;
 }
 
-std::optional<drogon_model::sqlite3::AiChats> AIThread::ToDbAiChat() const {
+std::optional<drogon_model::postgres::AiChats> AIThread::ToDbAiChat() const {
     if (!IsDbValid()) {
         return std::nullopt;
     }
     
-    drogon_model::sqlite3::AiChats aiChat;
+    drogon_model::postgres::AiChats aiChat;
     if (thread_id_>0)
 		aiChat.setThreadId(thread_id_);
     aiChat.setName(_name);
@@ -281,12 +281,12 @@ Json::Value MemberData::ToJson() const {
 }
 
 // 数据库转换实现
-std::optional<drogon_model::sqlite3::GroupMembers> MemberData::ToDbGroupMember() const {
+std::optional<drogon_model::postgres::GroupMembers> MemberData::ToDbGroupMember() const {
     if (!IsValid()) {
         return std::nullopt;
     }
 
-    drogon_model::sqlite3::GroupMembers member;
+    drogon_model::postgres::GroupMembers member;
     member.setThreadId(_thread_id);
     member.setUserUid(_user_uid);
     member.setRole(GroupRoleConvert::ToVal(_role));

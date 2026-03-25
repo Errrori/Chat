@@ -1,6 +1,6 @@
 #pragma once
 #include <optional>
-namespace drogon_model::sqlite3
+namespace drogon_model::postgres
 {
 	class Users;
 }
@@ -18,7 +18,7 @@ private:
 public:
     static UserInfo FromJson(const Json::Value& json);
     // Only for registration: builds a Users ORM row (requires hashed_password)
-    std::optional<drogon_model::sqlite3::Users> ToDbUsers() const;
+    std::optional<drogon_model::postgres::Users> ToDbUsers() const;
     bool IsDbValid() const;
 
     const std::string& getUid()            const { return uid; }

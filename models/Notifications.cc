@@ -5,33 +5,34 @@
  *
  */
 #include "pch.h"
+
 #include "Notifications.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string Notifications::Cols::_id = "id";
-const std::string Notifications::Cols::_type = "type";
-const std::string Notifications::Cols::_sender_uid = "sender_uid";
-const std::string Notifications::Cols::_recipient_uid = "recipient_uid";
-const std::string Notifications::Cols::_payload = "payload";
-const std::string Notifications::Cols::_is_read = "is_read";
-const std::string Notifications::Cols::_created_time = "created_time";
+const std::string Notifications::Cols::_id = "\"id\"";
+const std::string Notifications::Cols::_type = "\"type\"";
+const std::string Notifications::Cols::_sender_uid = "\"sender_uid\"";
+const std::string Notifications::Cols::_recipient_uid = "\"recipient_uid\"";
+const std::string Notifications::Cols::_payload = "\"payload\"";
+const std::string Notifications::Cols::_is_read = "\"is_read\"";
+const std::string Notifications::Cols::_created_time = "\"created_time\"";
 const std::string Notifications::primaryKeyName = "id";
 const bool Notifications::hasPrimaryKey = true;
-const std::string Notifications::tableName = "notifications";
+const std::string Notifications::tableName = "\"notifications\"";
 
 const std::vector<typename Notifications::MetaData> Notifications::metaData_={
-{"id","int64_t","integer",8,1,1,0},
-{"type","int64_t","integer",8,0,0,1},
+{"id","int64_t","bigint",8,1,1,1},
+{"type","int32_t","integer",4,0,0,1},
 {"sender_uid","std::string","text",0,0,0,1},
 {"recipient_uid","std::string","text",0,0,0,1},
 {"payload","std::string","text",0,0,0,0},
-{"is_read","int64_t","integer",8,0,0,0},
-{"created_time","int64_t","integer",8,0,0,0}
+{"is_read","int32_t","integer",4,0,0,1},
+{"created_time","int64_t","bigint",8,0,0,1}
 };
 const std::string &Notifications::getColumnName(size_t index) noexcept(false)
 {
@@ -48,7 +49,7 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["type"].isNull())
         {
-            type_=std::make_shared<int64_t>(r["type"].as<int64_t>());
+            type_=std::make_shared<int32_t>(r["type"].as<int32_t>());
         }
         if(!r["sender_uid"].isNull())
         {
@@ -64,7 +65,7 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["is_read"].isNull())
         {
-            isRead_=std::make_shared<int64_t>(r["is_read"].as<int64_t>());
+            isRead_=std::make_shared<int32_t>(r["is_read"].as<int32_t>());
         }
         if(!r["created_time"].isNull())
         {
@@ -88,7 +89,7 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 1;
         if(!r[index].isNull())
         {
-            type_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            type_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 2;
         if(!r[index].isNull())
@@ -108,7 +109,7 @@ Notifications::Notifications(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 5;
         if(!r[index].isNull())
         {
-            isRead_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            isRead_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 6;
         if(!r[index].isNull())
@@ -139,7 +140,7 @@ Notifications::Notifications(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            type_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[1]].asInt64());
+            type_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
         }
     }
     if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
@@ -171,7 +172,7 @@ Notifications::Notifications(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[5] = true;
         if(!pJson[pMasqueradingVector[5]].isNull())
         {
-            isRead_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[5]].asInt64());
+            isRead_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[5]].asInt64());
         }
     }
     if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
@@ -199,7 +200,7 @@ Notifications::Notifications(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["type"].isNull())
         {
-            type_=std::make_shared<int64_t>((int64_t)pJson["type"].asInt64());
+            type_=std::make_shared<int32_t>((int32_t)pJson["type"].asInt64());
         }
     }
     if(pJson.isMember("sender_uid"))
@@ -231,7 +232,7 @@ Notifications::Notifications(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[5]=true;
         if(!pJson["is_read"].isNull())
         {
-            isRead_=std::make_shared<int64_t>((int64_t)pJson["is_read"].asInt64());
+            isRead_=std::make_shared<int32_t>((int32_t)pJson["is_read"].asInt64());
         }
     }
     if(pJson.isMember("created_time"))
@@ -264,7 +265,7 @@ void Notifications::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            type_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[1]].asInt64());
+            type_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
         }
     }
     if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
@@ -296,7 +297,7 @@ void Notifications::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[5] = true;
         if(!pJson[pMasqueradingVector[5]].isNull())
         {
-            isRead_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[5]].asInt64());
+            isRead_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[5]].asInt64());
         }
     }
     if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
@@ -323,7 +324,7 @@ void Notifications::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["type"].isNull())
         {
-            type_=std::make_shared<int64_t>((int64_t)pJson["type"].asInt64());
+            type_=std::make_shared<int32_t>((int32_t)pJson["type"].asInt64());
         }
     }
     if(pJson.isMember("sender_uid"))
@@ -355,7 +356,7 @@ void Notifications::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[5] = true;
         if(!pJson["is_read"].isNull())
         {
-            isRead_=std::make_shared<int64_t>((int64_t)pJson["is_read"].asInt64());
+            isRead_=std::make_shared<int32_t>((int32_t)pJson["is_read"].asInt64());
         }
     }
     if(pJson.isMember("created_time"))
@@ -384,31 +385,26 @@ void Notifications::setId(const int64_t &pId) noexcept
     id_ = std::make_shared<int64_t>(pId);
     dirtyFlag_[0] = true;
 }
-void Notifications::setIdToNull() noexcept
-{
-    id_.reset();
-    dirtyFlag_[0] = true;
-}
 const typename Notifications::PrimaryKeyType & Notifications::getPrimaryKey() const
 {
     assert(id_);
     return *id_;
 }
 
-const int64_t &Notifications::getValueOfType() const noexcept
+const int32_t &Notifications::getValueOfType() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const int32_t defaultValue = int32_t();
     if(type_)
         return *type_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &Notifications::getType() const noexcept
+const std::shared_ptr<int32_t> &Notifications::getType() const noexcept
 {
     return type_;
 }
-void Notifications::setType(const int64_t &pType) noexcept
+void Notifications::setType(const int32_t &pType) noexcept
 {
-    type_ = std::make_shared<int64_t>(pType);
+    type_ = std::make_shared<int32_t>(pType);
     dirtyFlag_[1] = true;
 }
 
@@ -483,25 +479,20 @@ void Notifications::setPayloadToNull() noexcept
     dirtyFlag_[4] = true;
 }
 
-const int64_t &Notifications::getValueOfIsRead() const noexcept
+const int32_t &Notifications::getValueOfIsRead() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const int32_t defaultValue = int32_t();
     if(isRead_)
         return *isRead_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &Notifications::getIsRead() const noexcept
+const std::shared_ptr<int32_t> &Notifications::getIsRead() const noexcept
 {
     return isRead_;
 }
-void Notifications::setIsRead(const int64_t &pIsRead) noexcept
+void Notifications::setIsRead(const int32_t &pIsRead) noexcept
 {
-    isRead_ = std::make_shared<int64_t>(pIsRead);
-    dirtyFlag_[5] = true;
-}
-void Notifications::setIsReadToNull() noexcept
-{
-    isRead_.reset();
+    isRead_ = std::make_shared<int32_t>(pIsRead);
     dirtyFlag_[5] = true;
 }
 
@@ -521,15 +512,9 @@ void Notifications::setCreatedTime(const int64_t &pCreatedTime) noexcept
     createdTime_ = std::make_shared<int64_t>(pCreatedTime);
     dirtyFlag_[6] = true;
 }
-void Notifications::setCreatedTimeToNull() noexcept
-{
-    createdTime_.reset();
-    dirtyFlag_[6] = true;
-}
 
 void Notifications::updateId(const uint64_t id)
 {
-    id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &Notifications::insertColumns() noexcept
@@ -727,7 +712,7 @@ Json::Value Notifications::toJson() const
     }
     if(getType())
     {
-        ret["type"]=(Json::Int64)getValueOfType();
+        ret["type"]=getValueOfType();
     }
     else
     {
@@ -759,7 +744,7 @@ Json::Value Notifications::toJson() const
     }
     if(getIsRead())
     {
-        ret["is_read"]=(Json::Int64)getValueOfIsRead();
+        ret["is_read"]=getValueOfIsRead();
     }
     else
     {
@@ -797,7 +782,7 @@ Json::Value Notifications::toMasqueradedJson(
         {
             if(getType())
             {
-                ret[pMasqueradingVector[1]]=(Json::Int64)getValueOfType();
+                ret[pMasqueradingVector[1]]=getValueOfType();
             }
             else
             {
@@ -841,7 +826,7 @@ Json::Value Notifications::toMasqueradedJson(
         {
             if(getIsRead())
             {
-                ret[pMasqueradingVector[5]]=(Json::Int64)getValueOfIsRead();
+                ret[pMasqueradingVector[5]]=getValueOfIsRead();
             }
             else
             {
@@ -872,7 +857,7 @@ Json::Value Notifications::toMasqueradedJson(
     }
     if(getType())
     {
-        ret["type"]=(Json::Int64)getValueOfType();
+        ret["type"]=getValueOfType();
     }
     else
     {
@@ -904,7 +889,7 @@ Json::Value Notifications::toMasqueradedJson(
     }
     if(getIsRead())
     {
-        ret["is_read"]=(Json::Int64)getValueOfIsRead();
+        ret["is_read"]=getValueOfIsRead();
     }
     else
     {
@@ -1175,14 +1160,15 @@ bool Notifications::validJsonOfField(size_t index,
     switch(index)
     {
         case 0:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
             if(isForCreation)
             {
                 err="The automatic primary key cannot be set";
                 return false;
-            }
-            if(pJson.isNull())
-            {
-                return true;
             }
             if(!pJson.isInt64())
             {
@@ -1196,7 +1182,7 @@ bool Notifications::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isInt64())
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -1240,9 +1226,10 @@ bool Notifications::validJsonOfField(size_t index,
         case 5:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
-            if(!pJson.isInt64())
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -1251,7 +1238,8 @@ bool Notifications::validJsonOfField(size_t index,
         case 6:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

@@ -5,25 +5,26 @@
  *
  */
 #include "pch.h"
+
 #include "Friendships.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string Friendships::Cols::_uid1 = "uid1";
-const std::string Friendships::Cols::_uid2 = "uid2";
-const std::string Friendships::Cols::_created_time = "created_time";
+const std::string Friendships::Cols::_uid1 = "\"uid1\"";
+const std::string Friendships::Cols::_uid2 = "\"uid2\"";
+const std::string Friendships::Cols::_created_time = "\"created_time\"";
 const std::string Friendships::primaryKeyName = "";
 const bool Friendships::hasPrimaryKey = false;
-const std::string Friendships::tableName = "friendships";
+const std::string Friendships::tableName = "\"friendships\"";
 
 const std::vector<typename Friendships::MetaData> Friendships::metaData_={
 {"uid1","std::string","text",0,0,0,1},
 {"uid2","std::string","text",0,0,0,1},
-{"created_time","int64_t","integer",8,0,0,0}
+{"created_time","int64_t","bigint",8,0,0,1}
 };
 const std::string &Friendships::getColumnName(size_t index) noexcept(false)
 {
@@ -256,11 +257,6 @@ const std::shared_ptr<int64_t> &Friendships::getCreatedTime() const noexcept
 void Friendships::setCreatedTime(const int64_t &pCreatedTime) noexcept
 {
     createdTime_ = std::make_shared<int64_t>(pCreatedTime);
-    dirtyFlag_[2] = true;
-}
-void Friendships::setCreatedTimeToNull() noexcept
-{
-    createdTime_.reset();
     dirtyFlag_[2] = true;
 }
 
@@ -636,7 +632,8 @@ bool Friendships::validJsonOfField(size_t index,
         case 2:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

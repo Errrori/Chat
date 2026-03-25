@@ -12,21 +12,21 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string GroupMembers::Cols::_thread_id = "thread_id";
-const std::string GroupMembers::Cols::_user_uid = "user_uid";
-const std::string GroupMembers::Cols::_role = "role";
-const std::string GroupMembers::Cols::_join_time = "join_time";
+const std::string GroupMembers::Cols::_thread_id = "\"thread_id\"";
+const std::string GroupMembers::Cols::_user_uid = "\"user_uid\"";
+const std::string GroupMembers::Cols::_role = "\"role\"";
+const std::string GroupMembers::Cols::_join_time = "\"join_time\"";
 const std::vector<std::string> GroupMembers::primaryKeyName = {"thread_id","user_uid"};
 const bool GroupMembers::hasPrimaryKey = true;
-const std::string GroupMembers::tableName = "group_members";
+const std::string GroupMembers::tableName = "\"group_members\"";
 
 const std::vector<typename GroupMembers::MetaData> GroupMembers::metaData_={
-{"thread_id","int64_t","integer",8,0,1,1},
+{"thread_id","int64_t","bigint",8,0,1,1},
 {"user_uid","std::string","text",0,0,1,1},
-{"role","int64_t","integer",8,0,0,1},
-{"join_time","int64_t","integer",8,0,0,0}
+{"role","int32_t","integer",4,0,0,1},
+{"join_time","int64_t","bigint",8,0,0,1}
 };
 const std::string &GroupMembers::getColumnName(size_t index) noexcept(false)
 {
@@ -47,7 +47,7 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["role"].isNull())
         {
-            role_=std::make_shared<int64_t>(r["role"].as<int64_t>());
+            role_=std::make_shared<int32_t>(r["role"].as<int32_t>());
         }
         if(!r["join_time"].isNull())
         {
@@ -76,7 +76,7 @@ GroupMembers::GroupMembers(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 2;
         if(!r[index].isNull())
         {
-            role_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            role_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 3;
         if(!r[index].isNull())
@@ -115,7 +115,7 @@ GroupMembers::GroupMembers(const Json::Value &pJson, const std::vector<std::stri
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            role_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
+            role_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -151,7 +151,7 @@ GroupMembers::GroupMembers(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[2]=true;
         if(!pJson["role"].isNull())
         {
-            role_=std::make_shared<int64_t>((int64_t)pJson["role"].asInt64());
+            role_=std::make_shared<int32_t>((int32_t)pJson["role"].asInt64());
         }
     }
     if(pJson.isMember("join_time"))
@@ -191,7 +191,7 @@ void GroupMembers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            role_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[2]].asInt64());
+            role_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -225,7 +225,7 @@ void GroupMembers::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[2] = true;
         if(!pJson["role"].isNull())
         {
-            role_=std::make_shared<int64_t>((int64_t)pJson["role"].asInt64());
+            role_=std::make_shared<int32_t>((int32_t)pJson["role"].asInt64());
         }
     }
     if(pJson.isMember("join_time"))
@@ -277,20 +277,20 @@ void GroupMembers::setUserUid(std::string &&pUserUid) noexcept
     dirtyFlag_[1] = true;
 }
 
-const int64_t &GroupMembers::getValueOfRole() const noexcept
+const int32_t &GroupMembers::getValueOfRole() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const int32_t defaultValue = int32_t();
     if(role_)
         return *role_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GroupMembers::getRole() const noexcept
+const std::shared_ptr<int32_t> &GroupMembers::getRole() const noexcept
 {
     return role_;
 }
-void GroupMembers::setRole(const int64_t &pRole) noexcept
+void GroupMembers::setRole(const int32_t &pRole) noexcept
 {
-    role_ = std::make_shared<int64_t>(pRole);
+    role_ = std::make_shared<int32_t>(pRole);
     dirtyFlag_[2] = true;
 }
 
@@ -308,11 +308,6 @@ const std::shared_ptr<int64_t> &GroupMembers::getJoinTime() const noexcept
 void GroupMembers::setJoinTime(const int64_t &pJoinTime) noexcept
 {
     joinTime_ = std::make_shared<int64_t>(pJoinTime);
-    dirtyFlag_[3] = true;
-}
-void GroupMembers::setJoinTimeToNull() noexcept
-{
-    joinTime_.reset();
     dirtyFlag_[3] = true;
 }
 
@@ -473,7 +468,7 @@ Json::Value GroupMembers::toJson() const
     }
     if(getRole())
     {
-        ret["role"]=(Json::Int64)getValueOfRole();
+        ret["role"]=getValueOfRole();
     }
     else
     {
@@ -522,7 +517,7 @@ Json::Value GroupMembers::toMasqueradedJson(
         {
             if(getRole())
             {
-                ret[pMasqueradingVector[2]]=(Json::Int64)getValueOfRole();
+                ret[pMasqueradingVector[2]]=getValueOfRole();
             }
             else
             {
@@ -561,7 +556,7 @@ Json::Value GroupMembers::toMasqueradedJson(
     }
     if(getRole())
     {
-        ret["role"]=(Json::Int64)getValueOfRole();
+        ret["role"]=getValueOfRole();
     }
     else
     {
@@ -792,7 +787,7 @@ bool GroupMembers::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isInt64())
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -801,7 +796,8 @@ bool GroupMembers::validJsonOfField(size_t index,
         case 3:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

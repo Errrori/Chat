@@ -9,15 +9,18 @@
 #include "models/PrivateChats.h"
 #include "models/Block.h"
 #include "Common/Enums.h"
+#include "models/Users.h"
 
 using namespace drogon::orm;
 using namespace ChatEnums;
-using FriendRequests = drogon_model::sqlite3::FriendRequests;
-using Notifications = drogon_model::sqlite3::Notifications;
-using Friendships = drogon_model::sqlite3::Friendships;
-using Threads = drogon_model::sqlite3::Threads;
-using PrivateChats = drogon_model::sqlite3::PrivateChats;
-using Block = drogon_model::sqlite3::Block;
+
+using users = drogon_model::postgres::Users;
+using FriendRequests = drogon_model::postgres::FriendRequests;
+using Notifications = drogon_model::postgres::Notifications;
+using Friendships = drogon_model::postgres::Friendships;
+using Threads = drogon_model::postgres::Threads;
+using PrivateChats = drogon_model::postgres::PrivateChats;
+using Block = drogon_model::postgres::Block;
 
 drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std::string& requester_uid,
 	const std::string& acceptor_uid, const std::string& payload)

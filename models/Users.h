@@ -36,7 +36,7 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace sqlite3
+namespace postgres
 {
 
 class Users
@@ -111,7 +111,6 @@ class Users
     const std::shared_ptr<int64_t> &getId() const noexcept;
     ///Set the value of the column id
     void setId(const int64_t &pId) noexcept;
-    void setIdToNull() noexcept;
 
     /**  For column username  */
     ///Get the value of the column username, returns the default value if the column is null
@@ -166,7 +165,6 @@ class Users
     const std::shared_ptr<int64_t> &getCreateTime() const noexcept;
     ///Set the value of the column create_time
     void setCreateTime(const int64_t &pCreateTime) noexcept;
-    void setCreateTimeToNull() noexcept;
 
     /**  For column signature  */
     ///Get the value of the column signature, returns the default value if the column is null
@@ -234,13 +232,13 @@ class Users
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where id = ?";
+        static const std::string sql="select * from " + tableName + " where id = $1";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where id = ?";
+        static const std::string sql="delete from " + tableName + " where id = $1";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -248,6 +246,8 @@ class Users
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+            sql += "id,";
+            ++parametersCount;
         if(dirtyFlag_[1])
         {
             sql += "username,";
@@ -268,20 +268,14 @@ class Users
             sql += "uid,";
             ++parametersCount;
         }
-        if(dirtyFlag_[5])
-        {
-            sql += "avatar,";
-            ++parametersCount;
-        }
+        sql += "avatar,";
+        ++parametersCount;
         if(!dirtyFlag_[5])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[6])
-        {
-            sql += "create_time,";
-            ++parametersCount;
-        }
+        sql += "create_time,";
+        ++parametersCount;
         if(!dirtyFlag_[6])
         {
             needSelection=true;
@@ -296,6 +290,7 @@ class Users
             sql += "email,";
             ++parametersCount;
         }
+        needSelection=true;
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -304,54 +299,73 @@ class Users
         else
             sql += ") values (";
 
+        int placeholder=1;
+        char placeholderStr[64];
+        size_t n=0;
+        sql +="default,";
         if(dirtyFlag_[1])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[2])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[3])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[4])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[5])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[6])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[7])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[8])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        sql.append(1, ')');
+        if(needSelection)
+        {
+            sql.append(") returning *");
+        }
+        else
+        {
+            sql.append(1, ')');
+        }
         LOG_TRACE << sql;
         return sql;
     }
 };
-} // namespace sqlite3
+} // namespace postgres
 } // namespace drogon_model

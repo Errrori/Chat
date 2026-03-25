@@ -10,9 +10,13 @@ public:
         ADD_METHOD_TO(UserController::SearchUser,"/user/search",drogon::Get);
         ADD_METHOD_TO(UserController::UpdateUserProfile,"/user/profile",drogon::Post, "TokenVerifyFilter");
         ADD_METHOD_TO(UserController::UpdateUserProfile,"/user/modify/info",drogon::Post, "TokenVerifyFilter");
+
+        ADD_METHOD_TO(UserController::CloseUserConn, "/user/remove", drogon::Get, "TokenVerifyFilter");
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> GetUserProfile(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr> SearchUser(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr> UpdateUserProfile(drogon::HttpRequestPtr req);
+
+    drogon::Task<drogon::HttpResponsePtr> CloseUserConn(drogon::HttpRequestPtr req);
 };

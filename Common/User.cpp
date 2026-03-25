@@ -24,12 +24,12 @@ UserInfo UserInfo::FromJson(const Json::Value& json)
 	return info;
 }
 
-std::optional<drogon_model::sqlite3::Users> UserInfo::ToDbUsers() const
+std::optional<drogon_model::postgres::Users> UserInfo::ToDbUsers() const
 {
 	if (!IsDbValid())
 		return std::nullopt;
 
-	drogon_model::sqlite3::Users user;
+	drogon_model::postgres::Users user;
 	user.setUid(uid);
 	user.setUsername(username);
 	user.setAccount(account);

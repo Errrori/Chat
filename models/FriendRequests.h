@@ -36,7 +36,7 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace sqlite3
+namespace postgres
 {
 
 class FriendRequests
@@ -109,7 +109,6 @@ class FriendRequests
     const std::shared_ptr<int64_t> &getId() const noexcept;
     ///Set the value of the column id
     void setId(const int64_t &pId) noexcept;
-    void setIdToNull() noexcept;
 
     /**  For column requester_uid  */
     ///Get the value of the column requester_uid, returns the default value if the column is null
@@ -131,11 +130,11 @@ class FriendRequests
 
     /**  For column status  */
     ///Get the value of the column status, returns the default value if the column is null
-    const int64_t &getValueOfStatus() const noexcept;
+    const int32_t &getValueOfStatus() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getStatus() const noexcept;
+    const std::shared_ptr<int32_t> &getStatus() const noexcept;
     ///Set the value of the column status
-    void setStatus(const int64_t &pStatus) noexcept;
+    void setStatus(const int32_t &pStatus) noexcept;
 
     /**  For column created_time  */
     ///Get the value of the column created_time, returns the default value if the column is null
@@ -144,7 +143,6 @@ class FriendRequests
     const std::shared_ptr<int64_t> &getCreatedTime() const noexcept;
     ///Set the value of the column created_time
     void setCreatedTime(const int64_t &pCreatedTime) noexcept;
-    void setCreatedTimeToNull() noexcept;
 
     /**  For column updated_time  */
     ///Get the value of the column updated_time, returns the default value if the column is null
@@ -153,7 +151,6 @@ class FriendRequests
     const std::shared_ptr<int64_t> &getUpdatedTime() const noexcept;
     ///Set the value of the column updated_time
     void setUpdatedTime(const int64_t &pUpdatedTime) noexcept;
-    void setUpdatedTimeToNull() noexcept;
 
     /**  For column payload  */
     ///Get the value of the column payload, returns the default value if the column is null
@@ -190,7 +187,7 @@ class FriendRequests
     std::shared_ptr<int64_t> id_;
     std::shared_ptr<std::string> requesterUid_;
     std::shared_ptr<std::string> targetUid_;
-    std::shared_ptr<int64_t> status_;
+    std::shared_ptr<int32_t> status_;
     std::shared_ptr<int64_t> createdTime_;
     std::shared_ptr<int64_t> updatedTime_;
     std::shared_ptr<std::string> payload_;
@@ -209,13 +206,13 @@ class FriendRequests
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where id = ?";
+        static const std::string sql="select * from " + tableName + " where id = $1";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where id = ?";
+        static const std::string sql="delete from " + tableName + " where id = $1";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -223,6 +220,8 @@ class FriendRequests
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+            sql += "id,";
+            ++parametersCount;
         if(dirtyFlag_[1])
         {
             sql += "requester_uid,";
@@ -233,25 +232,20 @@ class FriendRequests
             sql += "target_uid,";
             ++parametersCount;
         }
-        if(dirtyFlag_[3])
+        sql += "status,";
+        ++parametersCount;
+        if(!dirtyFlag_[3])
         {
-            sql += "status,";
-            ++parametersCount;
+            needSelection=true;
         }
-        if(dirtyFlag_[4])
-        {
-            sql += "created_time,";
-            ++parametersCount;
-        }
+        sql += "created_time,";
+        ++parametersCount;
         if(!dirtyFlag_[4])
         {
             needSelection=true;
         }
-        if(dirtyFlag_[5])
-        {
-            sql += "updated_time,";
-            ++parametersCount;
-        }
+        sql += "updated_time,";
+        ++parametersCount;
         if(!dirtyFlag_[5])
         {
             needSelection=true;
@@ -261,6 +255,7 @@ class FriendRequests
             sql += "payload,";
             ++parametersCount;
         }
+        needSelection=true;
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -269,44 +264,67 @@ class FriendRequests
         else
             sql += ") values (";
 
+        int placeholder=1;
+        char placeholderStr[64];
+        size_t n=0;
+        sql +="default,";
         if(dirtyFlag_[1])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[2])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[3])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[4])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[5])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(dirtyFlag_[6])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        sql.append(1, ')');
+        if(needSelection)
+        {
+            sql.append(") returning *");
+        }
+        else
+        {
+            sql.append(1, ')');
+        }
         LOG_TRACE << sql;
         return sql;
     }
 };
-} // namespace sqlite3
+} // namespace postgres
 } // namespace drogon_model

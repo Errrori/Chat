@@ -12,19 +12,19 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string Threads::Cols::_thread_id = "thread_id";
-const std::string Threads::Cols::_type = "type";
-const std::string Threads::Cols::_create_time = "create_time";
+const std::string Threads::Cols::_thread_id = "\"thread_id\"";
+const std::string Threads::Cols::_type = "\"type\"";
+const std::string Threads::Cols::_create_time = "\"create_time\"";
 const std::string Threads::primaryKeyName = "thread_id";
 const bool Threads::hasPrimaryKey = true;
-const std::string Threads::tableName = "threads";
+const std::string Threads::tableName = "\"threads\"";
 
 const std::vector<typename Threads::MetaData> Threads::metaData_={
-{"thread_id","int64_t","integer",8,1,1,0},
-{"type","int64_t","integer",8,0,0,1},
-{"create_time","int64_t","integer",8,0,0,0}
+{"thread_id","int64_t","bigint",8,1,1,1},
+{"type","int32_t","integer",4,0,0,1},
+{"create_time","int64_t","bigint",8,0,0,1}
 };
 const std::string &Threads::getColumnName(size_t index) noexcept(false)
 {
@@ -41,7 +41,7 @@ Threads::Threads(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["type"].isNull())
         {
-            type_=std::make_shared<int64_t>(r["type"].as<int64_t>());
+            type_=std::make_shared<int32_t>(r["type"].as<int32_t>());
         }
         if(!r["create_time"].isNull())
         {
@@ -65,7 +65,7 @@ Threads::Threads(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 1;
         if(!r[index].isNull())
         {
-            type_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            type_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 2;
         if(!r[index].isNull())
@@ -96,7 +96,7 @@ Threads::Threads(const Json::Value &pJson, const std::vector<std::string> &pMasq
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            type_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[1]].asInt64());
+            type_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
         }
     }
     if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
@@ -124,7 +124,7 @@ Threads::Threads(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["type"].isNull())
         {
-            type_=std::make_shared<int64_t>((int64_t)pJson["type"].asInt64());
+            type_=std::make_shared<int32_t>((int32_t)pJson["type"].asInt64());
         }
     }
     if(pJson.isMember("create_time"))
@@ -157,7 +157,7 @@ void Threads::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            type_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[1]].asInt64());
+            type_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
         }
     }
     if(!pMasqueradingVector[2].empty() && pJson.isMember(pMasqueradingVector[2]))
@@ -184,7 +184,7 @@ void Threads::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["type"].isNull())
         {
-            type_=std::make_shared<int64_t>((int64_t)pJson["type"].asInt64());
+            type_=std::make_shared<int32_t>((int32_t)pJson["type"].asInt64());
         }
     }
     if(pJson.isMember("create_time"))
@@ -213,31 +213,26 @@ void Threads::setThreadId(const int64_t &pThreadId) noexcept
     threadId_ = std::make_shared<int64_t>(pThreadId);
     dirtyFlag_[0] = true;
 }
-void Threads::setThreadIdToNull() noexcept
-{
-    threadId_.reset();
-    dirtyFlag_[0] = true;
-}
 const typename Threads::PrimaryKeyType & Threads::getPrimaryKey() const
 {
     assert(threadId_);
     return *threadId_;
 }
 
-const int64_t &Threads::getValueOfType() const noexcept
+const int32_t &Threads::getValueOfType() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const int32_t defaultValue = int32_t();
     if(type_)
         return *type_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &Threads::getType() const noexcept
+const std::shared_ptr<int32_t> &Threads::getType() const noexcept
 {
     return type_;
 }
-void Threads::setType(const int64_t &pType) noexcept
+void Threads::setType(const int32_t &pType) noexcept
 {
-    type_ = std::make_shared<int64_t>(pType);
+    type_ = std::make_shared<int32_t>(pType);
     dirtyFlag_[1] = true;
 }
 
@@ -257,15 +252,9 @@ void Threads::setCreateTime(const int64_t &pCreateTime) noexcept
     createTime_ = std::make_shared<int64_t>(pCreateTime);
     dirtyFlag_[2] = true;
 }
-void Threads::setCreateTimeToNull() noexcept
-{
-    createTime_.reset();
-    dirtyFlag_[2] = true;
-}
 
 void Threads::updateId(const uint64_t id)
 {
-    threadId_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &Threads::insertColumns() noexcept
@@ -355,7 +344,7 @@ Json::Value Threads::toJson() const
     }
     if(getType())
     {
-        ret["type"]=(Json::Int64)getValueOfType();
+        ret["type"]=getValueOfType();
     }
     else
     {
@@ -393,7 +382,7 @@ Json::Value Threads::toMasqueradedJson(
         {
             if(getType())
             {
-                ret[pMasqueradingVector[1]]=(Json::Int64)getValueOfType();
+                ret[pMasqueradingVector[1]]=getValueOfType();
             }
             else
             {
@@ -424,7 +413,7 @@ Json::Value Threads::toMasqueradedJson(
     }
     if(getType())
     {
-        ret["type"]=(Json::Int64)getValueOfType();
+        ret["type"]=getValueOfType();
     }
     else
     {
@@ -583,14 +572,15 @@ bool Threads::validJsonOfField(size_t index,
     switch(index)
     {
         case 0:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
             if(isForCreation)
             {
                 err="The automatic primary key cannot be set";
                 return false;
-            }
-            if(pJson.isNull())
-            {
-                return true;
             }
             if(!pJson.isInt64())
             {
@@ -604,7 +594,7 @@ bool Threads::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isInt64())
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -613,7 +603,8 @@ bool Threads::validJsonOfField(size_t index,
         case 2:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

@@ -4,9 +4,6 @@
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\HttpClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -110,6 +107,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteRelationshipRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteInitializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgreSQLInitializer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\Users.cc">

@@ -3,7 +3,7 @@
 #include <string>
 #include <optional>
 
-namespace drogon_model::sqlite3
+namespace drogon_model::postgres
 {
 	class AiContext;
 }
@@ -30,7 +30,7 @@ public:
 	static Role StringToRole(const std::string& role_str);
 
 	bool IsValid() const;
-	std::optional<drogon_model::sqlite3::AiContext> ToDbObject() const;
+	std::optional<drogon_model::postgres::AiContext> ToDbObject() const;
 
 	// Getters
 	int getThreadId() const { return _thread_id; }

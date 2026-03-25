@@ -8,7 +8,7 @@
 class RedisService;
 class RelationshipService;
 
-namespace drogon_model::sqlite3
+namespace drogon_model::postgres
 {
 	class Messages;
 }

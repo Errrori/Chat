@@ -5,26 +5,24 @@
  *
  */
 #include "pch.h"
-
 #include "AiChats.h"
-#include <drogon/utils/Utilities.h>
 #include <string>
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string AiChats::Cols::_thread_id = "thread_id";
-const std::string AiChats::Cols::_name = "name";
-const std::string AiChats::Cols::_creator_uid = "creator_uid";
-const std::string AiChats::Cols::_avatar = "avatar";
-const std::string AiChats::Cols::_init_settings = "init_settings";
+const std::string AiChats::Cols::_thread_id = "\"thread_id\"";
+const std::string AiChats::Cols::_name = "\"name\"";
+const std::string AiChats::Cols::_creator_uid = "\"creator_uid\"";
+const std::string AiChats::Cols::_avatar = "\"avatar\"";
+const std::string AiChats::Cols::_init_settings = "\"init_settings\"";
 const std::string AiChats::primaryKeyName = "";
 const bool AiChats::hasPrimaryKey = false;
-const std::string AiChats::tableName = "ai_chats";
+const std::string AiChats::tableName = "\"ai_chats\"";
 
 const std::vector<typename AiChats::MetaData> AiChats::metaData_={
-{"thread_id","int64_t","integer",8,0,0,1},
+{"thread_id","int64_t","bigint",8,0,0,1},
 {"name","std::string","text",0,0,0,1},
 {"creator_uid","std::string","text",0,0,0,0},
 {"avatar","std::string","text",0,0,0,0},

@@ -5,32 +5,33 @@
  *
  */
 #include "pch.h"
+
 #include "FriendRequests.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string FriendRequests::Cols::_id = "id";
-const std::string FriendRequests::Cols::_requester_uid = "requester_uid";
-const std::string FriendRequests::Cols::_target_uid = "target_uid";
-const std::string FriendRequests::Cols::_status = "status";
-const std::string FriendRequests::Cols::_created_time = "created_time";
-const std::string FriendRequests::Cols::_updated_time = "updated_time";
-const std::string FriendRequests::Cols::_payload = "payload";
+const std::string FriendRequests::Cols::_id = "\"id\"";
+const std::string FriendRequests::Cols::_requester_uid = "\"requester_uid\"";
+const std::string FriendRequests::Cols::_target_uid = "\"target_uid\"";
+const std::string FriendRequests::Cols::_status = "\"status\"";
+const std::string FriendRequests::Cols::_created_time = "\"created_time\"";
+const std::string FriendRequests::Cols::_updated_time = "\"updated_time\"";
+const std::string FriendRequests::Cols::_payload = "\"payload\"";
 const std::string FriendRequests::primaryKeyName = "id";
 const bool FriendRequests::hasPrimaryKey = true;
-const std::string FriendRequests::tableName = "friend_requests";
+const std::string FriendRequests::tableName = "\"friend_requests\"";
 
 const std::vector<typename FriendRequests::MetaData> FriendRequests::metaData_={
-{"id","int64_t","integer",8,1,1,0},
+{"id","int64_t","bigint",8,1,1,1},
 {"requester_uid","std::string","text",0,0,0,1},
 {"target_uid","std::string","text",0,0,0,1},
-{"status","int64_t","integer",8,0,0,1},
-{"created_time","int64_t","integer",8,0,0,0},
-{"updated_time","int64_t","integer",8,0,0,0},
+{"status","int32_t","integer",4,0,0,1},
+{"created_time","int64_t","bigint",8,0,0,1},
+{"updated_time","int64_t","bigint",8,0,0,1},
 {"payload","std::string","text",0,0,0,0}
 };
 const std::string &FriendRequests::getColumnName(size_t index) noexcept(false)
@@ -56,7 +57,7 @@ FriendRequests::FriendRequests(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["status"].isNull())
         {
-            status_=std::make_shared<int64_t>(r["status"].as<int64_t>());
+            status_=std::make_shared<int32_t>(r["status"].as<int32_t>());
         }
         if(!r["created_time"].isNull())
         {
@@ -98,7 +99,7 @@ FriendRequests::FriendRequests(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 3;
         if(!r[index].isNull())
         {
-            status_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            status_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 4;
         if(!r[index].isNull())
@@ -155,7 +156,7 @@ FriendRequests::FriendRequests(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            status_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[3]].asInt64());
+            status_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[3]].asInt64());
         }
     }
     if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
@@ -215,7 +216,7 @@ FriendRequests::FriendRequests(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[3]=true;
         if(!pJson["status"].isNull())
         {
-            status_=std::make_shared<int64_t>((int64_t)pJson["status"].asInt64());
+            status_=std::make_shared<int32_t>((int32_t)pJson["status"].asInt64());
         }
     }
     if(pJson.isMember("created_time"))
@@ -280,7 +281,7 @@ void FriendRequests::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            status_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[3]].asInt64());
+            status_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[3]].asInt64());
         }
     }
     if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
@@ -339,7 +340,7 @@ void FriendRequests::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[3] = true;
         if(!pJson["status"].isNull())
         {
-            status_=std::make_shared<int64_t>((int64_t)pJson["status"].asInt64());
+            status_=std::make_shared<int32_t>((int32_t)pJson["status"].asInt64());
         }
     }
     if(pJson.isMember("created_time"))
@@ -382,11 +383,6 @@ const std::shared_ptr<int64_t> &FriendRequests::getId() const noexcept
 void FriendRequests::setId(const int64_t &pId) noexcept
 {
     id_ = std::make_shared<int64_t>(pId);
-    dirtyFlag_[0] = true;
-}
-void FriendRequests::setIdToNull() noexcept
-{
-    id_.reset();
     dirtyFlag_[0] = true;
 }
 const typename FriendRequests::PrimaryKeyType & FriendRequests::getPrimaryKey() const
@@ -439,20 +435,20 @@ void FriendRequests::setTargetUid(std::string &&pTargetUid) noexcept
     dirtyFlag_[2] = true;
 }
 
-const int64_t &FriendRequests::getValueOfStatus() const noexcept
+const int32_t &FriendRequests::getValueOfStatus() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const int32_t defaultValue = int32_t();
     if(status_)
         return *status_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &FriendRequests::getStatus() const noexcept
+const std::shared_ptr<int32_t> &FriendRequests::getStatus() const noexcept
 {
     return status_;
 }
-void FriendRequests::setStatus(const int64_t &pStatus) noexcept
+void FriendRequests::setStatus(const int32_t &pStatus) noexcept
 {
-    status_ = std::make_shared<int64_t>(pStatus);
+    status_ = std::make_shared<int32_t>(pStatus);
     dirtyFlag_[3] = true;
 }
 
@@ -472,11 +468,6 @@ void FriendRequests::setCreatedTime(const int64_t &pCreatedTime) noexcept
     createdTime_ = std::make_shared<int64_t>(pCreatedTime);
     dirtyFlag_[4] = true;
 }
-void FriendRequests::setCreatedTimeToNull() noexcept
-{
-    createdTime_.reset();
-    dirtyFlag_[4] = true;
-}
 
 const int64_t &FriendRequests::getValueOfUpdatedTime() const noexcept
 {
@@ -492,11 +483,6 @@ const std::shared_ptr<int64_t> &FriendRequests::getUpdatedTime() const noexcept
 void FriendRequests::setUpdatedTime(const int64_t &pUpdatedTime) noexcept
 {
     updatedTime_ = std::make_shared<int64_t>(pUpdatedTime);
-    dirtyFlag_[5] = true;
-}
-void FriendRequests::setUpdatedTimeToNull() noexcept
-{
-    updatedTime_.reset();
     dirtyFlag_[5] = true;
 }
 
@@ -529,7 +515,6 @@ void FriendRequests::setPayloadToNull() noexcept
 
 void FriendRequests::updateId(const uint64_t id)
 {
-    id_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &FriendRequests::insertColumns() noexcept
@@ -743,7 +728,7 @@ Json::Value FriendRequests::toJson() const
     }
     if(getStatus())
     {
-        ret["status"]=(Json::Int64)getValueOfStatus();
+        ret["status"]=getValueOfStatus();
     }
     else
     {
@@ -819,7 +804,7 @@ Json::Value FriendRequests::toMasqueradedJson(
         {
             if(getStatus())
             {
-                ret[pMasqueradingVector[3]]=(Json::Int64)getValueOfStatus();
+                ret[pMasqueradingVector[3]]=getValueOfStatus();
             }
             else
             {
@@ -888,7 +873,7 @@ Json::Value FriendRequests::toMasqueradedJson(
     }
     if(getStatus())
     {
-        ret["status"]=(Json::Int64)getValueOfStatus();
+        ret["status"]=getValueOfStatus();
     }
     else
     {
@@ -952,11 +937,6 @@ bool FriendRequests::validateJsonForCreation(const Json::Value &pJson, std::stri
     {
         if(!validJsonOfField(3, "status", pJson["status"], err, true))
             return false;
-    }
-    else
-    {
-        err="The status column cannot be null";
-        return false;
     }
     if(pJson.isMember("created_time"))
     {
@@ -1026,11 +1006,6 @@ bool FriendRequests::validateMasqueradedJsonForCreation(const Json::Value &pJson
               if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, true))
                   return false;
           }
-        else
-        {
-            err="The " + pMasqueradingVector[3] + " column cannot be null";
-            return false;
-        }
       }
       if(!pMasqueradingVector[4].empty())
       {
@@ -1175,14 +1150,15 @@ bool FriendRequests::validJsonOfField(size_t index,
     switch(index)
     {
         case 0:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
             if(isForCreation)
             {
                 err="The automatic primary key cannot be set";
                 return false;
-            }
-            if(pJson.isNull())
-            {
-                return true;
             }
             if(!pJson.isInt64())
             {
@@ -1220,7 +1196,7 @@ bool FriendRequests::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isInt64())
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -1229,7 +1205,8 @@ bool FriendRequests::validJsonOfField(size_t index,
         case 4:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {
@@ -1240,7 +1217,8 @@ bool FriendRequests::validJsonOfField(size_t index,
         case 5:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

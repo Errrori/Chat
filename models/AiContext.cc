@@ -11,27 +11,27 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string AiContext::Cols::_message_id = "message_id";
-const std::string AiContext::Cols::_thread_id = "thread_id";
-const std::string AiContext::Cols::_role = "role";
-const std::string AiContext::Cols::_content = "content";
-const std::string AiContext::Cols::_attachment = "attachment";
-const std::string AiContext::Cols::_reasoning_content = "reasoning_content";
-const std::string AiContext::Cols::_created_time = "created_time";
+const std::string AiContext::Cols::_message_id = "\"message_id\"";
+const std::string AiContext::Cols::_thread_id = "\"thread_id\"";
+const std::string AiContext::Cols::_role = "\"role\"";
+const std::string AiContext::Cols::_content = "\"content\"";
+const std::string AiContext::Cols::_attachment = "\"attachment\"";
+const std::string AiContext::Cols::_reasoning_content = "\"reasoning_content\"";
+const std::string AiContext::Cols::_created_time = "\"created_time\"";
 const std::string AiContext::primaryKeyName = "message_id";
 const bool AiContext::hasPrimaryKey = true;
-const std::string AiContext::tableName = "ai_context";
+const std::string AiContext::tableName = "\"ai_context\"";
 
 const std::vector<typename AiContext::MetaData> AiContext::metaData_={
-{"message_id","std::string","text",0,0,1,0},
-{"thread_id","int64_t","integer",8,0,0,1},
+{"message_id","std::string","text",0,0,1,1},
+{"thread_id","int64_t","bigint",8,0,0,1},
 {"role","std::string","text",0,0,0,1},
 {"content","std::string","text",0,0,0,1},
 {"attachment","std::string","text",0,0,0,0},
 {"reasoning_content","std::string","text",0,0,0,0},
-{"created_time","int64_t","integer",8,0,0,0}
+{"created_time","int64_t","bigint",8,0,0,1}
 };
 const std::string &AiContext::getColumnName(size_t index) noexcept(false)
 {
@@ -389,11 +389,6 @@ void AiContext::setMessageId(std::string &&pMessageId) noexcept
     messageId_ = std::make_shared<std::string>(std::move(pMessageId));
     dirtyFlag_[0] = true;
 }
-void AiContext::setMessageIdToNull() noexcept
-{
-    messageId_.reset();
-    dirtyFlag_[0] = true;
-}
 const typename AiContext::PrimaryKeyType & AiContext::getPrimaryKey() const
 {
     assert(messageId_);
@@ -529,11 +524,6 @@ const std::shared_ptr<int64_t> &AiContext::getCreatedTime() const noexcept
 void AiContext::setCreatedTime(const int64_t &pCreatedTime) noexcept
 {
     createdTime_ = std::make_shared<int64_t>(pCreatedTime);
-    dirtyFlag_[6] = true;
-}
-void AiContext::setCreatedTimeToNull() noexcept
-{
-    createdTime_.reset();
     dirtyFlag_[6] = true;
 }
 
@@ -964,6 +954,11 @@ bool AiContext::validateJsonForCreation(const Json::Value &pJson, std::string &e
         if(!validJsonOfField(0, "message_id", pJson["message_id"], err, true))
             return false;
     }
+    else
+    {
+        err="The message_id column cannot be null";
+        return false;
+    }
     if(pJson.isMember("thread_id"))
     {
         if(!validJsonOfField(1, "thread_id", pJson["thread_id"], err, true))
@@ -1028,6 +1023,11 @@ bool AiContext::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
                   return false;
           }
+        else
+        {
+            err="The " + pMasqueradingVector[0] + " column cannot be null";
+            return false;
+        }
       }
       if(!pMasqueradingVector[1].empty())
       {
@@ -1213,7 +1213,8 @@ bool AiContext::validJsonOfField(size_t index,
         case 0:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isString())
             {
@@ -1282,7 +1283,8 @@ bool AiContext::validJsonOfField(size_t index,
         case 6:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

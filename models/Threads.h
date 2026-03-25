@@ -36,7 +36,7 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace sqlite3
+namespace postgres
 {
 
 class Threads
@@ -105,15 +105,14 @@ class Threads
     const std::shared_ptr<int64_t> &getThreadId() const noexcept;
     ///Set the value of the column thread_id
     void setThreadId(const int64_t &pThreadId) noexcept;
-    void setThreadIdToNull() noexcept;
 
     /**  For column type  */
     ///Get the value of the column type, returns the default value if the column is null
-    const int64_t &getValueOfType() const noexcept;
+    const int32_t &getValueOfType() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getType() const noexcept;
+    const std::shared_ptr<int32_t> &getType() const noexcept;
     ///Set the value of the column type
-    void setType(const int64_t &pType) noexcept;
+    void setType(const int32_t &pType) noexcept;
 
     /**  For column create_time  */
     ///Get the value of the column create_time, returns the default value if the column is null
@@ -122,7 +121,6 @@ class Threads
     const std::shared_ptr<int64_t> &getCreateTime() const noexcept;
     ///Set the value of the column create_time
     void setCreateTime(const int64_t &pCreateTime) noexcept;
-    void setCreateTimeToNull() noexcept;
 
 
     static size_t getColumnNumber() noexcept {  return 3;  }
@@ -147,7 +145,7 @@ class Threads
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<int64_t> threadId_;
-    std::shared_ptr<int64_t> type_;
+    std::shared_ptr<int32_t> type_;
     std::shared_ptr<int64_t> createTime_;
     struct MetaData
     {
@@ -164,13 +162,13 @@ class Threads
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where thread_id = ?";
+        static const std::string sql="select * from " + tableName + " where thread_id = $1";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where thread_id = ?";
+        static const std::string sql="delete from " + tableName + " where thread_id = $1";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -178,20 +176,20 @@ class Threads
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
+            sql += "thread_id,";
+            ++parametersCount;
         if(dirtyFlag_[1])
         {
             sql += "type,";
             ++parametersCount;
         }
-        if(dirtyFlag_[2])
-        {
-            sql += "create_time,";
-            ++parametersCount;
-        }
+        sql += "create_time,";
+        ++parametersCount;
         if(!dirtyFlag_[2])
         {
             needSelection=true;
         }
+        needSelection=true;
         if(parametersCount > 0)
         {
             sql[sql.length()-1]=')';
@@ -200,24 +198,39 @@ class Threads
         else
             sql += ") values (";
 
+        int placeholder=1;
+        char placeholderStr[64];
+        size_t n=0;
+        sql +="default,";
         if(dirtyFlag_[1])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[2])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        sql.append(1, ')');
+        if(needSelection)
+        {
+            sql.append(") returning *");
+        }
+        else
+        {
+            sql.append(1, ')');
+        }
         LOG_TRACE << sql;
         return sql;
     }
 };
-} // namespace sqlite3
+} // namespace postgres
 } // namespace drogon_model

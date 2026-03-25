@@ -171,11 +171,20 @@ int main()
 		}
 	}
 
-	drogon::app().setLogLevel(trantor::Logger::kDebug)
-		.loadConfigFile(configPath)
-		.setDocumentRoot(documentRoot)
-		.setHomePage("index.html")
-		.setThreadNum(16);
+	try
+	{
+		drogon::app().setLogLevel(trantor::Logger::kDebug)
+			.loadConfigFile(configPath)
+			.setDocumentRoot(documentRoot)
+			.setHomePage("index.html")
+			.setThreadNum(16);
+	}
+	catch (const std::exception& e)
+	{
+		LOG_FATAL << "Failed to load config file: " << configPath << " , error: " << e.what();
+		curl_global_cleanup();
+		return 1;
+	}
 
 	//drogon::app().registerPostHandlingAdvice([](const drogon::HttpRequestPtr& req,
 	//	const drogon::HttpResponsePtr& resp)
@@ -188,7 +197,6 @@ int main()
 		LOG_INFO << "Server is ready to accept requests";
 	});
 
-	LOG_INFO << "Server starting...";
 	drogon::app().run();
 
 	curl_global_cleanup();

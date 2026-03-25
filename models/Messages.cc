@@ -12,33 +12,33 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string Messages::Cols::_message_id = "message_id";
-const std::string Messages::Cols::_thread_id = "thread_id";
-const std::string Messages::Cols::_sender_uid = "sender_uid";
-const std::string Messages::Cols::_sender_name = "sender_name";
-const std::string Messages::Cols::_sender_avatar = "sender_avatar";
-const std::string Messages::Cols::_content = "content";
-const std::string Messages::Cols::_attachment = "attachment";
-const std::string Messages::Cols::_status = "status";
-const std::string Messages::Cols::_create_time = "create_time";
-const std::string Messages::Cols::_update_time = "update_time";
+const std::string Messages::Cols::_message_id = "\"message_id\"";
+const std::string Messages::Cols::_thread_id = "\"thread_id\"";
+const std::string Messages::Cols::_sender_uid = "\"sender_uid\"";
+const std::string Messages::Cols::_sender_name = "\"sender_name\"";
+const std::string Messages::Cols::_sender_avatar = "\"sender_avatar\"";
+const std::string Messages::Cols::_content = "\"content\"";
+const std::string Messages::Cols::_attachment = "\"attachment\"";
+const std::string Messages::Cols::_status = "\"status\"";
+const std::string Messages::Cols::_create_time = "\"create_time\"";
+const std::string Messages::Cols::_update_time = "\"update_time\"";
 const std::string Messages::primaryKeyName = "message_id";
 const bool Messages::hasPrimaryKey = true;
-const std::string Messages::tableName = "messages";
+const std::string Messages::tableName = "\"messages\"";
 
 const std::vector<typename Messages::MetaData> Messages::metaData_={
-{"message_id","int64_t","integer",8,1,1,0},
-{"thread_id","int64_t","integer",8,0,0,1},
+{"message_id","int64_t","bigint",8,1,1,1},
+{"thread_id","int64_t","bigint",8,0,0,1},
 {"sender_uid","std::string","text",0,0,0,1},
 {"sender_name","std::string","text",0,0,0,1},
 {"sender_avatar","std::string","text",0,0,0,1},
 {"content","std::string","text",0,0,0,0},
 {"attachment","std::string","text",0,0,0,0},
-{"status","int64_t","integer",8,0,0,1},
-{"create_time","int64_t","integer",8,0,0,0},
-{"update_time","int64_t","integer",8,0,0,0}
+{"status","int32_t","integer",4,0,0,1},
+{"create_time","int64_t","bigint",8,0,0,1},
+{"update_time","int64_t","bigint",8,0,0,1}
 };
 const std::string &Messages::getColumnName(size_t index) noexcept(false)
 {
@@ -79,7 +79,7 @@ Messages::Messages(const Row &r, const ssize_t indexOffset) noexcept
         }
         if(!r["status"].isNull())
         {
-            status_=std::make_shared<int64_t>(r["status"].as<int64_t>());
+            status_=std::make_shared<int32_t>(r["status"].as<int32_t>());
         }
         if(!r["create_time"].isNull())
         {
@@ -137,7 +137,7 @@ Messages::Messages(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 7;
         if(!r[index].isNull())
         {
-            status_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            status_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 8;
         if(!r[index].isNull())
@@ -221,7 +221,7 @@ Messages::Messages(const Json::Value &pJson, const std::vector<std::string> &pMa
         dirtyFlag_[7] = true;
         if(!pJson[pMasqueradingVector[7]].isNull())
         {
-            status_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[7]].asInt64());
+            status_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[7]].asInt64());
         }
     }
     if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
@@ -305,7 +305,7 @@ Messages::Messages(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[7]=true;
         if(!pJson["status"].isNull())
         {
-            status_=std::make_shared<int64_t>((int64_t)pJson["status"].asInt64());
+            status_=std::make_shared<int32_t>((int32_t)pJson["status"].asInt64());
         }
     }
     if(pJson.isMember("create_time"))
@@ -394,7 +394,7 @@ void Messages::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[7] = true;
         if(!pJson[pMasqueradingVector[7]].isNull())
         {
-            status_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[7]].asInt64());
+            status_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[7]].asInt64());
         }
     }
     if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
@@ -477,7 +477,7 @@ void Messages::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[7] = true;
         if(!pJson["status"].isNull())
         {
-            status_=std::make_shared<int64_t>((int64_t)pJson["status"].asInt64());
+            status_=std::make_shared<int32_t>((int32_t)pJson["status"].asInt64());
         }
     }
     if(pJson.isMember("create_time"))
@@ -512,11 +512,6 @@ const std::shared_ptr<int64_t> &Messages::getMessageId() const noexcept
 void Messages::setMessageId(const int64_t &pMessageId) noexcept
 {
     messageId_ = std::make_shared<int64_t>(pMessageId);
-    dirtyFlag_[0] = true;
-}
-void Messages::setMessageIdToNull() noexcept
-{
-    messageId_.reset();
     dirtyFlag_[0] = true;
 }
 const typename Messages::PrimaryKeyType & Messages::getPrimaryKey() const
@@ -662,20 +657,20 @@ void Messages::setAttachmentToNull() noexcept
     dirtyFlag_[6] = true;
 }
 
-const int64_t &Messages::getValueOfStatus() const noexcept
+const int32_t &Messages::getValueOfStatus() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const int32_t defaultValue = int32_t();
     if(status_)
         return *status_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &Messages::getStatus() const noexcept
+const std::shared_ptr<int32_t> &Messages::getStatus() const noexcept
 {
     return status_;
 }
-void Messages::setStatus(const int64_t &pStatus) noexcept
+void Messages::setStatus(const int32_t &pStatus) noexcept
 {
-    status_ = std::make_shared<int64_t>(pStatus);
+    status_ = std::make_shared<int32_t>(pStatus);
     dirtyFlag_[7] = true;
 }
 
@@ -695,11 +690,6 @@ void Messages::setCreateTime(const int64_t &pCreateTime) noexcept
     createTime_ = std::make_shared<int64_t>(pCreateTime);
     dirtyFlag_[8] = true;
 }
-void Messages::setCreateTimeToNull() noexcept
-{
-    createTime_.reset();
-    dirtyFlag_[8] = true;
-}
 
 const int64_t &Messages::getValueOfUpdateTime() const noexcept
 {
@@ -717,15 +707,9 @@ void Messages::setUpdateTime(const int64_t &pUpdateTime) noexcept
     updateTime_ = std::make_shared<int64_t>(pUpdateTime);
     dirtyFlag_[9] = true;
 }
-void Messages::setUpdateTimeToNull() noexcept
-{
-    updateTime_.reset();
-    dirtyFlag_[9] = true;
-}
 
 void Messages::updateId(const uint64_t id)
 {
-    messageId_ = std::make_shared<int64_t>(static_cast<int64_t>(id));
 }
 
 const std::vector<std::string> &Messages::insertColumns() noexcept
@@ -1052,7 +1036,7 @@ Json::Value Messages::toJson() const
     }
     if(getStatus())
     {
-        ret["status"]=(Json::Int64)getValueOfStatus();
+        ret["status"]=getValueOfStatus();
     }
     else
     {
@@ -1164,7 +1148,7 @@ Json::Value Messages::toMasqueradedJson(
         {
             if(getStatus())
             {
-                ret[pMasqueradingVector[7]]=(Json::Int64)getValueOfStatus();
+                ret[pMasqueradingVector[7]]=getValueOfStatus();
             }
             else
             {
@@ -1254,7 +1238,7 @@ Json::Value Messages::toMasqueradedJson(
     }
     if(getStatus())
     {
-        ret["status"]=(Json::Int64)getValueOfStatus();
+        ret["status"]=getValueOfStatus();
     }
     else
     {
@@ -1612,14 +1596,15 @@ bool Messages::validJsonOfField(size_t index,
     switch(index)
     {
         case 0:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
             if(isForCreation)
             {
                 err="The automatic primary key cannot be set";
                 return false;
-            }
-            if(pJson.isNull())
-            {
-                return true;
             }
             if(!pJson.isInt64())
             {
@@ -1703,7 +1688,7 @@ bool Messages::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isInt64())
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -1712,7 +1697,8 @@ bool Messages::validJsonOfField(size_t index,
         case 8:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {
@@ -1723,7 +1709,8 @@ bool Messages::validJsonOfField(size_t index,
         case 9:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt64())
             {

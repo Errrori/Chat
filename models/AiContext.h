@@ -36,7 +36,7 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace sqlite3
+namespace postgres
 {
 
 class AiContext
@@ -110,7 +110,6 @@ class AiContext
     ///Set the value of the column message_id
     void setMessageId(const std::string &pMessageId) noexcept;
     void setMessageId(std::string &&pMessageId) noexcept;
-    void setMessageIdToNull() noexcept;
 
     /**  For column thread_id  */
     ///Get the value of the column thread_id, returns the default value if the column is null
@@ -165,7 +164,6 @@ class AiContext
     const std::shared_ptr<int64_t> &getCreatedTime() const noexcept;
     ///Set the value of the column created_time
     void setCreatedTime(const int64_t &pCreatedTime) noexcept;
-    void setCreatedTimeToNull() noexcept;
 
 
     static size_t getColumnNumber() noexcept {  return 7;  }
@@ -211,13 +209,13 @@ class AiContext
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where message_id = ?";
+        static const std::string sql="select * from " + tableName + " where message_id = $1";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where message_id = ?";
+        static const std::string sql="delete from " + tableName + " where message_id = $1";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -255,11 +253,8 @@ class AiContext
             sql += "reasoning_content,";
             ++parametersCount;
         }
-        if(dirtyFlag_[6])
-        {
-            sql += "created_time,";
-            ++parametersCount;
-        }
+        sql += "created_time,";
+        ++parametersCount;
         if(!dirtyFlag_[6])
         {
             needSelection=true;
@@ -272,49 +267,63 @@ class AiContext
         else
             sql += ") values (";
 
+        int placeholder=1;
+        char placeholderStr[64];
+        size_t n=0;
         if(dirtyFlag_[0])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[1])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[2])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[3])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[4])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[5])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[6])
         {
-            sql.append("?,");
-
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        else
+        {
+            sql +="default,";
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        sql.append(1, ')');
+        if(needSelection)
+        {
+            sql.append(") returning *");
+        }
+        else
+        {
+            sql.append(1, ')');
+        }
         LOG_TRACE << sql;
         return sql;
     }
 };
-} // namespace sqlite3
+} // namespace postgres
 } // namespace drogon_model

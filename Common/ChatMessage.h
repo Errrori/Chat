@@ -4,7 +4,7 @@
 
 #include "ChatThread.h"
 
-namespace drogon_model::sqlite3
+namespace drogon_model::postgres
 {
 	class Messages;
 }
@@ -13,7 +13,7 @@ class ChatMessage
 {
 public:
 	static ChatMessage FromJson(const Json::Value& data);
-	std::optional<drogon_model::sqlite3::Messages> ToDbMessage() const;
+	std::optional<drogon_model::postgres::Messages> ToDbMessage() const;
 	std::optional<Json::Value> ToMessage() const;
 	bool IsValid() const;
 

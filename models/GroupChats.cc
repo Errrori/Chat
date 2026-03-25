@@ -5,24 +5,25 @@
  *
  */
 #include "pch.h"
+
 #include "GroupChats.h"
 #include <drogon/utils/Utilities.h>
 #include <string>
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::sqlite3;
+using namespace drogon_model::postgres;
 
-const std::string GroupChats::Cols::_thread_id = "thread_id";
-const std::string GroupChats::Cols::_name = "name";
-const std::string GroupChats::Cols::_avatar = "avatar";
-const std::string GroupChats::Cols::_description = "description";
+const std::string GroupChats::Cols::_thread_id = "\"thread_id\"";
+const std::string GroupChats::Cols::_name = "\"name\"";
+const std::string GroupChats::Cols::_avatar = "\"avatar\"";
+const std::string GroupChats::Cols::_description = "\"description\"";
 const std::string GroupChats::primaryKeyName = "";
 const bool GroupChats::hasPrimaryKey = false;
-const std::string GroupChats::tableName = "group_chats";
+const std::string GroupChats::tableName = "\"group_chats\"";
 
 const std::vector<typename GroupChats::MetaData> GroupChats::metaData_={
-{"thread_id","int64_t","integer",8,0,0,1},
+{"thread_id","int64_t","bigint",8,0,0,1},
 {"name","std::string","text",0,0,0,1},
 {"avatar","std::string","text",0,0,0,0},
 {"description","std::string","text",0,0,0,0}

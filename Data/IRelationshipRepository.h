@@ -15,11 +15,11 @@ public:
 		ProcessRequest(const std::string& requester_uid, const std::string& acceptor_uid, int status) = 0;
 
 	// Get unread notifications for a user (is_read == 0)
-	virtual drogon::Task<std::vector<drogon_model::sqlite3::Notifications>>
+	virtual drogon::Task<std::vector<drogon_model::postgres::Notifications>>
 		GetUnreadNotifications(const std::string& uid) = 0;
 
 	// Get all notifications for a user with pagination
-	virtual drogon::Task<std::vector<drogon_model::sqlite3::Notifications>>
+	virtual drogon::Task<std::vector<drogon_model::postgres::Notifications>>
 		GetNotifications(const std::string& uid, int offset, int limit) = 0;
 
 	// Batch mark notifications as read; empty ids = mark all unread; returns affected rows
@@ -27,7 +27,7 @@ public:
 		MarkNotificationsRead(const std::string& uid, const std::vector<int64_t>& ids) = 0;
 
 	// Get pending friend requests received by a user
-	virtual drogon::Task<std::vector<drogon_model::sqlite3::FriendRequests>>
+	virtual drogon::Task<std::vector<drogon_model::postgres::FriendRequests>>
 		GetPendingFriendRequests(const std::string& uid) = 0;
 
 	// Block / Unblock

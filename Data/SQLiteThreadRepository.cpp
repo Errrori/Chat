@@ -11,11 +11,11 @@
 #include "Common/Convert.h"
 
 using namespace drogon::orm;
-using Threads = drogon_model::sqlite3::Threads;
-using PrivateChats = drogon_model::sqlite3::PrivateChats;
-using GroupChats = drogon_model::sqlite3::GroupChats;
-using GroupMembers = drogon_model::sqlite3::GroupMembers;
-using AIChats = drogon_model::sqlite3::AiChats;
+using Threads = drogon_model::postgres::Threads;
+using PrivateChats = drogon_model::postgres::PrivateChats;
+using GroupChats = drogon_model::postgres::GroupChats;
+using GroupMembers = drogon_model::postgres::GroupMembers;
+using AIChats = drogon_model::postgres::AiChats;
 
 
 drogon::Task<int> SQLiteThreadRepository::CreatePrivateThread(PrivateThread info)
