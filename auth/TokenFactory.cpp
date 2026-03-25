@@ -3,50 +3,17 @@
 #include "TokenService.h"
 #include "TokenConstants.h"
 
-namespace Utils { namespace Authentication { std::string GenerateUid(); } }
-
 namespace Auth {
 
 // static
-TokenPair TokenFactory::GeneratePair(const std::string& uid)
-{
-    const auto  jti_a = Utils::Authentication::GenerateUid();
-    const auto  jti_r = Utils::Authentication::GenerateUid();
-
-    TokenPair pair;
-    pair.access.value = TokenService::GetInstance().Sign(
-        uid, TokenType::Access, AccessTokenTTL, jti_a);
-    pair.access.ttl = AccessTokenTTL;
-
-    pair.refresh.value = TokenService::GetInstance().Sign(
-        uid, TokenType::Refresh, RefreshTokenTTL, jti_r);
-    pair.refresh.jti = jti_r;
-    pair.refresh.ttl = RefreshTokenTTL;
-
-    return pair;
-}
-
-// static
-AccessToken TokenFactory::GenerateAccess(const std::string& uid)
+Token TokenFactory::GenerateToken(const std::string& uid, TokenType type)
 {
     const auto jti = Utils::Authentication::GenerateUid();
-    AccessToken at;
-    at.value = TokenService::GetInstance().Sign(
-        uid, TokenType::Access, AccessTokenTTL, jti);
-    at.ttl = AccessTokenTTL;
-    return at;
-}
-
-// static
-RefreshToken TokenFactory::GenerateRefresh(const std::string& uid)
-{
-    const auto jti = Utils::Authentication::GenerateUid();
-    RefreshToken rt;
-    rt.value = TokenService::GetInstance().Sign(
-        uid, TokenType::Refresh, RefreshTokenTTL, jti);
-    rt.jti = jti;
-    rt.ttl = RefreshTokenTTL;
-    return rt;
+    Token token;
+    token.value = TokenService::GetInstance().Sign(
+        uid, type, type==TokenType::Access?AccessTokenTTL:RefreshTokenTTL, jti);
+	token.jti = jti;
+    return token;
 }
 
 } // namespace Auth

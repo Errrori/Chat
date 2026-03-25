@@ -2,7 +2,6 @@
 #include "TokenService.h"
 #include "TokenConstants.h"
 #include "SecretProvider.h"
-#include "Common/User.h"
 #include "jwt-cpp/jwt.h"
 #include <cctype>
 
@@ -50,26 +49,28 @@ std::string TokenService::Sign(const std::string& uid,
         LOG_ERROR << "[TokenService] Sign error: " << e.what();
         return {};
     }
+
 }
 
-bool TokenService::Verify(const std::string& token,
-                          TokenType expected_type,
-                          std::string& out_uid,
-                          std::string& out_jti)
+std::optional<TokenData> TokenService::Verify(const std::string& token,
+                                              TokenType expected_type)
 {
     try
     {
         const auto& secret = SecretProvider::GetInstance().GetJwtSecret();
         const auto  decoded = jwt::decode(token);
 
+        TokenData data;
+
         auto verifier = jwt::verify()
             .allow_algorithm(jwt::algorithm::hs256{ secret });
         verifier.verify(decoded);
+        data.expire_at = decoded.get_expires_at();
 
-        if (decoded.get_expires_at() < std::chrono::system_clock::now())
+        if ( data.expire_at < std::chrono::system_clock::now())
         {
             LOG_WARN << "[TokenService] Token expired";
-            return false;
+            return std::nullopt;
         }
 
         const char* expected_typ = (expected_type == TokenType::Access)
@@ -80,28 +81,28 @@ bool TokenService::Verify(const std::string& token,
             decoded.get_payload_claim("typ").as_string() != expected_typ)
         {
             LOG_WARN << "[TokenService] Token type mismatch, expected: " << expected_typ;
-            return false;
+			return std::nullopt;
         }
 
-        out_jti = decoded.has_id() ? decoded.get_id() : "";
+        data.jti = decoded.has_id() ? decoded.get_id() : "";
         if (!decoded.has_payload_claim("uid"))
         {
             LOG_WARN << "[TokenService] Token missing uid claim";
-            return false;
+            return std::nullopt;
         }
-        out_uid = decoded.get_payload_claim("uid").as_string();
-        if (out_uid.empty())
+        data.uid = decoded.get_payload_claim("uid").as_string();
+        if (data.uid.empty())
         {
             LOG_WARN << "[TokenService] Token uid claim is empty";
-            return false;
+            return std::nullopt;
         }
 
-        return true;
+        return data;
     }
     catch (const std::exception& e)
     {
         LOG_ERROR << "[TokenService] Verify error: " << e.what();
-        return false;
+        return std::nullopt;
     }
 }
 

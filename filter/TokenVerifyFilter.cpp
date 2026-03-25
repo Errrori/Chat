@@ -11,15 +11,20 @@ void TokenVerifyFilter::doFilter(const drogon::HttpRequestPtr& req, drogon::Filt
 {
 	auto token = Auth::TokenService::GetInstance().ExtractFromRequest(req);
 
-	std::string uid;
-	std::string jti;
-	if (token.empty() || !Auth::TokenService::GetInstance().Verify(
-		token, Auth::TokenType::Access, uid, jti))
+	if (!token.empty() )
 	{
-		fcb(Utils::CreateErrorResponse(401, 401, "invalid or expired access token"));
-		return;
+		auto result = Auth::TokenService::GetInstance().Verify(
+		token, Auth::TokenType::Access);
+		if(result){
+			req->getAttributes()->insert("uid", result->uid);
+			fccb();
+			return;
+		}
 	}
 
-	req->getAttributes()->insert("uid", uid);
-	fccb();
+	fcb(Utils::CreateErrorResponse(401, 401, "invalid or expired access token"));
+	return;
+	
+
+	
 }

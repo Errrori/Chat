@@ -71,17 +71,6 @@ namespace Utils {
             return Auth::SecretProvider::GetInstance().GetJwtSecret();
         }
 
-    	std::string GenerateJWT(const UserInfo& info)
-        {
-                return Auth::TokenFactory::GenerateAccess(info.getUid()).value;
-        }
-
-            bool VerifyJWT(const std::string& token, std::string& uid)
-        {
-            std::string jti;
-                return Auth::TokenService::GetInstance().Verify(token, Auth::TokenType::Access, uid, jti);
-        }
-
         std::string GetToken(const drogon::HttpRequestPtr& req)
         {
             return Auth::TokenService::GetInstance().ExtractFromRequest(req);
@@ -117,6 +106,16 @@ namespace Utils {
         auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
         resp->setStatusCode(static_cast<drogon::HttpStatusCode>(statusCode));
         return resp;
+    }
+
+    double GetRandomJitter(double min_sec, double max_sec)
+    {
+        static std::mt19937 gen(std::random_device{}());
+        static std::mutex rng_mutex;
+
+        std::lock_guard<std::mutex> lock(rng_mutex);
+        std::uniform_real_distribution<double> dist(min_sec, max_sec);
+        return dist(gen);
     }
 
     Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code)

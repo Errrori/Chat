@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include "auth/TokenConstants.h"
-#include "Common/User.h"
 
 class UserInfo;
 
@@ -15,6 +14,8 @@ namespace Utils
     drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message);
     drogon::HttpResponsePtr CreateSuccessResp(int statusCode, int code, const std::string& message);
     drogon::HttpResponsePtr CreateSuccessJsonResp(int statusCode, int code, const std::string& message, const Json::Value& data);
+
+    double GetRandomJitter(double min_sec = 0.0, double max_sec = 5.0);
 
     Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code);
     Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code, const std::string& message_id);
@@ -39,14 +40,6 @@ namespace Utils
         // Secret management (delegates to Auth::SecretProvider)
         std::string GetJwtSecret();
         std::string LoadJwtSecret(const std::string& file_path = Auth::SecretFilePath);
-
-        // Token generation (delegates to Auth::TokenFactory)
-        // Backward compatible: generates access token (new code should use Auth::TokenFactory::GeneratePair)
-        std::string GenerateJWT(const UserInfo& info);
-
-        // Token verification (delegates to Auth::TokenService)
-        // Backward compatible: verifies access token only
-        bool VerifyJWT(const std::string& token, std::string& uid);
 
         // Extract token string from request (delegates to Auth::TokenService)
         std::string GetToken(const drogon::HttpRequestPtr& req);

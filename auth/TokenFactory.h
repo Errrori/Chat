@@ -2,25 +2,14 @@
 #include <string>
 
 namespace Auth {
+	enum class TokenType;
 
-struct AccessToken
-{
-    std::string value;
-    unsigned    ttl;
-};
-
-struct RefreshToken
+	struct Token
 {
     std::string value;
     std::string jti;
-    unsigned    ttl;
 };
 
-struct TokenPair
-{
-    AccessToken  access;
-    RefreshToken refresh;
-};
 
 /**
  * TokenFactory — high-level token issuance.
@@ -29,16 +18,9 @@ struct TokenPair
 class TokenFactory
 {
 public:
-    /// Login: generate access + refresh pair from uid.
-    static TokenPair    GeneratePair(const std::string& uid);
+	/// Refresh: generate new access token by uid
+    static Token  GenerateToken(const std::string& uid, TokenType type);
 
-    /// Refresh: generate new access token by uid
-    static AccessToken  GenerateAccess(const std::string& uid);
-
-    /// Refresh: generate new refresh token (full rotation)
-    static RefreshToken GenerateRefresh(const std::string& uid);
-
-private:
     TokenFactory() = delete;
 };
 

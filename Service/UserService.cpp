@@ -135,18 +135,17 @@ drogon::Task<drogon::HttpResponsePtr> UserService::UserLogin(const UserInfo& inf
         if (user_record.getUid().empty())
             co_return Utils::CreateErrorResponse(500, 500, "server error");
 
-        auto pair = Auth::TokenFactory::GeneratePair(user_record.getUid());
+        auto at = Auth::TokenFactory::GenerateToken(user_record.getUid(),Auth::TokenType::Access);
+		auto rt = Auth::TokenFactory::GenerateToken(user_record.getUid(),Auth::TokenType::Refresh);
 
         Json::Value data;
         data["uid"]               = user_record.getUid();
-        data["access_token"]      = pair.access.value;
-        data["access_expires_in"] = pair.access.ttl;
-        data["refresh_expires_in"]= pair.refresh.ttl;
+        data["access_token"]      = at.value;
         data["token_type"]        = "Bearer";
 
         const auto t_redis_session_start = NowMs();
         co_await _redis_service->StoreRefreshSession(
-            user_record.getUid(), pair.refresh.jti,
+            user_record.getUid(), rt.jti,
             static_cast<int>(Auth::RefreshSessionTTL));
         LOG_INFO << "[UserService] UserLogin redis-store-refresh cost_ms=" << (NowMs() - t_redis_session_start)
                  << " uid=" << user_record.getUid();
@@ -160,7 +159,7 @@ drogon::Task<drogon::HttpResponsePtr> UserService::UserLogin(const UserInfo& inf
                  << " uid=" << user_record.getUid();
 
         auto resp = Utils::CreateSuccessJsonResp(200, 200, "success login", data);
-        resp->addCookie(BuildRefreshTokenCookie(pair.refresh.value, pair.refresh.ttl));
+        resp->addCookie(BuildRefreshTokenCookie(rt.value, Auth::RefreshTokenTTL));
         LOG_INFO << "[UserService] UserLogin success total_cost_ms=" << (NowMs() - t0)
                  << " uid=" << user_record.getUid() << " account=" << account;
         co_return resp;
@@ -254,57 +253,51 @@ drogon::Task<UsersInfo> UserService::UpdateUserProfile(
 drogon::Task<drogon::HttpResponsePtr> UserService::RefreshToken(
     const std::string& refresh_token) const
 {
-    std::string uid;
-    std::string old_jti;
     // Verify refresh token
-    if (!Auth::TokenService::GetInstance().Verify(
-        refresh_token, Auth::TokenType::Refresh, uid, old_jti))
+    auto token = Auth::TokenService::GetInstance().Verify(
+        refresh_token, Auth::TokenType::Refresh);
+
+    if (!token)
     {
         co_return Utils::CreateErrorResponse(401, 401, "invalid or expired refresh token");
     }
 
-    if (uid.empty() || old_jti.empty())
-        co_return Utils::CreateErrorResponse(401, 401, "invalid refresh token claims");
-
     // Verify user still exists
-    auto check = co_await _user_repo->GetUserProfileByUid(uid);
+    auto check = co_await _user_repo->GetUserProfileByUid(token->uid);
     if (!check.IsValid())
         co_return Utils::CreateErrorResponse(401, 401, "user not found");
 
     // Generate new tokens
-    auto new_access = Auth::TokenFactory::GenerateAccess(uid);
-    auto new_refresh = Auth::TokenFactory::GenerateRefresh(uid);
+    auto new_access = Auth::TokenFactory::GenerateToken(token->uid, Auth::TokenType::Access);
+    auto new_refresh = Auth::TokenFactory::GenerateToken(token->uid,Auth::TokenType::Refresh);
 
     // Rotate refresh session in Redis
     bool rotated = co_await _redis_service->RotateRefreshSession(
-        uid, old_jti, new_refresh.jti,
+        token->uid, token->jti, new_refresh.jti,
         static_cast<int>(Auth::RefreshSessionTTL));
 
     if (!rotated)
     {
-        LOG_WARN << "[UserService] RefreshToken: stale jti for uid=" << uid;
+        LOG_WARN << "[UserService] RefreshToken: stale jti for uid=" << token->uid;
         co_return Utils::CreateErrorResponse(401, 401, "refresh token has been invalidated");
     }
 
     // Build response with new tokens
     Json::Value data;
     data["access_token"] = new_access.value;
-    data["access_expires_in"] = new_access.ttl;
-    data["refresh_expires_in"] = new_refresh.ttl;
     data["token_type"] = "Bearer";
     auto resp = Utils::CreateSuccessJsonResp(200, 200, "token refreshed", data);
-    resp->addCookie(BuildRefreshTokenCookie(new_refresh.value, new_refresh.ttl));
+    resp->addCookie(BuildRefreshTokenCookie(new_refresh.value, Auth::RefreshTokenTTL));
     co_return resp;
 }
 
 drogon::Task<drogon::HttpResponsePtr> UserService::Logout(
     const std::string& refresh_token) const
 {
-    std::string uid;
-    std::string jti;
     // Verify refresh token (ignore failure for logout)
-    if (!Auth::TokenService::GetInstance().Verify(
-        refresh_token, Auth::TokenType::Refresh, uid, jti))
+    auto token = Auth::TokenService::GetInstance().Verify(
+        refresh_token, Auth::TokenType::Refresh);
+    if (!token)
     {
         auto resp = Utils::CreateSuccessResp(200, 200, "logged out");
         resp->addCookie(BuildClearedRefreshTokenCookie());
@@ -312,8 +305,7 @@ drogon::Task<drogon::HttpResponsePtr> UserService::Logout(
     }
 
     // Revoke refresh session if user exists
-    if (!uid.empty())
-        co_await _redis_service->RevokeRefreshSession(uid);
+    co_await _redis_service->RevokeRefreshSession(token->uid);
 
     auto resp = Utils::CreateSuccessResp(200, 200, "logged out");
     resp->addCookie(BuildClearedRefreshTokenCookie());
