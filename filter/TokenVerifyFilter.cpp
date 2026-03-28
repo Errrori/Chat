@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Common/ResponseHelper.h"
 #include "TokenVerifyFilter.h"
 #include "Common/User.h"
 #include "Container.h"
@@ -22,7 +23,7 @@ void TokenVerifyFilter::doFilter(const drogon::HttpRequestPtr& req, drogon::Filt
 		}
 	}
 
-	fcb(Utils::CreateErrorResponse(401, 401, "invalid or expired access token"));
+	fcb(ResponseHelper::MakeResponse(401, 401, "invalid or expired access token"));
 	return;
 	
 

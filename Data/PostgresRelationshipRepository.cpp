@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SQLiteRelationshipRepository.h"
+#include "PostgresRelationshipRepository.h"
 
 
 #include "models/FriendRequests.h"
@@ -22,7 +22,7 @@ using Threads = drogon_model::postgres::Threads;
 using PrivateChats = drogon_model::postgres::PrivateChats;
 using Block = drogon_model::postgres::Block;
 
-drogon::Task<int64_t> SQLiteRelationshipRepository::WriteFriendRequest(const std::string& requester_uid,
+drogon::Task<int64_t> PostgresRelationshipRepository::WriteFriendRequest(const std::string& requester_uid,
 	const std::string& acceptor_uid, const std::string& payload)
 {
 	auto trans = co_await _db->newTransactionCoro();
@@ -139,7 +139,7 @@ auto thread_result = co_await thread_mapper.insert(new_thread);
     }
 } // anonymous namespace
 
-drogon::Task<int64_t> SQLiteRelationshipRepository::ProcessRequest(const std::string& requester_uid,
+drogon::Task<int64_t> PostgresRelationshipRepository::ProcessRequest(const std::string& requester_uid,
                                                                    const std::string& acceptor_uid, int status)
 {
     auto trans = co_await _db->newTransactionCoro();
@@ -201,7 +201,7 @@ drogon::Task<int64_t> SQLiteRelationshipRepository::ProcessRequest(const std::st
     co_return threadId;
 }
 
-drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetUnreadNotifications(
+drogon::Task<std::vector<Notifications>> PostgresRelationshipRepository::GetUnreadNotifications(
 	const std::string& uid)
 {
 	CoroMapper<Notifications> mapper(_db);
@@ -210,7 +210,7 @@ drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetUnread
 	co_return co_await mapper.findBy(criteria);
 }
 
-drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetNotifications(
+drogon::Task<std::vector<Notifications>> PostgresRelationshipRepository::GetNotifications(
 	const std::string& uid, int offset, int limit)
 {
 	CoroMapper<Notifications> mapper(_db);
@@ -218,7 +218,7 @@ drogon::Task<std::vector<Notifications>> SQLiteRelationshipRepository::GetNotifi
 	co_return co_await mapper.findBy(criteria);
 }
 
-drogon::Task<size_t> SQLiteRelationshipRepository::MarkNotificationsRead(
+drogon::Task<size_t> PostgresRelationshipRepository::MarkNotificationsRead(
 	const std::string& uid, const std::vector<int64_t>& ids)
 {
 	size_t affected_rows = 0;
@@ -232,7 +232,7 @@ drogon::Task<size_t> SQLiteRelationshipRepository::MarkNotificationsRead(
 	co_return affected_rows;
 }
 
-drogon::Task<std::vector<FriendRequests>> SQLiteRelationshipRepository::GetPendingFriendRequests(
+drogon::Task<std::vector<FriendRequests>> PostgresRelationshipRepository::GetPendingFriendRequests(
 	const std::string& uid)
 {
 	CoroMapper<FriendRequests> mapper(_db);
@@ -246,33 +246,31 @@ drogon::Task<std::vector<FriendRequests>> SQLiteRelationshipRepository::GetPendi
 	co_return result;
 }
 
-drogon::Task<> SQLiteRelationshipRepository::BlockUser(const std::string& operator_uid, const std::string& blocked_uid)
+drogon::Task<> PostgresRelationshipRepository::BlockUser(const std::string& operator_uid, const std::string& blocked_uid)
 {
 	bool already = co_await HasBlocked(operator_uid, blocked_uid);
 	if (already)
 		throw std::invalid_argument("User is already blocked");
 
-	auto client = _db;
-	co_await client->execSqlCoro(
-		"INSERT INTO block (operator_uid, blocked_uid) VALUES (?, ?)",
+	co_await _db->execSqlCoro(
+		"INSERT INTO block (operator_uid, blocked_uid) VALUES ($1, $2)",
 		operator_uid, blocked_uid
 	);
 }
 
-drogon::Task<> SQLiteRelationshipRepository::UnblockUser(const std::string& operator_uid, const std::string& blocked_uid)
+drogon::Task<> PostgresRelationshipRepository::UnblockUser(const std::string& operator_uid, const std::string& blocked_uid)
 {
 	bool exists = co_await HasBlocked(operator_uid, blocked_uid);
 	if (!exists)
 		throw std::invalid_argument("No block relationship found");
 
-	auto client = _db;
-	co_await client->execSqlCoro(
-		"DELETE FROM block WHERE operator_uid = ? AND blocked_uid = ?",
+	co_await _db->execSqlCoro(
+		"DELETE FROM block WHERE operator_uid = $1 AND blocked_uid = $2",
 		operator_uid, blocked_uid
 	);
 }
 
-drogon::Task<bool> SQLiteRelationshipRepository::IsBlocked(const std::string& uid_a, const std::string& uid_b)
+drogon::Task<bool> PostgresRelationshipRepository::IsBlocked(const std::string& uid_a, const std::string& uid_b)
 {
 	CoroMapper<Block> mapper(_db);
 	auto result = co_await mapper.limit(1).findBy(
@@ -284,7 +282,7 @@ drogon::Task<bool> SQLiteRelationshipRepository::IsBlocked(const std::string& ui
 	co_return !result.empty();
 }
 
-drogon::Task<bool> SQLiteRelationshipRepository::HasBlocked(const std::string& operator_uid, const std::string& target_uid)
+drogon::Task<bool> PostgresRelationshipRepository::HasBlocked(const std::string& operator_uid, const std::string& target_uid)
 {
 	CoroMapper<Block> mapper(_db);
 	auto result = co_await mapper.limit(1).findBy(

@@ -11,19 +11,13 @@ namespace Utils
     constexpr unsigned SecretLength  = Auth::SecretLength;
     inline const std::string& SecretFilePath = Auth::SecretFilePath;
 
-    drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message);
-    drogon::HttpResponsePtr CreateSuccessResp(int statusCode, int code, const std::string& message);
-    drogon::HttpResponsePtr CreateSuccessJsonResp(int statusCode, int code, const std::string& message, const Json::Value& data);
 
-    double GetRandomJitter(double min_sec = 0.0, double max_sec = 5.0);
-
-    Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code);
-    Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code, const std::string& message_id);
 
     void SendJson(const drogon::WebSocketConnectionPtr& conn, const Json::Value& data);
 
     std::string GetCurrentTimeStr();
     int64_t GetCurrentTimeStamp();
+    double GetRandomJitter(double min_sec = 0.0, double max_sec = 10.0);
 
     namespace Authentication
     {

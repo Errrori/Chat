@@ -10,10 +10,10 @@ namespace drogon_model::postgres
 
 class ChatMessage;
 
-class SQLiteMessageRepository :public IMessageRepository
+class PostgresMessageRepository :public IMessageRepository
 {
 public:
-	explicit SQLiteMessageRepository(drogon::orm::DbClientPtr db) : _db(std::move(db)) {}
+	explicit PostgresMessageRepository(drogon::orm::DbClientPtr db) : _db(std::move(db)) {}
 	drogon::Task<int64_t> RecordUserMessage(const ChatMessage& message) override;
 	drogon::Task<> RecordAIMessage(const AIMessage& message) override;
 	drogon::Task<Json::Value> GetMessageRecords(int thread_id, int64_t existed_id, int num = 50) override;

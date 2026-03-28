@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Common/ResponseHelper.h"
 #include "RelationshipController.h"
 #include "Service/RelationshipService.h"
 #include "Common/User.h"
@@ -14,12 +15,12 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::SendFriendRequest(
 		auto jsonBody = req->getJsonObject();
 		if (!jsonBody)
 		{
-			co_return Utils::CreateErrorResponse(400, 400, "Invalid JSON format");
+			co_return ResponseHelper::MakeResponse(400, 400, "Invalid JSON format");
 		}
 
 		if (!jsonBody->isMember("acceptor_uid"))
 		{
-			co_return Utils::CreateErrorResponse(400, 400, "Missing acceptor_uid");
+			co_return ResponseHelper::MakeResponse(400, 400, "Missing acceptor_uid");
 		}
 
 		std::string acceptor_uid = (*jsonBody)["acceptor_uid"].asString();
@@ -29,18 +30,18 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::SendFriendRequest(
 
 		if (requester_uid == acceptor_uid)
 		{
-			co_return Utils::CreateErrorResponse(400, 400, "Cannot send friend request to yourself");
+			co_return ResponseHelper::MakeResponse(400, 400, "Cannot send friend request to yourself");
 		}
 
 		auto service = Container::GetInstance().GetRelationshipService();
 		co_await service->SendFriendRequest(requester_uid, acceptor_uid, message);
 
-		co_return Utils::CreateSuccessResp(200, 200, "Friend request sent successfully");
+		co_return ResponseHelper::MakeResponse(200, 200, "Friend request sent successfully");
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in SendFriendRequest: " << e.what();
-		co_return Utils::CreateErrorResponse(400, 400, e.what());
+		co_return ResponseHelper::MakeResponse(400, 400, e.what());
 	}
 }
 
@@ -53,19 +54,19 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::ProcessFriendReque
 		auto jsonBody = req->getJsonObject();
 		if (!jsonBody)
 		{
-			co_return Utils::CreateErrorResponse(400, 400, "Invalid JSON format");
+			co_return ResponseHelper::MakeResponse(400, 400, "Invalid JSON format");
 		}
 
 		if (!jsonBody->isMember("requester_uid") || !jsonBody->isMember("action"))
 		{
-			co_return Utils::CreateErrorResponse(400, 400, "Missing requester_uid or action");
+			co_return ResponseHelper::MakeResponse(400, 400, "Missing requester_uid or action");
 		}
 
 		std::string requester_uid = (*jsonBody)["requester_uid"].asString();
 		int action = (*jsonBody)["action"].asInt();
 
 		if (action != 1 && action != 2)
-			co_return Utils::CreateErrorResponse(400, 400, "Invalid action (1=Accept, 2=Reject)");
+			co_return ResponseHelper::MakeResponse(400, 400, "Invalid action (1=Accept, 2=Reject)");
 
 		auto service = Container::GetInstance().GetRelationshipService();
 		try
@@ -76,18 +77,18 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::ProcessFriendReque
 				data = Json::nullValue;
 			else
 				data["thread_id"] = thread_id;
-			co_return Utils::CreateSuccessJsonResp(200, 200, "Friend request processed successfully", data);
+			co_return ResponseHelper::MakeResponse(200, 200, "Friend request processed successfully", data);
 		}
 		catch (const std::exception& e)
 		{
 			LOG_ERROR << "exception:"<< e.what();
-			co_return Utils::CreateErrorResponse(400, 400, "fail to process the friend request");
+			co_return ResponseHelper::MakeResponse(400, 400, "fail to process the friend request");
 		}
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in ProcessFriendRequest: " << e.what();
-		co_return Utils::CreateErrorResponse(500, 500, "Internal Server Error");
+		co_return ResponseHelper::MakeResponse(500, 500, "Internal Server Error");
 	}
 }
 
@@ -97,12 +98,12 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::GetUnreadNotificat
 	{
 		const auto& uid = req->getAttributes()->get<std::string>("uid");
 		auto data = co_await Container::GetInstance().GetRelationshipService()->GetUnreadNotifications(uid);
-		co_return Utils::CreateSuccessJsonResp(200, 200, "success", data);
+		co_return ResponseHelper::MakeResponse(200, 200, "success", data);
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in GetUnreadNotifications: " << e.what();
-		co_return Utils::CreateErrorResponse(500, 500, "Internal Server Error");
+		co_return ResponseHelper::MakeResponse(500, 500, "Internal Server Error");
 	}
 }
 
@@ -118,12 +119,12 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::GetNotifications(d
 		limit  = std::clamp(limit, 1, 100);
 
 		auto data = co_await Container::GetInstance().GetRelationshipService()->GetNotifications(uid, offset, limit);
-		co_return Utils::CreateSuccessJsonResp(200, 200, "success", data);
+		co_return ResponseHelper::MakeResponse(200, 200, "success", data);
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in GetNotifications: " << e.what();
-		co_return Utils::CreateErrorResponse(500, 500, "Internal Server Error");
+		co_return ResponseHelper::MakeResponse(500, 500, "Internal Server Error");
 	}
 }
 
@@ -148,12 +149,12 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::MarkNotificationsR
 
 		Json::Value data;
 		data["updated"] = static_cast<int>(updated);
-		co_return Utils::CreateSuccessJsonResp(200, 200, "success", data);
+		co_return ResponseHelper::MakeResponse(200, 200, "success", data);
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in MarkNotificationsRead: " << e.what();
-		co_return Utils::CreateErrorResponse(500, 500, "Internal Server Error");
+		co_return ResponseHelper::MakeResponse(500, 500, "Internal Server Error");
 	}
 }
 
@@ -163,12 +164,12 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::GetPendingFriendRe
 	{
 		const auto& uid = req->getAttributes()->get<std::string>("uid");
 		auto data = co_await Container::GetInstance().GetRelationshipService()->GetPendingFriendRequests(uid);
-		co_return Utils::CreateSuccessJsonResp(200, 200, "success", data);
+		co_return ResponseHelper::MakeResponse(200, 200, "success", data);
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in GetPendingFriendRequests: " << e.what();
-		co_return Utils::CreateErrorResponse(500, 500, "Internal Server Error");
+		co_return ResponseHelper::MakeResponse(500, 500, "Internal Server Error");
 	}
 }
 
@@ -180,11 +181,11 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::BlockUser(drogon::
 
 		auto jsonBody = req->getJsonObject();
 		if (!jsonBody || !jsonBody->isMember("target_uid"))
-			co_return Utils::CreateErrorResponse(400, 400, "Missing target_uid");
+			co_return ResponseHelper::MakeResponse(400, 400, "Missing target_uid");
 
 		std::string target_uid = (*jsonBody)["target_uid"].asString();
 		if (operator_uid == target_uid)
-			co_return Utils::CreateErrorResponse(400, 400, "Cannot block yourself");
+			co_return ResponseHelper::MakeResponse(400, 400, "Cannot block yourself");
 
 		try
 		{
@@ -192,14 +193,14 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::BlockUser(drogon::
 		}
 		catch (const std::invalid_argument& e)
 		{
-			co_return Utils::CreateErrorResponse(400, 400, e.what());
+			co_return ResponseHelper::MakeResponse(400, 400, e.what());
 		}
-		co_return Utils::CreateSuccessResp(200, 200, "User blocked successfully");
+		co_return ResponseHelper::MakeResponse(200, 200, "User blocked successfully");
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in BlockUser: " << e.what();
-		co_return Utils::CreateErrorResponse(500, 500, "Internal Server Error");
+		co_return ResponseHelper::MakeResponse(500, 500, "Internal Server Error");
 	}
 }
 
@@ -211,11 +212,11 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::UnblockUser(drogon
 
 		auto jsonBody = req->getJsonObject();
 		if (!jsonBody || !jsonBody->isMember("target_uid"))
-			co_return Utils::CreateErrorResponse(400, 400, "Missing target_uid");
+			co_return ResponseHelper::MakeResponse(400, 400, "Missing target_uid");
 
 		std::string target_uid = (*jsonBody)["target_uid"].asString();
 		if (operator_uid == target_uid)
-			co_return Utils::CreateErrorResponse(400, 400, "Cannot unblock yourself");
+			co_return ResponseHelper::MakeResponse(400, 400, "Cannot unblock yourself");
 
 		try
 		{
@@ -223,13 +224,13 @@ drogon::Task<drogon::HttpResponsePtr> RelationshipController::UnblockUser(drogon
 		}
 		catch (const std::invalid_argument& e)
 		{
-			co_return Utils::CreateErrorResponse(400, 400, e.what());
+			co_return ResponseHelper::MakeResponse(400, 400, e.what());
 		}
-		co_return Utils::CreateSuccessResp(200, 200, "User unblocked successfully");
+		co_return ResponseHelper::MakeResponse(200, 200, "User unblocked successfully");
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "Error in UnblockUser: " << e.what();
-		co_return Utils::CreateErrorResponse(500, 500, "Internal Server Error");
+		co_return ResponseHelper::MakeResponse(500, 500, "Internal Server Error");
 	}
 }

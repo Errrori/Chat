@@ -97,16 +97,16 @@
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Service\RedisService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteUserRepository.cpp">
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgresUserRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteMessageRepository.cpp">
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgresMessageRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteThreadRepository.cpp">
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgresThreadRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteRelationshipRepository.cpp">
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgresRelationshipRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteInitializer.cpp">
@@ -146,9 +146,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\Friendships.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\RelationshipEvent.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\Block.cc">

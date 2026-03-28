@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Common/ResponseHelper.h"
 #include "MessageService.h"
 #include "models/Messages.h"
 #include "Common/ChatMessage.h"
@@ -72,7 +73,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 				if (members.empty())
 				{
 					LOG_ERROR << "thread has no members, thread_id: " << thread_id;
-					cb(Utils::GenErrorResponse("invalid thread", ChatCode::NotPermission));
+					cb(ResponseHelper::MakeErrorJson("invalid thread", ChatCode::NotPermission));
 					co_return;
 				}
 
@@ -84,7 +85,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 			if (std::find(members.begin(), members.end(), sender_uid) == members.end())
 			{
 				LOG_ERROR << "user not in thread, tid=" << thread_id << " uid=" << sender_uid;
-				cb(Utils::GenErrorResponse("user is not in thread", ChatCode::NotPermission));
+				cb(ResponseHelper::MakeErrorJson("user is not in thread", ChatCode::NotPermission));
 				co_return;
 			}
 			LOG_DEBUG << "Member validation passed for uid: " << sender_uid;
@@ -101,7 +102,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 					bool blocked = co_await _relationship_service->IsBlocked(sender_uid, block_target);
 					if (blocked)
 					{
-						cb(Utils::GenErrorResponse("Cannot send message due to block relationship", ChatCode::NotPermission));
+						cb(ResponseHelper::MakeErrorJson("Cannot send message due to block relationship", ChatCode::NotPermission));
 						co_return;
 					}
 				}
@@ -113,7 +114,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 				if (!msg.IsValid())
 				{
 					LOG_ERROR << "message to delivered is not valid";
-					cb(Utils::GenErrorResponse("message data is not valid", ChatCode::InvalidArg));
+					cb(ResponseHelper::MakeErrorJson("message data is not valid", ChatCode::InvalidArg));
 					co_return;
 				}
 
@@ -136,13 +137,13 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 			}catch (const std::exception& e)
 			{
 				LOG_ERROR << "exception: " << e.what();
-				cb(Utils::GenErrorResponse("can not store the message", ChatCode::SystemException));
+				cb(ResponseHelper::MakeErrorJson("can not store the message", ChatCode::SystemException));
 			}
 		});
 	}catch (const std::exception& e)
 	{
 		LOG_ERROR << "exception in ProcessMessage: " << e.what();
-		cb(Utils::GenErrorResponse("can not store the message", ChatCode::SystemException));
+		cb(ResponseHelper::MakeErrorJson("can not store the message", ChatCode::SystemException));
 	}
 
 }
@@ -226,7 +227,7 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 			if (type != ChatThread::AI)
 			{
 				LOG_ERROR << "thread id is not corresponding to an AI thread";
-                Utils::SendJson(conn, Utils::GenErrorResponse("unmatched type", ChatCode::UnMatchedType));
+                Utils::SendJson(conn, ResponseHelper::MakeErrorJson("unmatched type", ChatCode::UnMatchedType));
 				co_return;
 			}
 
@@ -239,7 +240,7 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 			if (!ai_msg.IsValid())
 			{
 				LOG_ERROR << "AI message is not valid";
-                Utils::SendJson(conn, Utils::GenErrorResponse("invalid AI message", ChatCode::MissingField));
+                Utils::SendJson(conn, ResponseHelper::MakeErrorJson("invalid AI message", ChatCode::MissingField));
 				co_return;//handle
 			}
 
@@ -275,7 +276,7 @@ void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnecti
 		catch (const std::exception& e)
 		{
 			LOG_ERROR << "exception: " << e.what();
-            Utils::SendJson(conn, Utils::GenErrorResponse("server exception: "+std::string(e.what()),ChatCode::SystemException));
+            Utils::SendJson(conn, ResponseHelper::MakeErrorJson("server exception: "+std::string(e.what()),ChatCode::SystemException));
 		}
 	}
 	);
@@ -375,7 +376,7 @@ drogon::Task<AIMessage> MessageService::AIRequestProcessor::operator()(const std
 			if (res_code != CURLE_OK)
 			{
 				LOG_ERROR << "curl error: " << std::string(curl_easy_strerror(res_code));
-				send_cb(Utils::GenErrorResponse("request perform fail ", ChatCode::BadAIRequest,req.GetRequestId()));
+				send_cb(ResponseHelper::MakeErrorJson("request perform fail ", ChatCode::BadAIRequest,req.GetRequestId()));
 				throw std::runtime_error("request perform fail");
 			}
 
@@ -395,7 +396,7 @@ drogon::Task<AIMessage> MessageService::AIRequestProcessor::operator()(const std
 		if (res_code != CURLE_OK)
 		{
 			LOG_ERROR << "curl error: " << std::string(curl_easy_strerror(res_code));
-			send_cb(Utils::GenErrorResponse("request perform fail ", ChatCode::BadAIRequest, req_id));
+			send_cb(ResponseHelper::MakeErrorJson("request perform fail ", ChatCode::BadAIRequest, req_id));
 			throw std::runtime_error("request perform fail");
 		}
 		//lack of process Json
@@ -403,13 +404,13 @@ drogon::Task<AIMessage> MessageService::AIRequestProcessor::operator()(const std
 		Json::Reader reader;
 		if (!reader.parse(resp, json_resp))
 		{
-			send_cb(Utils::GenErrorResponse("can not parse response", ChatCode::InValidJson,req_id));
+			send_cb(ResponseHelper::MakeErrorJson("can not parse response", ChatCode::InValidJson,req_id));
 			throw std::invalid_argument("can not parse response");
 		}
 
 		if (json_resp.isMember("error"))
 		{
-			send_cb(Utils::GenErrorResponse(json_resp["error"]["message"].toStyledString(), ChatCode::BadAIRequest, req_id));
+			send_cb(ResponseHelper::MakeErrorJson(json_resp["error"]["message"].toStyledString(), ChatCode::BadAIRequest, req_id));
 			throw std::runtime_error("request error: "+ json_resp["error"]["message"].asString());
 		}
 
@@ -500,7 +501,7 @@ size_t MessageService::AIRequestProcessor::StreamWriteCallback(void* contents, s
 				{
 					if (chunk_data.isMember("error"))
 					{
-						context->_cb(Utils::GenErrorResponse(chunk_data["error"]["message"].asString(),ChatCode::BadAIRequest));
+						context->_cb(ResponseHelper::MakeErrorJson(chunk_data["error"]["message"].asString(),ChatCode::BadAIRequest));
 					}
 					else if (chunk_data.isMember("choices") &&
 						chunk_data["choices"].isArray() &&
@@ -523,12 +524,12 @@ size_t MessageService::AIRequestProcessor::StreamWriteCallback(void* contents, s
 				}
 				else
 				{
-					context->_cb(Utils::GenErrorResponse("can not parse response",ChatCode::InValidJson));
+					context->_cb(ResponseHelper::MakeErrorJson("can not parse response",ChatCode::InValidJson));
 				}
 			}
 			catch (std::exception& e) {
 				LOG_ERROR << "exception in parsing stream chunk: " << e.what();
-				context->_cb(Utils::GenErrorResponse(e.what(), ChatCode::SystemException,context->_req_id));
+				context->_cb(ResponseHelper::MakeErrorJson(e.what(), ChatCode::SystemException,context->_req_id));
 			}
 		}
 	}

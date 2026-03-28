@@ -425,10 +425,10 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Service\FileService.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Service\RelationshipService.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Service\RedisService.cpp" />
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteUserRepository.cpp" />
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteMessageRepository.cpp" />
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteThreadRepository.cpp" />
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteRelationshipRepository.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgresUserRepository.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgresMessageRepository.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgresThreadRepository.cpp" />
+    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgresRelationshipRepository.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\SQLiteInitializer.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\Data\PostgreSQLInitializer.cpp" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\Users.cc" />
@@ -442,7 +442,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\FriendRequests.cc" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\Notifications.cc" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\Friendships.cc" />
-    <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\RelationshipEvent.cc" />
     <ClCompile Include="C:\Repository0428\ChatServer\ChatServer\models\Block.cc" />
   </ItemGroup>
   <ItemGroup />

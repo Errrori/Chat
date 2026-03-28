@@ -81,7 +81,7 @@ class UserSession:
         )
 
     # ── WebSocket 连接（异步接收，打印通知） ──
-    def connect_ws(self, ws_url: str):
+    def connect_ws(self, ws_url: str):      
         def on_message(ws, message):
             try:
                 data = json.loads(message)

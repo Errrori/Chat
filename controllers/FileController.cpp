@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Common/ResponseHelper.h"
 #include "FileController.h"
 #include "Service/FileService.h"
 
@@ -11,7 +12,7 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 	//File parsing issues or multiple files uploaded
 	if (parser.parse(req)!=0||parser.getFiles().size()!=1)
 	{
-		auto resp = Utils::CreateErrorResponse(400, 400, "File cannot be parsed or number of upload files exceeds 1");
+		auto resp = ResponseHelper::MakeResponse(400, 400, "File cannot be parsed or number of upload files exceeds 1");
 		callback(resp);
 		return;
 	}
@@ -20,7 +21,7 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 
 	if (file.getFileType()!=FT_IMAGE)
 	{
-		auto resp = Utils::CreateErrorResponse(403, 403, "Cannot upload non-image files here");
+		auto resp = ResponseHelper::MakeResponse(403, 403, "Cannot upload non-image files here");
 		callback(resp);
 		return;
 	}
@@ -38,7 +39,7 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 	if (!is_supported)
 	{
 		LOG_ERROR << "upload file is not supported : "<<file_extension;
-		auto resp = Utils::CreateErrorResponse(400, 400, "Unsupported file type");
+		auto resp = ResponseHelper::MakeResponse(400, 400, "Unsupported file type");
 		callback(resp);
 		return;
 	}
@@ -59,6 +60,6 @@ void FileController::UploadImage(const drogon::HttpRequestPtr& req,
 		callback(HttpResponse::newHttpJsonResponse(data));
 		return;
 	}
-	auto resp = Utils::CreateErrorResponse(500, 500, "Failed to upload file");
+	auto resp = ResponseHelper::MakeResponse(500, 500, "Failed to upload file");
 	callback(resp);
 }

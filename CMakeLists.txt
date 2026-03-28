@@ -35,7 +35,6 @@ set(SOURCES
     auth/TokenService.cpp
     auth/TokenFactory.cpp
     auth/PasswordService.cpp
-    auth/AccountValidator.cpp
     
     # Controllers
     controllers/Authentication.cpp
@@ -69,10 +68,10 @@ set(SOURCES
     Service/RedisService.cpp
     
     # Data layer
-    Data/SQLiteUserRepository.cpp
-    Data/SQLiteMessageRepository.cpp
-    Data/SQLiteThreadRepository.cpp
-    Data/SQLiteRelationshipRepository.cpp
+    Data/PostgresUserRepository.cpp
+    Data/PostgresMessageRepository.cpp
+    Data/PostgresThreadRepository.cpp
+    Data/PostgresRelationshipRepository.cpp
     Data/SQLiteInitializer.cpp
     Data/PostgreSQLInitializer.cpp
     
@@ -88,11 +87,20 @@ set(SOURCES
     models/FriendRequests.cc
     models/Notifications.cc
     models/Friendships.cc
-    models/RelationshipEvent.cc
     models/Block.cc
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+# Workaround: GCC 13 ICE (bug #108696) in coroutine frame generation at -O0.
+# Applying -O1 to the single affected file is sufficient to suppress the ICE
+# without changing the overall Debug build or affecting other translation units.
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set_source_files_properties(
+        Data/PostgresRelationshipRepository.cpp
+        PROPERTIES COMPILE_FLAGS "-O1"
+    )
+endif()
 
 # 查找 Drogon 包
 find_package(Drogon REQUIRED)

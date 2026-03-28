@@ -52,7 +52,7 @@ drogon::Task<bool> RedisService::IsOnline(const std::string& uid)
     }
 }
 
-drogon::Task<> RedisService::CacheDisplayProfile(const std::string& uid, const UsersInfo& profile)
+drogon::Task<> RedisService::CacheDisplayProfile(const std::string& uid, const UserInfo& profile)
 {
     try
     {
@@ -67,18 +67,18 @@ drogon::Task<> RedisService::CacheDisplayProfile(const std::string& uid, const U
     }
 }
 
-drogon::Task<UsersInfo> RedisService::GetCachedDisplayProfile(const std::string& uid)
+drogon::Task<UserInfo> RedisService::GetCachedDisplayProfile(const std::string& uid)
 {
     try
     {
         auto key = MakeKey(RedisKeys::UserDisplayHash, uid);
         auto result = co_await _client->execCommandCoro("HGETALL %s", key.c_str());
         if (result.isNil())
-            co_return UsersInfo{};
+            co_return UserInfo{};
 
         auto arr = result.asArray();
         if (arr.empty())
-            co_return UsersInfo{};
+            co_return UserInfo{};
 
         Json::Value json(Json::objectValue);
         for (size_t i = 0; i + 1 < arr.size(); i += 2)
@@ -89,7 +89,7 @@ drogon::Task<UsersInfo> RedisService::GetCachedDisplayProfile(const std::string&
     catch (const std::exception& e)
     {
         LOG_ERROR << "RedisService::GetCachedDisplayProfile error: " << e.what();
-        co_return UsersInfo{};
+        co_return UserInfo{};
     }
 }
 

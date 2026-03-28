@@ -57,10 +57,10 @@ public:
     // ──────────────────────────────────────────────
 
     /// 将展示资料写入 Redis Hash，TTL = UserInfoTTL
-    drogon::Task<> CacheDisplayProfile(const std::string& uid, const UsersInfo& profile);
+    drogon::Task<> CacheDisplayProfile(const std::string& uid, const UserInfo& profile);
 
-    /// 从缓存读取展示资料；cache miss 返回空 UsersInfo
-    drogon::Task<UsersInfo> GetCachedDisplayProfile(const std::string& uid);
+    /// 从缓存读取展示资料；cache miss 返回空 UserInfo
+    drogon::Task<UserInfo> GetCachedDisplayProfile(const std::string& uid);
 
     /// 使缓存失效（用户修改资料时调用）
     drogon::Task<> InvalidateDisplayProfile(const std::string& uid);

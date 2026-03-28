@@ -16,10 +16,10 @@
     #include <netdb.h>
 #endif
 
-#include "Data/SQLiteMessageRepository.h"
-#include "Data/SQLiteThreadRepository.h"
-#include "Data/SQLiteUserRepository.h"
-#include "Data/SQLiteRelationshipRepository.h"
+#include "Data/PostgresMessageRepository.h"
+#include "Data/PostgresThreadRepository.h"
+#include "Data/PostgresUserRepository.h"
+#include "Data/PostgresRelationshipRepository.h"
 #include "Service/ThreadService.h"
 #include "Service/UserService.h"
 #include "Service/MessageService.h"
@@ -98,22 +98,7 @@ Container::Container()
 {
 	{
 		auto db = drogon::app().getDbClient();
-		switch (db->type())
-		{
-		case drogon::orm::ClientType::PostgreSQL:
-			_db_initializer = std::make_shared<PostgreSQLInitializer>(db);
-			break;
-		case drogon::orm::ClientType::Sqlite3:
-			_db_initializer = std::make_shared<SQLiteInitializer>(db);
-			LOG_INFO << "Using SQLite initializer";
-			break;
-		case drogon::orm::ClientType::Mysql:
-		default:
-			LOG_WARN << "Current DbClient type is not implemented for dedicated initializer, fallback to SQLite initializer";
-			_db_initializer = std::make_shared<SQLiteInitializer>(db);
-			break;
-		}
-
+		_db_initializer = std::make_shared<PostgreSQLInitializer>(db);
 		_db_initializer->Initialize();
 		_db_initializer->Migrate();
 		LOG_INFO << "Database init success";
@@ -180,10 +165,10 @@ Container::Container()
 	}
 
 	auto db = drogon::app().getDbClient();
-	_user_repo         = std::make_shared<SQLiteUserRepository>(db);
-	_thread_repo       = std::make_shared<SQLiteThreadRepository>(db);
-	_message_repo      = std::make_shared<SQLiteMessageRepository>(db);
-	_relationship_repo = std::make_shared<SQLiteRelationshipRepository>(db);
+	_user_repo         = std::make_shared<PostgresUserRepository>(db);
+	_thread_repo       = std::make_shared<PostgresThreadRepository>(db);
+	_message_repo      = std::make_shared<PostgresMessageRepository>(db);
+	_relationship_repo = std::make_shared<PostgresRelationshipRepository>(db);
 
 	_user_service         = std::make_shared<UserService>(_user_repo, _redis_service);
 	_thread_service       = std::make_shared<ThreadService>(_thread_repo);

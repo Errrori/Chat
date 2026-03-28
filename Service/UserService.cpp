@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "Common/ResponseHelper.h"
 #include "UserService.h"
 #include "Common/User.h"
 #include "Data/IUserRepository.h"
@@ -12,11 +13,6 @@ using namespace Utils::Authentication;
 
 namespace
 {
-    int64_t NowMs()
-    {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now().time_since_epoch()).count();
-    }
 
     constexpr const char* kRefreshTokenCookieName = "refresh_token";
 
@@ -41,142 +37,96 @@ namespace
 
 drogon::Task<drogon::HttpResponsePtr> UserService::UserRegister(const UserInfo& info) const
 {
-    const auto t0 = NowMs();
-    const auto& username = info.getUsername();
-    const auto& password = info.getHashedPassword();
-    const auto& account = info.getAccount();
+    const auto& username = info.GetUsername();
+    const auto& password = info.GetHashedPassword();
+    const auto& account = info.GetAccount();
 
     // Check essential fields validation
-    if (username.empty() || password.empty() || account.empty())
+    if (!username || !password || !account)
     {
         LOG_ERROR << "UserRegister: lack of essential fields";
-        co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
+        co_return ResponseHelper::MakeResponse(400, 400, "lack of essential fields");
     }
 
-    if (!IsValidAccount(account))
+    if (!IsValidAccount(*account))
 	{
         LOG_ERROR << " account is not valid";
-        co_return Utils::CreateErrorResponse(400, 400, "account is not valid");
+        co_return ResponseHelper::MakeResponse(400, 400, "account is not valid");
 	}
 
     try
     {
-        const auto t_check_start = NowMs();
-        auto record = co_await _user_repo->GetAuthUserByAccount(account);
-        LOG_INFO << "[UserService] UserRegister check-account cost_ms=" << (NowMs() - t_check_start)
-                 << " account=" << account;
-        if (!record.getUid().empty())
-        {
-            LOG_INFO << "[UserService] UserRegister duplicate-account total_cost_ms=" << (NowMs() - t0)
-                     << " account=" << account;
-            co_return Utils::CreateSuccessResp(400, 400, "user is already existed");
-        }
 
-        const auto t_add_start = NowMs();
-        bool success = co_await _user_repo->AddUserCoro(info);
-        LOG_INFO << "[UserService] UserRegister add-user cost_ms=" << (NowMs() - t_add_start)
-                 << " account=" << account;
+    	bool success = co_await _user_repo->AddUserCoro(info);
 
         if (success)
-        {
-            LOG_INFO << "[UserService] UserRegister success total_cost_ms=" << (NowMs() - t0)
-                     << " account=" << account;
-            co_return Utils::CreateSuccessResp(200, 200, "user register: " + username);
-        }
+            co_return ResponseHelper::MakeResponse(200, 200, "user register: " + *username);
         else
-        {
-            LOG_WARN << "[UserService] UserRegister failed total_cost_ms=" << (NowMs() - t0)
-                     << " account=" << account;
-            co_return Utils::CreateErrorResponse(500, 500, "can not create user info");
-        }
+            co_return ResponseHelper::MakeResponse(500, 500, "can not create user info");
+        
     }
     catch (const std::exception& e)
     {
-        LOG_ERROR << "UserRegister exception: " << e.what() << " total_cost_ms=" << (NowMs() - t0)
-                  << " account=" << account;
-        co_return Utils::CreateErrorResponse(500, 500, "server error");
+        co_return ResponseHelper::MakeResponse(500, 500, "server error");
     }
 }
 
 drogon::Task<drogon::HttpResponsePtr> UserService::UserLogin(const UserInfo& info) const
 {
-    const auto t0 = NowMs();
-    if (info.getAccount().empty() || info.getHashedPassword().empty())
-        co_return Utils::CreateErrorResponse(400, 400, "lack of essential fields");
+    if (!info.GetAccount() || !info.GetHashedPassword())
+        co_return ResponseHelper::MakeResponse(400, 400, "lack of essential fields");
 
-    const auto& account = info.getAccount();
+    const auto& account = info.GetAccount();
 
     try
     {
         // Verify password against stored hash
-        const auto t_pwd_start = NowMs();
-        auto stored_password = co_await _user_repo->GetHashedPassword(account);
-        LOG_INFO << "[UserService] UserLogin get-hash cost_ms=" << (NowMs() - t_pwd_start)
-                 << " account=" << account;
+        auto stored_password = co_await _user_repo->GetHashedPassword(*account);
         if (stored_password.empty())
-        {
-            LOG_INFO << "[UserService] UserLogin account-not-found total_cost_ms=" << (NowMs() - t0)
-                     << " account=" << account;
-            co_return Utils::CreateErrorResponse(400, 400, "user is not existed");
-        }
+            co_return ResponseHelper::MakeResponse(400, 400, "user is not existed");
 
-        if (stored_password != info.getHashedPassword())
-        {
-            LOG_INFO << "[UserService] UserLogin password-mismatch total_cost_ms=" << (NowMs() - t0)
-                     << " account=" << account;
-            co_return Utils::CreateErrorResponse(400, 400, "password is not correct");
-        }
+        if (stored_password != info.GetHashedPassword())
+            co_return ResponseHelper::MakeResponse(400, 400, "password is not correct");
 
         // Fetch public profile (uid/username/account/avatar)
-        const auto t_profile_start = NowMs();
-        auto user_record = co_await _user_repo->GetAuthUserByAccount(account);
-        LOG_INFO << "[UserService] UserLogin get-user-profile cost_ms=" << (NowMs() - t_profile_start)
-                 << " account=" << account;
-        if (user_record.getUid().empty())
-            co_return Utils::CreateErrorResponse(500, 500, "server error");
-
-        auto at = Auth::TokenFactory::GenerateToken(user_record.getUid(),Auth::TokenType::Access);
-		auto rt = Auth::TokenFactory::GenerateToken(user_record.getUid(),Auth::TokenType::Refresh);
+        auto user_record = co_await _user_repo->GetAuthUserByAccount(*account);
+        if (!user_record.IsValid())
+            co_return ResponseHelper::MakeResponse(500, 500, "server error");
+        auto uid = *user_record.GetUid();
+        auto at = Auth::TokenFactory::GenerateToken(uid,Auth::TokenType::Access);
+		auto rt = Auth::TokenFactory::GenerateToken(uid,Auth::TokenType::Refresh);
 
         Json::Value data;
-        data["uid"]               = user_record.getUid();
-        data["access_token"]      = at.value;
+        data["uid"]               = uid;
+        data["token"]             = at.value;
         data["token_type"]        = "Bearer";
 
-        const auto t_redis_session_start = NowMs();
         co_await _redis_service->StoreRefreshSession(
-            user_record.getUid(), rt.jti,
+            uid, rt.jti,
             static_cast<int>(Auth::RefreshSessionTTL));
-        LOG_INFO << "[UserService] UserLogin redis-store-refresh cost_ms=" << (NowMs() - t_redis_session_start)
-                 << " uid=" << user_record.getUid();
 
         auto display_profile = UserInfoBuilder::BuildCached(
-            user_record.getUsername(), user_record.getAvatar());
+            *user_record.GetUsername(), *user_record.GetAvatar());
 
-        const auto t_redis_profile_start = NowMs();
-        co_await _redis_service->CacheDisplayProfile(user_record.getUid(), display_profile);
-        LOG_INFO << "[UserService] UserLogin redis-cache-display cost_ms=" << (NowMs() - t_redis_profile_start)
-                 << " uid=" << user_record.getUid();
+        co_await _redis_service->CacheDisplayProfile(uid, display_profile);
 
-        auto resp = Utils::CreateSuccessJsonResp(200, 200, "success login", data);
+        auto resp = ResponseHelper::MakeResponse(200, 200, "success login", data);
         resp->addCookie(BuildRefreshTokenCookie(rt.value, Auth::RefreshTokenTTL));
-        LOG_INFO << "[UserService] UserLogin success total_cost_ms=" << (NowMs() - t0)
-                 << " uid=" << user_record.getUid() << " account=" << account;
+
         co_return resp;
     }
     catch (const std::exception& e)
     {
-        LOG_ERROR << "UserLogin exception: " << e.what() << " total_cost_ms=" << (NowMs() - t0)
-                  << " account=" << account;
-        co_return Utils::CreateErrorResponse(500, 500, "server error");
+        LOG_ERROR << "UserLogin exception: " << e.what();
+        co_return ResponseHelper::MakeResponse(500, 500, "server error");
     }
 }
 
-drogon::Task<UsersInfo> UserService::GetDisplayProfileByUid(const std::string& uid)
+drogon::Task<UserInfo> UserService::GetDisplayProfileByUid(const std::string& uid) const
 {
-    auto cached = co_await _redis_service->GetCachedDisplayProfile(uid);
+    /*auto cached = co_await _redis_service->GetCachedDisplayProfile(uid);
     if (cached.IsValid())
-        co_return cached;
+        co_return cached;*/
 
     auto record = co_await _user_repo->GetDisplayProfileByUid(uid);
     if (record.IsValid())
@@ -184,10 +134,10 @@ drogon::Task<UsersInfo> UserService::GetDisplayProfileByUid(const std::string& u
     co_return record;
 }
 
-drogon::Task<UsersInfo> UserService::GetUserProfileByUid(const std::string& uid) const
+drogon::Task<UserInfo> UserService::GetUserProfileByUid(const std::string& uid) const
 {
     if (uid.empty())
-        co_return UsersInfo{};
+        co_return UserInfo{};
 
     try
     {
@@ -197,14 +147,14 @@ drogon::Task<UsersInfo> UserService::GetUserProfileByUid(const std::string& uid)
     catch (const std::exception& e)
     {
         LOG_ERROR << "exception in GetUserProfileByUid: " << e.what();
-        co_return UsersInfo{};
+        co_return UserInfo{};
     }
 }
 
-drogon::Task<UsersInfo> UserService::SearchUserByAccount(const std::string& account) const
+drogon::Task<UserInfo> UserService::SearchUserByAccount(const std::string& account) const
 {
     if (account.empty())
-        co_return UsersInfo{};
+        co_return UserInfo{};
 
     try
     {
@@ -214,28 +164,28 @@ drogon::Task<UsersInfo> UserService::SearchUserByAccount(const std::string& acco
     catch (const std::exception& e)
     {
         LOG_ERROR << "SearchUserByAccount exception: " << e.what();
-        co_return UsersInfo{};
+        co_return UserInfo{};
     }
 }
 
-drogon::Task<UsersInfo> UserService::UpdateUserProfile(
-    const std::string& uid, const UsersInfo& update_info) const
+drogon::Task<UserInfo> UserService::UpdateUserProfile(
+    const std::string& uid, const UserInfo& update_info) const
 {
     if (uid.empty())
-        co_return UsersInfo{};
+        co_return UserInfo{};
 
     if (!update_info.HasUpdates())
-        co_return UsersInfo{};
+        co_return UserInfo{};
 
     try
     {
         auto existing = co_await _user_repo->GetUserProfileByUid(uid);
         if (!existing.IsValid())
-            co_return UsersInfo{};
+            co_return UserInfo{};
 
         auto ok = co_await _user_repo->UpdateUserProfile(uid, update_info);
         if (!ok)
-            co_return UsersInfo{};
+            co_return UserInfo{};
 
         if (update_info.AffectsDisplayProfile())
             co_await _redis_service->InvalidateDisplayProfile(uid);
@@ -246,7 +196,7 @@ drogon::Task<UsersInfo> UserService::UpdateUserProfile(
     catch (const std::exception& e)
     {
         LOG_ERROR << "UpdateUserProfile exception: " << e.what();
-        co_return UsersInfo{};
+        co_return UserInfo{};
     }
 }
 
@@ -259,13 +209,13 @@ drogon::Task<drogon::HttpResponsePtr> UserService::RefreshToken(
 
     if (!token)
     {
-        co_return Utils::CreateErrorResponse(401, 401, "invalid or expired refresh token");
+        co_return ResponseHelper::MakeResponse(401, 401, "invalid or expired refresh token");
     }
 
     // Verify user still exists
     auto check = co_await _user_repo->GetUserProfileByUid(token->uid);
     if (!check.IsValid())
-        co_return Utils::CreateErrorResponse(401, 401, "user not found");
+        co_return ResponseHelper::MakeResponse(401, 401, "user not found");
 
     // Generate new tokens
     auto new_access = Auth::TokenFactory::GenerateToken(token->uid, Auth::TokenType::Access);
@@ -279,14 +229,14 @@ drogon::Task<drogon::HttpResponsePtr> UserService::RefreshToken(
     if (!rotated)
     {
         LOG_WARN << "[UserService] RefreshToken: stale jti for uid=" << token->uid;
-        co_return Utils::CreateErrorResponse(401, 401, "refresh token has been invalidated");
+        co_return ResponseHelper::MakeResponse(401, 401, "refresh token has been invalidated");
     }
 
     // Build response with new tokens
     Json::Value data;
     data["access_token"] = new_access.value;
     data["token_type"] = "Bearer";
-    auto resp = Utils::CreateSuccessJsonResp(200, 200, "token refreshed", data);
+    auto resp = ResponseHelper::MakeResponse(200, 200, "token refreshed", data);
     resp->addCookie(BuildRefreshTokenCookie(new_refresh.value, Auth::RefreshTokenTTL));
     co_return resp;
 }
@@ -299,7 +249,7 @@ drogon::Task<drogon::HttpResponsePtr> UserService::Logout(
         refresh_token, Auth::TokenType::Refresh);
     if (!token)
     {
-        auto resp = Utils::CreateSuccessResp(200, 200, "logged out");
+        auto resp = ResponseHelper::MakeResponse(200, 200, "logged out");
         resp->addCookie(BuildClearedRefreshTokenCookie());
         co_return resp;
     }
@@ -307,7 +257,7 @@ drogon::Task<drogon::HttpResponsePtr> UserService::Logout(
     // Revoke refresh session if user exists
     co_await _redis_service->RevokeRefreshSession(token->uid);
 
-    auto resp = Utils::CreateSuccessResp(200, 200, "logged out");
+    auto resp = ResponseHelper::MakeResponse(200, 200, "logged out");
     resp->addCookie(BuildClearedRefreshTokenCookie());
     co_return resp;
 }

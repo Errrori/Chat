@@ -2,171 +2,16 @@
 #include "User.h"
 #include "models/Users.h"
 
-// Builds a UserInfo from a JSON object (registration body or Redis cache).
-// Only reads the 4 public fields; password is hashed from "password" key if present.
-UserInfo UserInfo::FromJson(const Json::Value& json)
+UserInfo UserInfoBuilder::BuildSignInInfo(const std::string& account, const std::string& hashed_password)
 {
-	UserInfo info{};
-	try
-	{
-		if (json.isMember("uid"))      info.uid      = json["uid"].asString();
-		if (json.isMember("username")) info.username = json["username"].asString();
-		if (json.isMember("account"))  info.account  = json["account"].asString();
-		if (json.isMember("avatar"))   info.avatar   = json["avatar"].asString();
-		if (json.isMember("password"))
-			info.hashed_password = Utils::Authentication::PasswordHashed(json["password"].asString());
-	}
-	catch (const std::exception& e)
-	{
-		LOG_ERROR << "UserInfo::FromJson error: " << e.what();
-		return UserInfo{};
-	}
-	return info;
-}
-
-std::optional<drogon_model::postgres::Users> UserInfo::ToDbUsers() const
-{
-	if (!IsDbValid())
-		return std::nullopt;
-
-	drogon_model::postgres::Users user;
-	user.setUid(uid);
-	user.setUsername(username);
-	user.setAccount(account);
-	user.setPassword(hashed_password);
-	if (!avatar.empty())
-		user.setAvatar(avatar);
-
-	return user;
-}
-
-bool UserInfo::IsDbValid() const
-{
-	return !uid.empty() && !username.empty() && !account.empty() && !hashed_password.empty();
-}
-
-std::string UserInfo::ToString() const
-{
-	return "UserInfo{uid:" + uid + ", username:" + username +
-		", account:" + account + ", avatar:" + avatar + "}";
-}
-
-Json::Value UserInfo::ToJson() const
-{
-	Json::Value json;
-	json["uid"]      = uid;
-	json["username"] = username;
-	json["account"]  = account;
-	json["avatar"]   = avatar;
-	return json;
-}
-
-void UserInfo::Reset()
-{
-	uid.clear();
-	username.clear();
-	account.clear();
-	avatar.clear();
-	hashed_password.clear();
-}
-
-UserCachedInfo UserCachedInfo::FromJson(const Json::Value& json)
-{
-	UserCachedInfo profile;
-	try
-	{
-		if (json.isMember("username"))
-			profile.username = json["username"].asString();
-		if (json.isMember("avatar"))
-			profile.avatar = json["avatar"].asString();
-	}
-	catch (const std::exception& e)
-	{
-		LOG_ERROR << "UserCachedInfo::FromJson error: " << e.what();
-		return UserCachedInfo{};
-	}
-	return profile;
-}
-
-bool UserCachedInfo::IsEmpty() const
-{
-	return username.empty() && avatar.empty();
-}
-
-Json::Value UserCachedInfo::ToJson() const
-{
-	Json::Value json;
-	json["username"] = username;
-	json["avatar"] = avatar;
-	return json;
-}
-
-Json::Value UserSearchCard::ToJson() const
-{
-	Json::Value json;
-	json["uid"] = uid;
-	json["username"] = username;
-	json["avatar"] = avatar;
-	json["signature"] = signature;
-	return json;
-}
-
-Json::Value UserProfile::ToJson() const
-{
-	Json::Value json;
-	json["uid"] = uid;
-	json["account"] = account;
-	json["username"] = username;
-	json["avatar"] = avatar;
-	json["signature"] = signature;
-	return json;
-}
-
-UserProfilePatch UserProfilePatch::FromJson(const Json::Value& json)
-{
-	UserProfilePatch patch;
-	if (json.isMember("username") && !json["username"].isNull())
-		patch.username = json["username"].asString();
-	if (json.isMember("avatar") && !json["avatar"].isNull())
-		patch.avatar = json["avatar"].asString();
-	if (json.isMember("signature") && !json["signature"].isNull())
-		patch.signature = json["signature"].asString();
-	return patch;
-}
-
-bool UserProfilePatch::HasUpdates() const
-{
-	return username.has_value() || avatar.has_value() || signature.has_value();
-}
-
-bool UserProfilePatch::AffectsDisplayProfile() const
-{
-	return username.has_value() || avatar.has_value();
-}
-
-Json::Value UserProfilePatch::ToJson() const
-{
-	Json::Value json(Json::objectValue);
-	if (username.has_value())
-		json["username"] = *username;
-	if (avatar.has_value())
-		json["avatar"] = *avatar;
-	if (signature.has_value())
-		json["signature"] = *signature;
-	return json;
-}
-
-
-UsersInfo UserInfoBuilder::BuildSignInInfo(const std::string& account, const std::string& hashed_password)
-{
-	UsersInfo info;
-	info.SetType(UsersInfo::SignIn);
+	UserInfo info;
+	info.SetType(UserInfo::SignIn);
 	info.SetAccount(account);
 	info.SetHashedPassword(hashed_password);
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildSignInInfo(const Json::Value& json_data)
+UserInfo UserInfoBuilder::BuildSignInInfo(const Json::Value& json_data)
 {
 	try
 	{
@@ -179,27 +24,27 @@ UsersInfo UserInfoBuilder::BuildSignInInfo(const Json::Value& json_data)
 	}
 }
 
-UsersInfo UserInfoBuilder::BuildSignInInfo(std::string&& account, std::string&& hashed_password)
+UserInfo UserInfoBuilder::BuildSignInInfo(std::string&& account, std::string&& hashed_password)
 {
-	UsersInfo info;
-	info.SetType(UsersInfo::SignIn);
+	UserInfo info;
+	info.SetType(UserInfo::SignIn);
 	info.SetAccount(std::move(account));
 	info.SetHashedPassword(std::move(hashed_password));
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildSignUpInfo(const std::string& username, const std::string& account,
+UserInfo UserInfoBuilder::BuildSignUpInfo(const std::string& username, const std::string& account,
                                            const std::string& hashed_password)
 {
-	UsersInfo info;
-	info.SetType(UsersInfo::SignUp);
+	UserInfo info;
+	info.SetType(UserInfo::SignUp);
 	info.SetUsername(username);
 	info.SetAccount(account);
 	info.SetHashedPassword(hashed_password);
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildSignUpInfo(const Json::Value& json_data)
+UserInfo UserInfoBuilder::BuildSignUpInfo(const Json::Value& json_data)
 {
 	try
 	{
@@ -213,21 +58,21 @@ UsersInfo UserInfoBuilder::BuildSignUpInfo(const Json::Value& json_data)
 	}
 }
 
-UsersInfo UserInfoBuilder::BuildSignUpInfo(std::string&& username, std::string&& account, std::string&& hashed_password)
+UserInfo UserInfoBuilder::BuildSignUpInfo(std::string&& username, std::string&& account, std::string&& hashed_password)
 {
-	UsersInfo info;
-	info.SetType(UsersInfo::SignUp);
+	UserInfo info;
+	info.SetType(UserInfo::SignUp);
 	info.SetUsername(std::move(username));
 	info.SetAccount(std::move(account));
 	info.SetHashedPassword(std::move(hashed_password));
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildProfile(const std::string& username, const std::string& avatar,
+UserInfo UserInfoBuilder::BuildProfile(const std::string& username, const std::string& avatar,
                                         const std::string& account, const std::string& uid, const std::string& signature)
 {
-	UsersInfo info;
-	info.SetType(UsersInfo::Profile);
+	UserInfo info;
+	info.SetType(UserInfo::Profile);
 	info.SetUsername(username);
 	info.SetAvatar(avatar);
 	info.SetAccount(account);
@@ -236,7 +81,7 @@ UsersInfo UserInfoBuilder::BuildProfile(const std::string& username, const std::
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildProfile(const Json::Value& json_data)
+UserInfo UserInfoBuilder::BuildProfile(const Json::Value& json_data)
 {
 	try
 	{
@@ -249,11 +94,11 @@ UsersInfo UserInfoBuilder::BuildProfile(const Json::Value& json_data)
 	}
 }
 
-UsersInfo UserInfoBuilder::BuildProfile(std::string&& username, std::string&& avatar, std::string&& account,
+UserInfo UserInfoBuilder::BuildProfile(std::string&& username, std::string&& avatar, std::string&& account,
                                         std::string&& uid, std::string&& signature)
 {
-	UsersInfo info;
-	info.SetType(UsersInfo::Profile);
+	UserInfo info;
+	info.SetType(UserInfo::Profile);
 	info.SetUsername(std::move(username));
 	info.SetAvatar(std::move(avatar));
 	info.SetAccount(std::move(account));
@@ -262,16 +107,16 @@ UsersInfo UserInfoBuilder::BuildProfile(std::string&& username, std::string&& av
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildCached(const std::string& username, const std::string& avatar)
+UserInfo UserInfoBuilder::BuildCached(const std::string& username, const std::string& avatar)
 {
-	UsersInfo info;
-	info.SetType(UsersInfo::Cached);
+	UserInfo info;
+	info.SetType(UserInfo::Cached);
 	info.SetUsername(username);
 	info.SetAvatar(avatar);
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildCached(const Json::Value& json_data)
+UserInfo UserInfoBuilder::BuildCached(const Json::Value& json_data)
 {
 	try
 	{
@@ -284,20 +129,20 @@ UsersInfo UserInfoBuilder::BuildCached(const Json::Value& json_data)
 	}
 }
 
-UsersInfo UserInfoBuilder::BuildCached(std::string&& username, std::string&& avatar)
+UserInfo UserInfoBuilder::BuildCached(std::string&& username, std::string&& avatar)
 {
-	UsersInfo info;
-	info.SetType(UsersInfo::Cached);
+	UserInfo info;
+	info.SetType(UserInfo::Cached);
 	info.SetUsername(std::move(username));
 	info.SetAvatar(std::move(avatar));
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildUpdatedInfo(std::optional<std::string> username, std::optional<std::string> avatar,
+UserInfo UserInfoBuilder::BuildUpdatedInfo(std::optional<std::string> username, std::optional<std::string> avatar,
 	std::optional<std::string> signature)
 {
-	UsersInfo info;
-	info.SetType(UsersInfo::UpdateInfo);
+	UserInfo info;
+	info.SetType(UserInfo::UpdateInfo);
 	if (username) 
 		info.SetUsername(std::move(*username));
 	if (avatar)
@@ -307,18 +152,18 @@ UsersInfo UserInfoBuilder::BuildUpdatedInfo(std::optional<std::string> username,
 	return info;
 }
 
-UsersInfo UserInfoBuilder::BuildUpdatedInfo(const Json::Value& json_data)
+UserInfo UserInfoBuilder::BuildUpdatedInfo(const Json::Value& json_data)
 {
 	try
 	{
-		UsersInfo info;
+		UserInfo info;
 		if (json_data.isMember("username")&&!json_data["username"].isNull())
 			info.SetUsername(json_data["username"].asString());
 		if (json_data.isMember("avatar") && !json_data["avatar"].isNull())
 			info.SetAvatar(json_data["avatar"].asString());
 		if (json_data.isMember("signature")&&!json_data["signature"].isNull())
 			info.SetSignature(json_data["signature"].asString());
-		info.SetType(UsersInfo::UpdateInfo);
+		info.SetType(UserInfo::UpdateInfo);
 		return info;
 	}
 	catch (const std::exception& e)
@@ -329,7 +174,7 @@ UsersInfo UserInfoBuilder::BuildUpdatedInfo(const Json::Value& json_data)
 }
 
 
-bool UsersInfo::IsValid() const
+bool UserInfo::IsValid() const
 {
 	switch (type_)
 	{
@@ -349,21 +194,21 @@ bool UsersInfo::IsValid() const
 	}
 }
 
-bool UsersInfo::HasUpdates() const
+bool UserInfo::HasUpdates() const
 {
 	if (type_ != UpdateInfo)
 		return false;
 	return username_.has_value() || avatar_.has_value() || signature_.has_value();
 }
 
-bool UsersInfo::AffectsDisplayProfile() const
+bool UserInfo::AffectsDisplayProfile() const
 {
 	if (type_ != UpdateInfo)
 		return false;
 	return username_.has_value() || avatar_.has_value();
 }
 
-Json::Value UsersInfo::ToJson() const
+Json::Value UserInfo::ToJson() const
 {
 	//important: never serialize hashed_password!!!
 

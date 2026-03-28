@@ -2,10 +2,10 @@
 #include "Data/IRelationshipRepository.h"
 #include <drogon/orm/DbClient.h>
 
-class SQLiteRelationshipRepository :public IRelationshipRepository
+class PostgresRelationshipRepository :public IRelationshipRepository
 {
 public:
-	explicit SQLiteRelationshipRepository(drogon::orm::DbClientPtr db) : _db(std::move(db)) {}
+	explicit PostgresRelationshipRepository(drogon::orm::DbClientPtr db) : _db(std::move(db)) {}
 	drogon::Task<int64_t> WriteFriendRequest(const std::string& requester_uid,
 		const std::string& acceptor_uid, const std::string& payload) override;
 

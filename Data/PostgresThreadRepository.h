@@ -6,10 +6,10 @@ class PrivateThread;
 class GroupThread;
 class AIThread;
 
-class SQLiteThreadRepository:public IThreadRepository
+class PostgresThreadRepository:public IThreadRepository
 {
 public:
-	explicit SQLiteThreadRepository(drogon::orm::DbClientPtr db) : _db(std::move(db)) {}
+	explicit PostgresThreadRepository(drogon::orm::DbClientPtr db) : _db(std::move(db)) {}
 	drogon::Task<int> CreatePrivateThread(PrivateThread info) override;
 	drogon::Task<int> CreateGroupThread(GroupThread info) override;
 	drogon::Task<int> CreateAIThread(AIThread info) override;

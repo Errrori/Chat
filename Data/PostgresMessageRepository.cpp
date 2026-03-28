@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SQLiteMessageRepository.h"
+#include "PostgresMessageRepository.h"
 
 
 #include "Common/ChatMessage.h"
@@ -21,7 +21,7 @@ using GroupMembers = drogon_model::postgres::GroupMembers;
 //�����߼�����Service�㣬��Ҫ��鷢�����Ƿ��ڸ�thread��
 //����ֵΪmessage_id
 
-drogon::Task<int64_t> SQLiteMessageRepository::RecordUserMessage(const ChatMessage& message)
+drogon::Task<int64_t> PostgresMessageRepository::RecordUserMessage(const ChatMessage& message)
 {
 	try
 	{
@@ -64,7 +64,7 @@ drogon::Task<int64_t> SQLiteMessageRepository::RecordUserMessage(const ChatMessa
 }
 
 
-drogon::Task<> SQLiteMessageRepository::RecordAIMessage(const AIMessage& message)
+drogon::Task<> PostgresMessageRepository::RecordAIMessage(const AIMessage& message)
 {
 	try
 	{
@@ -106,7 +106,7 @@ drogon::Task<> SQLiteMessageRepository::RecordAIMessage(const AIMessage& message
 	}
 }
 
-drogon::Task<Json::Value> SQLiteMessageRepository::GetMessageRecords(int thread_id, int64_t existed_id, int num)
+drogon::Task<Json::Value> PostgresMessageRepository::GetMessageRecords(int thread_id, int64_t existed_id, int num)
 {
 	try
 	{
@@ -139,7 +139,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetMessageRecords(int thread_
 }
 
 
-drogon::Task<Json::Value> SQLiteMessageRepository::GetAIContext(int thread_id, int64_t timestamp)
+drogon::Task<Json::Value> PostgresMessageRepository::GetAIContext(int thread_id, int64_t timestamp)
 {
 	try
 	{
@@ -165,7 +165,7 @@ drogon::Task<Json::Value> SQLiteMessageRepository::GetAIContext(int thread_id, i
 	
 }
 
-drogon::Task<Json::Value> SQLiteMessageRepository::GetChatOverviews(int64_t existing_id, const std::string& uid)
+drogon::Task<Json::Value> PostgresMessageRepository::GetChatOverviews(int64_t existing_id, const std::string& uid)
 {
 	try {
 

@@ -1,0 +1,65 @@
+# 本地 / 离线构建专用 Dockerfile
+# 前提: chat:latest 已存在（作为 builder + runtime 双重 base，无需拉取任何新镜像）
+# 使用场景: Docker Hub / 镜像源不可达时，仍能用本地缓存完成重新构建
+#
+# 注意: build context 必须是 workspace 根目录（ChatServer/ 的上一级）
+# 用法（在 ChatServer/ 目录执行）:
+#   docker build -f Dockerfile.local -t chat:latest ..
+#   docker compose up -d
+
+# ── Builder 阶段 ─────────────────────────────────────────────────
+FROM chat:latest AS builder
+
+# 安装编译工具（使用已配置好的 aliyun 源，无需外网）
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang \
+    cmake \
+    make \
+    build-essential \
+    pkg-config \
+    libjsoncpp-dev \
+    uuid-dev \
+    libssl-dev \
+    zlib1g-dev \
+    libsqlite3-dev \
+    libcurl4-openssl-dev \
+    libdrogon-dev \
+    libtrantor-dev \
+    libpq-dev \
+    libmariadb-dev \
+    libbrotli-dev \
+    libyaml-cpp-dev \
+    libhiredis-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置 Clang 避开 GCC C++20 协程已知 bug
+ENV CC=clang
+ENV CXX=clang++
+
+WORKDIR /workspace
+
+# 从 workspace 根目录复制:
+#   ChatServer/  → 应用源代码
+#   third_party/ → jwt-cpp 头文件（header-only，仅编译期需要）
+COPY ChatServer/ .
+COPY third_party/ third_party/
+
+# 编译（先清除 Windows 环境遗留的 CMakeCache，再重新 configure）
+RUN rm -rf build \
+    && mkdir build \
+    && cd build \
+    && cmake .. -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Release \
+    && make -j$(nproc)
+
+# ── Runtime 阶段 ─────────────────────────────────────────────────
+# 复用 chat:latest 作为运行时基础，无需拉取任何镜像
+FROM chat:latest AS runtime
+
+WORKDIR /app
+
+# 用新编译的二进制覆盖旧版本
+COPY --from=builder /workspace/build/Test /app/Test
+
+EXPOSE 10086
+CMD ["./Test"]

@@ -11,14 +11,23 @@
 #include "auth/TokenService.h"
 #include "auth/TokenFactory.h"
 #include "auth/PasswordService.h"
-#include "auth/AccountValidator.h"
 
 
 namespace Utils {
     namespace Authentication
     {
         bool IsValidAccount(const std::string& account) {
-            return Auth::AccountValidator::GetInstance().IsValid(account);
+            static const std::regex fmt{ "^[a-zA-Z0-9]{6,16}$" };
+            if (!std::regex_match(account, fmt))
+                return false;
+
+            //static const std::vector<std::string> reserved = { "admin", "root", "system" };
+            //auto lower = account;
+            //std::transform(lower.begin(), lower.end(), lower.begin(),
+            //               [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
+
+            //return std::find(reserved.begin(), reserved.end(), lower) == reserved.end();
+            return true;
         }
 
 #ifdef _WIN32
@@ -77,64 +86,7 @@ namespace Utils {
         }
     }
 
-	drogon::HttpResponsePtr CreateErrorResponse(int statusCode, int code, const std::string& message)
-    {
-        Json::Value response;
-        response["code"] = code;
-        response["message"] = message;
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-        resp->setStatusCode(static_cast<drogon::HttpStatusCode>(statusCode));
-        return resp;
-    }
 
-    drogon::HttpResponsePtr CreateSuccessResp(int statusCode, int code, const std::string& message)
-    {
-        Json::Value response;
-        response["code"] = code;
-        response["message"] = message;
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-        resp->setStatusCode(static_cast<drogon::HttpStatusCode>(statusCode));
-        return resp;
-    }
-
-    drogon::HttpResponsePtr CreateSuccessJsonResp(int statusCode, int code, const std::string& message,const Json::Value& data)
-    {
-        Json::Value response;
-        response["code"] = code;
-        response["message"] = message;
-        response["data"] = data;
-        auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
-        resp->setStatusCode(static_cast<drogon::HttpStatusCode>(statusCode));
-        return resp;
-    }
-
-    double GetRandomJitter(double min_sec, double max_sec)
-    {
-        static std::mt19937 gen(std::random_device{}());
-        static std::mutex rng_mutex;
-
-        std::lock_guard<std::mutex> lock(rng_mutex);
-        std::uniform_real_distribution<double> dist(min_sec, max_sec);
-        return dist(gen);
-    }
-
-    Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code)
-    {
-        Json::Value resp;
-        resp["code"] = code;
-        resp["error"] = msg;
-        return resp;
-    }
-
-    //only for Ai request
-    Json::Value GenErrorResponse(const std::string& msg, ChatCode::Code code,const std::string& message_id)
-    {
-        Json::Value resp;
-        resp["code"] = code;
-        resp["error"] = msg;
-        resp["message_id"] = message_id;
-        return resp;
-    }
 
     void SendJson(const drogon::WebSocketConnectionPtr& conn, const Json::Value& data)
     {
@@ -153,5 +105,12 @@ namespace Utils {
     int64_t GetCurrentTimeStamp()
     {
 		return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    }
+
+    double GetRandomJitter(double min_sec, double max_sec)
+    {
+        static thread_local std::mt19937 rng(std::random_device{}());
+        std::uniform_real_distribution<double> dist(min_sec, max_sec);
+        return dist(rng);
     }
 }
