@@ -177,6 +177,23 @@ const std::vector<Migration> MIGRATIONS = {
         16, "Index: group_members(user_uid)",
         "CREATE INDEX IF NOT EXISTS idx_group_members_uid ON group_members(user_uid);"
     },
+    {
+        17, "Index: notifications(recipient_uid, is_read)",
+        // Covers GET /relation/notifications  (recipient_uid = ?)
+        // and    GET /relation/notifications/unread  (recipient_uid = ? AND is_read = 0)
+        "CREATE INDEX IF NOT EXISTS idx_notifications_recipient "
+        "ON notifications(recipient_uid, is_read);"
+    },
+    {
+        18, "Index: friend_requests(requester_uid, status)",
+        "CREATE INDEX IF NOT EXISTS idx_friend_requests_requester "
+        "ON friend_requests(requester_uid, status);"
+    },
+    {
+        19, "Index: friend_requests(target_uid, status)",
+        "CREATE INDEX IF NOT EXISTS idx_friend_requests_target "
+        "ON friend_requests(target_uid, status);"
+    },
 
     // ---- Append future migrations BELOW this line ----------------------------
     // Example:

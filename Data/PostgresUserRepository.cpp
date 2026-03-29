@@ -133,13 +133,14 @@ drogon::Task<AddUserStatus> PostgresUserRepository::AddUserCoro(const UserInfo& 
 			"VALUES ($1, $2, $3, $4, $5) "
 			"ON CONFLICT (account) DO NOTHING";
 
+		const std::string avatar = info.GetAvatar().has_value() ? *info.GetAvatar() : std::string{};
 		auto result = co_await _db->execSqlCoro(
 			sql,
-			*info.GetUid(),
-			*info.GetAccount(),
-			*info.GetUsername(),
-			*info.GetHashedPassword(),
-			info.GetAvatar().has_value() ? *info.GetAvatar() : std::string{});
+			info.GetUid()->c_str(),
+			info.GetAccount()->c_str(),
+			info.GetUsername()->c_str(),
+			info.GetHashedPassword()->c_str(),
+			avatar.c_str());
 
 		if (result.affectedRows() == 0)
 			co_return AddUserStatus::AlreadyExists;

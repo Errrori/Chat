@@ -127,9 +127,9 @@ drogon::Task<drogon::HttpResponsePtr> UserService::UserLogin(const UserInfo& inf
 
 drogon::Task<UserInfo> UserService::GetDisplayProfileByUid(const std::string& uid) const
 {
-    /*auto cached = co_await _redis_service->GetCachedDisplayProfile(uid);
+    auto cached = co_await _redis_service->GetCachedDisplayProfile(uid);
     if (cached.IsValid())
-        co_return cached;*/
+        co_return cached;
 
     auto record = co_await _user_repo->GetDisplayProfileByUid(uid);
     if (record.IsValid())

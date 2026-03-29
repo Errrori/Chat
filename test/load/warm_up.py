@@ -183,6 +183,16 @@ def main():
                 print(f"    {account_name(idx)}: {msg}")
             if len(login_fail) > 5:
                 print(f"    … 及其他 {len(login_fail) - 5} 个")
+
+            # 检测"密码不正确"错误：通常意味着 DB 中残留了旧的明文密码（服务端密码
+            # 哈希算法已改为 MD5，但老账号数据未迁移）。
+            stale_pw = [idx for idx, msg in login_fail if "password is not correct" in msg]
+            if stale_pw:
+                print(f"\n  {BOLD}[诊断] 检测到 {len(stale_pw)} 个账号密码格式不匹配（可能是旧明文密码残留）{RESET}")
+                print(f"  运行以下命令清除旧测试数据后重新预热：\n")
+                print(f"    docker compose exec postgres psql -U postgres -d postgres \\")
+                print(f"      -c \"DELETE FROM users WHERE account LIKE '{ACCOUNT_PREFIX}%';\"")
+                print(f"\n  然后再次运行: python warm_up.py --host {base_url}\n")
         else:
             print(f"  {GREEN}✔ 登录验证: {len(login_success):4d} / {len(reg_success)}{RESET}")
 
@@ -191,7 +201,7 @@ def main():
     rate = pool_size / elapsed if elapsed > 0 else 0
     print(f"\n  {BOLD}完成{RESET}，耗时 {elapsed:.1f}s，平均速率 {rate:.1f} 账号/s")
 
-    if reg_fail:
+    if reg_fail or (not args.no_verify and login_fail):
         sys.exit(1)
 
 
