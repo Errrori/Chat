@@ -56,14 +56,17 @@ drogon::Task<drogon::HttpResponsePtr> UserService::UserRegister(const UserInfo& 
 
     try
     {
+        auto status = co_await _user_repo->AddUserCoro(info);
 
-    	bool success = co_await _user_repo->AddUserCoro(info);
-
-        if (success)
+        switch (status)
+        {
+        case AddUserStatus::Inserted:
             co_return ResponseHelper::MakeResponse(200, 200, "user register: " + *username);
-        else
+        case AddUserStatus::AlreadyExists:
+            co_return ResponseHelper::MakeResponse(409, 409, "account already exists");
+        default:
             co_return ResponseHelper::MakeResponse(500, 500, "can not create user info");
-        
+        }
     }
     catch (const std::exception& e)
     {

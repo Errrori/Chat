@@ -3,6 +3,14 @@
 #include "Common/User.h"
 #include <drogon/HttpController.h>
 
+/// Result returned by IUserRepository::AddUserCoro.
+enum class AddUserStatus : int8_t
+{
+    Inserted      =  0,  ///< Row was newly inserted.
+    AlreadyExists =  1,  ///< account UNIQUE constraint — no row written.
+    Error         = -1,  ///< Unexpected DB error.
+};
+
 class IUserRepository
 {
 public:
@@ -23,8 +31,9 @@ public:
 	// Returns the search card projection used by account lookup.
 	virtual drogon::Task<UserInfo> FindUserByAccount(const std::string& account) const = 0;
 
-	// Persists a new user (requires hashed_password set on info)
-	virtual drogon::Task<bool> AddUserCoro(const UserInfo& info) = 0;
+	// Persists a new user (requires hashed_password set on info).
+	// Uses INSERT ... ON CONFLICT (account) DO NOTHING — safe for concurrent calls.
+	virtual drogon::Task<AddUserStatus> AddUserCoro(const UserInfo& info) = 0;
 
 	// Updates mutable user profile fields by uid.
 	virtual drogon::Task<bool> UpdateUserProfile(const std::string& uid, const UserInfo& update_info) = 0;

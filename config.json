@@ -9,7 +9,7 @@
       "user": "postgres",
       "passwd": "123456",
       "is_fast": false,
-      "connection_number": 8,
+      "connection_number": 20,
       "filename": ""
     }
   ],

@@ -6,6 +6,7 @@
 #include "Container.h"
 #include "Service/UserService.h"
 #include "auth/TokenService.h"
+#include "Utils.h"
 
 // Handle user registration request
 drogon::Task<drogon::HttpResponsePtr> AuthController::OnRegister(drogon::HttpRequestPtr req)
@@ -24,7 +25,8 @@ drogon::Task<drogon::HttpResponsePtr> AuthController::OnRegister(drogon::HttpReq
             co_return ResponseHelper::MakeResponse(400, 400, "request body is not valid JSON");
 
         auto user_info = UserInfoBuilder::BuildSignUpInfo(
-            body["username"].asString(), body["account"].asString(), body["password"].asString());
+            body["username"].asString(), body["account"].asString(),
+            Utils::Authentication::PasswordHashed(body["password"].asString()));
 
         user_info.SetUid(Utils::Authentication::GenerateUid());
 
@@ -51,7 +53,9 @@ drogon::Task<drogon::HttpResponsePtr> AuthController::OnLogin(drogon::HttpReques
     }
     else
         co_return ResponseHelper::MakeResponse(400, 400, "request body is not valid JSON");
-	auto info = UserInfoBuilder::BuildSignInInfo(body["account"].asString(), body["password"].asString());
+	auto info = UserInfoBuilder::BuildSignInInfo(
+		body["account"].asString(),
+		Utils::Authentication::PasswordHashed(body["password"].asString()));
 
     auto resp = co_await Container::GetInstance().GetUserService()->UserLogin(info);
     co_return resp;

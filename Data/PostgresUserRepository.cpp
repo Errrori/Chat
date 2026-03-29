@@ -122,25 +122,34 @@ drogon::Task<UserInfo> PostgresUserRepository::FindUserByAccount(const std::stri
 	}
 }
 
-drogon::Task<bool> PostgresUserRepository::AddUserCoro(const UserInfo& info)
+drogon::Task<AddUserStatus> PostgresUserRepository::AddUserCoro(const UserInfo& info)
 {
 	try
 	{
-		CoroMapper<Users> mapper(_db);
-		Users user;
-		user.setUid(*info.GetUid());
-		user.setAccount(*info.GetAccount());
-		user.setUsername(*info.GetUsername());
-		user.setPassword(*info.GetHashedPassword());
-		user.setAvatar(info.GetAvatar().has_value() ? *info.GetAvatar() : "");
-		co_await mapper.insert(user);
+		// Single-round-trip upsert: ON CONFLICT DO NOTHING lets the DB handle
+		// duplicate accounts atomically without a separate SELECT pre-check.
+		const std::string sql =
+			"INSERT INTO users (uid, account, username, password, avatar) "
+			"VALUES ($1, $2, $3, $4, $5) "
+			"ON CONFLICT (account) DO NOTHING";
 
-		co_return true;
+		auto result = co_await _db->execSqlCoro(
+			sql,
+			*info.GetUid(),
+			*info.GetAccount(),
+			*info.GetUsername(),
+			*info.GetHashedPassword(),
+			info.GetAvatar().has_value() ? *info.GetAvatar() : std::string{});
+
+		if (result.affectedRows() == 0)
+			co_return AddUserStatus::AlreadyExists;
+
+		co_return AddUserStatus::Inserted;
 	}
 	catch (const std::exception& e)
 	{
 		LOG_ERROR << "AddUser error: " << e.what();
-		co_return false;
+		co_return AddUserStatus::Error;
 	}
 }
 
