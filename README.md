@@ -24,7 +24,7 @@
 - 响应时间：绝大多数接口的平均响应时间在 3–6 ms 之间
 - 百分位数：90% 的请求在 6 ms 内完成，99% 在 21 ms 内完成，说明系统在压力下仍保持稳定低延迟。
 - 结论：本次压测场景下（总请求量约 105 万次，峰值吞吐 1300 req/s），系统所有接口错误率为0，响应时间满足预期（P99 < 30 ms），具备良好的高并发处理能力。
-- 测试方法详见 [测试](## 测试)
+- 测试方法详见 [测试](##测试)
 
 具体数据如下：
 | Type | Name | Request Count | Failure Count | Median Response Time | Average Response Time | Min Response Time | Max Response Time | Average Content Size | Requests/s | Failures/s | 50% | 66% | 75% | 80% | 90% | 95% | 98% | 99% | 99.9% | 99.99% | 100% |
@@ -136,8 +136,5 @@ locust -f ws_locustfile.py --headless --users 500 --spawn-rate 10 --run-time 10m
 ## 在线文档
 
 开发文档: [开发文档](https://veryshuai666.github.io/ChatDocs/)
+
 接口文档: [接口文档](https://veryshuai666.github.io/ChatDocs/%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3/%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3/)
-
-```
-
-```
