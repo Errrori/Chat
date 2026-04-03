@@ -1,6 +1,38 @@
 #include "pch.h"
 #include "RedisService.h"
+#include <array>
 #include <drogon/utils/coroutine.h>
+
+namespace
+{
+struct TimerDelayAwaiter
+{
+    std::chrono::milliseconds delay;
+
+    bool await_ready() const noexcept
+    {
+        return delay.count() <= 0;
+    }
+
+    void await_suspend(std::coroutine_handle<> handle) const
+    {
+        drogon::app().getLoop()->runAfter(
+            static_cast<double>(delay.count()) / 1000.0,
+            [handle]() mutable {
+                handle.resume();
+            });
+    }
+
+    void await_resume() const noexcept
+    {
+    }
+};
+
+drogon::Task<> RetryDelay(std::chrono::milliseconds delay)
+{
+    co_await TimerDelayAwaiter{delay};
+}
+}
 
 std::string RedisService::MakeKey(const char* pattern, const std::string& uid)
 {
@@ -106,30 +138,104 @@ drogon::Task<> RedisService::InvalidateDisplayProfile(const std::string& uid)
     }
 }
 
-drogon::Task<> RedisService::PushOfflinePacket(const std::string& uid,
-                                               const std::string& packet_json,
-                                               ChatDelivery::OfflineChannel channel)
+drogon::Task<bool> RedisService::PushOfflinePacket(const std::string& uid,
+                                                   const std::string& packet_json,
+                                                   ChatDelivery::OfflineChannel channel)
 {
+    static constexpr std::array<int, 3> kRetryDelaysMs{100, 200, 400};
+
+    for (size_t attempt = 0; attempt < kRetryDelaysMs.size(); ++attempt)
+    {
+        try
+        {
+            auto key = MakeKey(channel == ChatDelivery::OfflineChannel::Notice
+                ? RedisKeys::OfflineNoticeQueue
+                : RedisKeys::OfflineMessageQueue,
+                uid);
+            co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), packet_json.c_str());
+            co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
+            co_return true;
+        }
+        catch (const std::exception& e)
+        {
+            LOG_WARN << "Redis push offline packet attempt " << (attempt + 1)
+                << " failed for uid=" << uid << ": " << e.what();
+
+            if (attempt + 1 < kRetryDelaysMs.size())
+                co_await RetryDelay(std::chrono::milliseconds(kRetryDelaysMs[attempt]));
+        }
+    }
+
+    LOG_ERROR << "Redis push offline packet failed after retries for uid=" << uid;
+    co_return false;
+}
+
+drogon::Task<bool> RedisService::MoveOfflineMessagesToPending(const std::string& uid)
+{
+    try
+    {
+        auto source_key = MakeKey(RedisKeys::OfflineMessageQueue, uid);
+        auto pending_key = MakeKey(RedisKeys::PendingDeliveryQueue, uid);
+
+        auto exists = co_await _client->execCommandCoro("EXISTS %s", source_key.c_str());
+        if (exists.asInteger() == 0)
+            co_return false;
+
+        co_await _client->execCommandCoro("DEL %s", pending_key.c_str());
+        co_await _client->execCommandCoro("RENAME %s %s", source_key.c_str(), pending_key.c_str());
+        co_await _client->execCommandCoro("EXPIRE %s %d", pending_key.c_str(), RedisKeys::OfflineQueueTTL);
+        co_return true;
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::MoveOfflineMessagesToPending error: " << e.what();
+        co_return false;
+    }
+}
+
+drogon::Task<std::optional<std::string>> RedisService::PopPendingOfflineMessage(const std::string& uid)
+{
+    try
+    {
+        auto pending_key = MakeKey(RedisKeys::PendingDeliveryQueue, uid);
+        auto result = co_await _client->execCommandCoro("LPOP %s", pending_key.c_str());
+        if (result.isNil())
+            co_return std::nullopt;
+
+        co_return result.asString();
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::PopPendingOfflineMessage error: " << e.what();
+        co_return std::nullopt;
+    }
+}
+
+drogon::Task<> RedisService::RestorePendingOfflineMessages(const std::string& uid)
+{
+    static constexpr char kRestorePendingLua[] =
+        "local msgs = redis.call('LRANGE', KEYS[1], 0, -1) "
+        "if #msgs == 0 then return 0 end "
+        "redis.call('DEL', KEYS[1]) "
+        "for i = #msgs, 1, -1 do redis.call('LPUSH', KEYS[2], msgs[i]) end "
+        "redis.call('EXPIRE', KEYS[2], tonumber(ARGV[1])) "
+        "return #msgs";
 
     try
     {
-        if (channel == ChatDelivery::OfflineChannel::Notice)
-        {
-            auto key = MakeKey(RedisKeys::OfflineNoticeQueue, uid);
-            co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), packet_json.c_str());
-            co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
-        }
-        else
-        {
-            auto key = MakeKey(RedisKeys::OfflineMessageQueue, uid);
-            co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), packet_json.c_str());
-            co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
-        }
-    }catch (const std::exception& e)
-    {
-        LOG_ERROR << "Redis push offline packet: " << e.what();
+        auto pending_key = MakeKey(RedisKeys::PendingDeliveryQueue, uid);
+        auto source_key = MakeKey(RedisKeys::OfflineMessageQueue, uid);
+        co_await _client->execCommandCoro(
+            "EVAL %s 2 %s %s %d",
+            kRestorePendingLua,
+            pending_key.c_str(),
+            source_key.c_str(),
+            RedisKeys::OfflineQueueTTL);
     }
-    
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::RestorePendingOfflineMessages error: " << e.what();
+    }
 }
 
 drogon::Task<std::vector<std::string>> RedisService::PopAllOfflineMessages(const std::string& uid)

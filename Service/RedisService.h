@@ -4,6 +4,7 @@
 #include <drogon/nosql/RedisClient.h>
 #include "Common/User.h"
 #include "Common/OutboundMessage.h"
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -14,6 +15,7 @@ namespace RedisKeys {
     constexpr auto UserDisplayHash = "user:display:{}"; // HASH user:display:{uid}
     constexpr auto OfflineMessageQueue = "offline:message:{}"; // LIST offline:message:{uid}
     constexpr auto OfflineNoticeQueue  = "offline:notice:{}";  // LIST offline:notice:{uid}
+    constexpr auto PendingDeliveryQueue = "pending:delivery:{}"; // LIST pending:delivery:{uid}
     constexpr auto RefreshSession = "auth:refresh:{}"; // STRING auth:refresh:{uid} = jti
 
     // TTL（秒）
@@ -70,8 +72,17 @@ public:
     // ──────────────────────────────────────────────
 
     /// 按业务通道推入离线包
-    drogon::Task<> PushOfflinePacket(const std::string& uid, const std::string& packet_json,
-                                     ChatDelivery::OfflineChannel channel);
+    drogon::Task<bool> PushOfflinePacket(const std::string& uid, const std::string& packet_json,
+                                         ChatDelivery::OfflineChannel channel);
+
+    /// 将离线消息队列原子移动到 pending 队列，避免推送过程中的半删除问题
+    drogon::Task<bool> MoveOfflineMessagesToPending(const std::string& uid);
+
+    /// 从 pending 队列逐条弹出离线消息
+    drogon::Task<std::optional<std::string>> PopPendingOfflineMessage(const std::string& uid);
+
+    /// 将 pending 中剩余消息原子恢复回 offline 队列
+    drogon::Task<> RestorePendingOfflineMessages(const std::string& uid);
 
     /// 取出并清空该用户所有离线消息（用户上线时调用）
     drogon::Task<std::vector<std::string>> PopAllOfflineMessages(const std::string& uid);

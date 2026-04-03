@@ -23,6 +23,8 @@ struct MsgProcessedResult
 {
 	bool success;
 	std::string error;
+	bool partial_degraded{false};
+	int redis_failed_targets{0};
 };
 
 class MessageService

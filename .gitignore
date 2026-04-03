@@ -1,3 +1,19 @@
+# Build directories
+/build/
+/bin/
+/obj/
+/x64/
+/Debug/
+/Release/
+..bfg-report/
+
+# IDE files
+/.vs/
+/.vscode/
+
+# Temporary files
+*.tmp
+*.log
 /ref/
 /deploy-output/
 /uploads/

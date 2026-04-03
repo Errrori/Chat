@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include <drogon/WebSocketConnection.h>
+#include <drogon/utils/coroutine.h>
 #include "Common/ConnectionContext.h"
 #include "Common/OutboundMessage.h"
 class RedisService;
@@ -38,6 +39,6 @@ private:
 	std::shared_ptr<RedisService> _redis_service;
 
 	drogon::Task<> OnUserConnected(std::string uid);
-	drogon::Task<> OnUserDisconnected(std::string uid, trantor::TimerId timer_id) const;
+	drogon::Task<> OnUserDisconnected(std::string uid, trantor::TimerId timer_id);
 };
 

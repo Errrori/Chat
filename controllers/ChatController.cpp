@@ -93,6 +93,18 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
                 {
                     auto result = co_await Container::GetInstance().
                 		GetMessageService()->ProcessChatMsg(thread_id, uid, content, attachment);
+                    if (!result.success)
+                    {
+                        LOG_ERROR << "ProcessChatMsg failed, thread_id=" << thread_id
+                            << ", error=" << result.error;
+                        co_return;
+                    }
+
+                    if (result.partial_degraded)
+                    {
+                        LOG_ERROR << "ProcessChatMsg completed with degraded offline queueing, thread_id="
+                            << thread_id << ", redis_failed_targets=" << result.redis_failed_targets;
+                    }
                 }
             );
         }catch (const std::exception& e)

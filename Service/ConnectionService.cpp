@@ -1,6 +1,16 @@
 #include "pch.h"
 #include "ConnectionService.h"
 #include "RedisService.h"
+#include <drogon/utils/coroutine.h>
+
+namespace
+{
+constexpr char kDeliveryReasonInvalidEnvelope[] = "invalid envelope";
+constexpr char kDeliveryReasonSent[] = "sent";
+constexpr char kDeliveryReasonOfflineDropped[] = "offline dropped";
+constexpr char kDeliveryReasonQueued[] = "queued";
+constexpr char kDeliveryReasonQueuedRedisFailed[] = "queued(redis_failed,db_only)";
+}
 
 bool ConnectionService::SendEnvelopeOnline(const std::string& uid, const Json::Value& envelope)
 {
@@ -23,7 +33,7 @@ drogon::Task<bool> ConnectionService::IsOnline(const std::string& uid)
 {
 	{
 		std::lock_guard lock(_mutex);
-		if (_conn_to_id_map.contains(uid))
+		if (_conn_to_id_map.find(uid) != _conn_to_id_map.end())
 			co_return true;
 	}
 	co_return co_await _redis_service->IsOnline(uid);
@@ -34,21 +44,23 @@ bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn
 {
 	try
 	{
+		drogon::WebSocketConnectionPtr old_conn;
 		{
 			std::lock_guard lock(_mutex);
 			auto it = _conn_to_id_map.find(uid);
 			if (it != _conn_to_id_map.end())
 			{
 				LOG_INFO << "user already have a connection";
-				const auto& old_conn = it->second;
-				if (old_conn && old_conn->connected())
-				{
-					LOG_INFO << "kick the old connection";
-					old_conn->shutdown(drogon::CloseCode::kViolation, "another device log in");
-				}
+				old_conn = it->second;
 				_conn_to_id_map.erase(it);
 			}
 			_conn_to_id_map.emplace(uid, conn);
+		}
+
+		if (old_conn && old_conn->connected())
+		{
+			LOG_INFO << "kick the old connection";
+			old_conn->shutdown(drogon::CloseCode::kViolation, "another device log in");
 		}
 			LOG_INFO << "new user connected: " << uid;
 
@@ -74,7 +86,8 @@ bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn
 						{
 							lock->shutdown();
 						}
-						LOG_ERROR << "Timer not reclaimed in time: "<<lock->getContext<ConnectionContext>()->timer_id;
+						if(lock)
+							LOG_ERROR << "Timer not reclaimed in time: "<<lock->getContext<ConnectionContext>()->timer_id;
 					});
 			}
 			else
@@ -107,17 +120,52 @@ drogon::Task<> ConnectionService::OnUserConnected(std::string uid)
 {
 	co_await _redis_service->SetOnline(uid);
 	auto notices = co_await _redis_service->PopAllOfflineNotices(uid);
-	auto msgs = co_await _redis_service->PopAllOfflineMessages(uid);
-	if (!notices.empty() || !msgs.empty())
+	drogon::WebSocketConnectionPtr conn;
 	{
 		std::lock_guard lock(_mutex);
 		auto it = _conn_to_id_map.find(uid);
-		if (it != _conn_to_id_map.end() && it->second && it->second->connected())
+		if (it == _conn_to_id_map.end() || !(it->second && it->second->connected()))
 		{
-			for (const auto& notice_str : notices)
-				it->second->send(notice_str);
-			for (const auto& msg_str : msgs)
-				it->second->send(msg_str);
+			if (it != _conn_to_id_map.end())
+				_conn_to_id_map.erase(it);
+			co_return;
+		}
+
+		conn = it->second;
+		if (auto context = conn->getContext<ConnectionContext>())
+			context->is_delivering_offline = true;
+	}
+
+	for (const auto& notice_str : notices)
+	{
+		if (!(conn && conn->connected()))
+			break;
+		conn->send(notice_str);
+	}
+
+	const auto moved = co_await _redis_service->MoveOfflineMessagesToPending(uid);
+	if (moved)
+	{
+		while (conn && conn->connected())
+		{
+			auto pending_msg = co_await _redis_service->PopPendingOfflineMessage(uid);
+			if (!pending_msg.has_value())
+				break;
+
+			if (!(conn && conn->connected()))
+				break;
+
+			conn->send(*pending_msg);
+		}
+	}
+
+	{
+		std::lock_guard lock(_mutex);
+		auto it = _conn_to_id_map.find(uid);
+		if (it != _conn_to_id_map.end() && it->second)
+		{
+			if (auto context = it->second->getContext<ConnectionContext>())
+				context->is_delivering_offline = false;
 		}
 	}
 }
@@ -132,7 +180,7 @@ drogon::Task<ChatDelivery::DeliveryResult> ConnectionService::DeliverToUser(
 	const auto envelope = message.ToEnvelope();
 	if (envelope.isNull())
 	{
-		result.reason = "invalid envelope";
+		result.reason = kDeliveryReasonInvalidEnvelope;
 		co_return result;
 	}
 
@@ -153,30 +201,52 @@ drogon::Task<ChatDelivery::DeliveryResult> ConnectionService::DeliverToUser(
 	{
 		Utils::SendJson(conn, envelope);
 		result.state = ChatDelivery::DeliveryState::Sent;
-		result.reason = "sent";
+		result.reason = kDeliveryReasonSent;
 		co_return result;
 	}
 
 	if (message.policy == ChatDelivery::DeliveryPolicy::OnlineOnly)
 	{
-		result.reason = "offline dropped";
+		result.reason = kDeliveryReasonOfflineDropped;
 		co_return result;
 	}
 
 	Json::StreamWriterBuilder builder;
 	builder["indentation"] = "";
 	const auto serialized = Json::writeString(builder, envelope);
-	co_await _redis_service->PushOfflinePacket(uid, serialized, message.channel);
+	const auto pushed = co_await _redis_service->PushOfflinePacket(uid, serialized, message.channel);
 
 	result.state = ChatDelivery::DeliveryState::Queued;
-	result.reason = "queued";
+	if (!pushed)
+	{
+		result.reason = kDeliveryReasonQueuedRedisFailed;
+		result.degraded = true;
+		result.redisQueueFailed = true;
+		LOG_ERROR << "[Delivery] Redis queue failed for uid=" << uid
+			<< ", message remains DB-only until fallback replay";
+	}
+	else
+	{
+		result.reason = kDeliveryReasonQueued;
+	}
 	co_return result;
 }
 
-drogon::Task<> ConnectionService::OnUserDisconnected(std::string uid, trantor::TimerId timer_id) const
+drogon::Task<> ConnectionService::OnUserDisconnected(std::string uid, trantor::TimerId timer_id)
 {
+	{
+		std::lock_guard lock(_mutex);
+		auto it = _conn_to_id_map.find(uid);
+		if (it != _conn_to_id_map.end() && it->second && it->second->connected())
+		{
+			drogon::app().getLoop()->invalidateTimer(timer_id);
+			co_return;
+		}
+	}
+
 	drogon::app().getLoop()->invalidateTimer(timer_id);
 	co_await _redis_service->SetOffline(uid);
+	co_await _redis_service->RestorePendingOfflineMessages(uid);
 }
 
 bool ConnectionService::RemoveConnection(const drogon::WebSocketConnectionPtr& conn)
@@ -189,13 +259,21 @@ bool ConnectionService::RemoveConnection(const drogon::WebSocketConnectionPtr& c
 	}
 
 	const auto uid = context->uid;
+	bool removed_current = false;
 
 	{
 		std::lock_guard lock(_mutex);
 		auto it = _conn_to_id_map.find(uid);
 		if (it !=_conn_to_id_map.end()&&conn==it->second)
+		{
 			_conn_to_id_map.erase(it);
+			removed_current = true;
+		}
 	}
+
+	drogon::app().getLoop()->invalidateTimer(context->timer_id);
+	if (!removed_current)
+		return false;
 
 	LOG_INFO << "Remove Connection: " << uid;
 	drogon::async_run([self = shared_from_this(), uid,timer_id = context->timer_id]() -> drogon::Task<> {
@@ -212,9 +290,9 @@ bool ConnectionService::RemoveConnection(const std::string& uid)
 		auto it = _conn_to_id_map.find(uid);
 		if (it != _conn_to_id_map.end())
 		{
-			_conn_to_id_map.erase(it);
 			const auto& context = it->second->getContext<ConnectionContext>();
 			timer_id = context->timer_id;
+			_conn_to_id_map.erase(it);
 		}
 		else
 			return false;
@@ -235,12 +313,30 @@ std::shared_ptr<ConnectionContext> ConnectionService::GetConnInfo(const drogon::
 
 void ConnectionService::RemoveUserConn(const std::string& uid)
 {
-	std::lock_guard lock(_mutex);
-	auto it = _conn_to_id_map.find(uid);
-	if (it != _conn_to_id_map.end())
+	drogon::WebSocketConnectionPtr conn;
+	trantor::TimerId timer_id;
 	{
-		it->second->shutdown();
+		std::lock_guard lock(_mutex);
+		auto it = _conn_to_id_map.find(uid);
+		if (it == _conn_to_id_map.end())
+			return;
+
+		conn = it->second;
+		if (conn)
+		{
+			if (const auto context = conn->getContext<ConnectionContext>())
+				timer_id = context->timer_id;
+		}
 		_conn_to_id_map.erase(it);
-		LOG_INFO << "Removed connection for user: " << uid;
 	}
+
+	if (conn && conn->connected())
+	{
+		conn->shutdown();
+	}
+
+	LOG_INFO << "Removed connection for user: " << uid;
+	drogon::async_run([self = shared_from_this(), uid, timer_id]() -> drogon::Task<> {
+		co_await self->OnUserDisconnected(uid, timer_id);
+	});
 }

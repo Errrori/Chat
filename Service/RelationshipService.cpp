@@ -46,6 +46,11 @@ drogon::Task<> RelationshipService::SendFriendRequest(const std::string& request
 				ChatDelivery::OfflineChannel::Notice));
 		if (result.state == ChatDelivery::DeliveryState::Queued)
 			LOG_INFO << "queued friend request notice for offline user: " << acceptor_uid;
+		if (result.IsRedisQueueFailed())
+		{
+			LOG_ERROR << "[RelationshipDelivery] Redis queue degraded for friend request notice, notice_id="
+				<< event_id << ", recipient_uid=" << acceptor_uid;
+		}
 	}catch (const std::exception& e)
 	{
 		throw;
@@ -84,6 +89,11 @@ drogon::Task<int64_t> RelationshipService::ProcessFriendRequest(const std::strin
 				ChatDelivery::OfflineChannel::Notice));
 		if (result.state == ChatDelivery::DeliveryState::Queued)
 			LOG_INFO << "queued process-request notice for offline user: " << requester_uid;
+		if (result.IsRedisQueueFailed())
+		{
+			LOG_ERROR << "[RelationshipDelivery] Redis queue degraded for process-request notice, thread_id="
+				<< thread_id << ", recipient_uid=" << requester_uid;
+		}
     	
     	co_return thread_id;
     }

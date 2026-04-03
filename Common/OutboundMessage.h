@@ -33,9 +33,12 @@ namespace ChatDelivery
     {
         DeliveryState state{DeliveryState::Dropped};
         std::string reason;
+        bool degraded{false};
+        bool redisQueueFailed{false};
 
         bool IsSent() const { return state == DeliveryState::Sent; }
         bool IsQueued() const { return state == DeliveryState::Queued; }
+        bool IsRedisQueueFailed() const { return redisQueueFailed; }
     };
 
     using OutboundPayload = std::variant<ChatMessage, Notice, Json::Value>;

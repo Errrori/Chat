@@ -12,6 +12,41 @@
 #include "RedisService.h"
 #include "UserService.h"
 
+namespace
+{
+struct DeliverySummary
+{
+	int sent_count{0};
+	int queued_count{0};
+	int dropped_count{0};
+	int redis_failed_queue_count{0};
+	std::vector<std::string> failed_uids;
+
+	void Accumulate(const std::string& uid, const ChatDelivery::DeliveryResult& result)
+	{
+		switch (result.state)
+		{
+		case ChatDelivery::DeliveryState::Sent:
+			++sent_count;
+			break;
+		case ChatDelivery::DeliveryState::Queued:
+			++queued_count;
+			break;
+		case ChatDelivery::DeliveryState::Dropped:
+			++dropped_count;
+			break;
+		}
+
+		if (result.IsRedisQueueFailed())
+		{
+			++redis_failed_queue_count;
+			if (failed_uids.size() < 8)
+				failed_uids.push_back(uid);
+		}
+	}
+};
+}
+
 
 drogon::Task<Json::Value> MessageService::GetChatRecords(int thread_id, int num, int64_t existed_id)
 {
@@ -120,6 +155,7 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 
 				const auto json_msg = msg.ToMessage().value();
 				LOG_INFO << "send message: " << json_msg.toStyledString();
+				DeliverySummary summary;
 
 				// Step 5: unified delivery (online send + optional offline queue)
 				for (const auto& target_uid : members)
@@ -131,8 +167,21 @@ void MessageService::ProcessUserMsg(ChatMessage msg, const ErrorCb& cb) const
 							: ChatDelivery::DeliveryPolicy::PreferOnline);
 
 					auto result = co_await _conn_service->DeliverToUser(target_uid, outbound);
+					summary.Accumulate(target_uid, result);
 					if (result.state == ChatDelivery::DeliveryState::Queued)
 						LOG_INFO << "Queued offline message for: " << target_uid;
+					if (result.IsRedisQueueFailed())
+					{
+						LOG_ERROR << "[MessageDelivery] Redis queue degraded in ProcessUserMsg, thread_id="
+							<< thread_id << ", message_id=" << msg_id << ", target_uid=" << target_uid;
+					}
+				}
+
+				if (summary.redis_failed_queue_count > 0)
+				{
+					LOG_ERROR << "[MessageDelivery] ProcessUserMsg completed with degraded offline queueing, thread_id="
+						<< thread_id << ", message_id=" << msg_id
+						<< ", redis_failed_targets=" << summary.redis_failed_queue_count;
 				}
 			}catch (const std::exception& e)
 			{
@@ -191,6 +240,7 @@ drogon::Task<MsgProcessedResult> MessageService::ProcessChatMsg(int thread_id, c
 
 	auto msg_id = co_await _msg_repo->RecordUserMessage(message);
 	message.setMessageId(msg_id);
+	DeliverySummary summary;
 
 	if (!message.IsValid())
 	{
@@ -208,9 +258,20 @@ drogon::Task<MsgProcessedResult> MessageService::ProcessChatMsg(int thread_id, c
 			: ChatDelivery::DeliveryPolicy::PreferOnline);
 
 		auto result = co_await _conn_service->DeliverToUser(target_uid, outbound);
+		summary.Accumulate(target_uid, result);
+		if (result.IsRedisQueueFailed())
+		{
+			LOG_ERROR << "[MessageDelivery] Redis queue degraded in ProcessChatMsg, thread_id="
+				<< thread_id << ", message_id=" << msg_id << ", target_uid=" << target_uid;
+		}
 	}
 
-	co_return{ .success = true };
+	co_return{
+		.success = true,
+		.error = "",
+		.partial_degraded = summary.redis_failed_queue_count > 0,
+		.redis_failed_targets = summary.redis_failed_queue_count
+	};
 }
 
 
