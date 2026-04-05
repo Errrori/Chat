@@ -146,6 +146,7 @@ drogon::Task<bool> RedisService::PushOfflinePacket(const std::string& uid,
 
     for (size_t attempt = 0; attempt < kRetryDelaysMs.size(); ++attempt)
     {
+        bool succeeded = false;
         try
         {
             auto key = MakeKey(channel == ChatDelivery::OfflineChannel::Notice
@@ -154,15 +155,20 @@ drogon::Task<bool> RedisService::PushOfflinePacket(const std::string& uid,
                 uid);
             co_await _client->execCommandCoro("RPUSH %s %s", key.c_str(), packet_json.c_str());
             co_await _client->execCommandCoro("EXPIRE %s %d", key.c_str(), RedisKeys::OfflineQueueTTL);
-            co_return true;
+            succeeded = true;
         }
         catch (const std::exception& e)
         {
             LOG_WARN << "Redis push offline packet attempt " << (attempt + 1)
                 << " failed for uid=" << uid << ": " << e.what();
+        }
 
-            if (attempt + 1 < kRetryDelaysMs.size())
-                co_await RetryDelay(std::chrono::milliseconds(kRetryDelaysMs[attempt]));
+        if (succeeded)
+            co_return true;
+
+        if (attempt + 1 < kRetryDelaysMs.size()) {
+            // 等待延迟后再进行下一次尝试
+            co_await RetryDelay(std::chrono::milliseconds(kRetryDelaysMs[attempt]));
         }
     }
 
