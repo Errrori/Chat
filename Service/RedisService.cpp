@@ -3,37 +3,6 @@
 #include <array>
 #include <drogon/utils/coroutine.h>
 
-namespace
-{
-struct TimerDelayAwaiter
-{
-    std::chrono::milliseconds delay;
-
-    bool await_ready() const noexcept
-    {
-        return delay.count() <= 0;
-    }
-
-    void await_suspend(std::coroutine_handle<> handle) const
-    {
-        drogon::app().getLoop()->runAfter(
-            static_cast<double>(delay.count()) / 1000.0,
-            [handle]() mutable {
-                handle.resume();
-            });
-    }
-
-    void await_resume() const noexcept
-    {
-    }
-};
-
-drogon::Task<> RetryDelay(std::chrono::milliseconds delay)
-{
-    co_await TimerDelayAwaiter{delay};
-}
-}
-
 std::string RedisService::MakeKey(const char* pattern, const std::string& uid)
 {
     std::string key(pattern);
@@ -166,10 +135,9 @@ drogon::Task<bool> RedisService::PushOfflinePacket(const std::string& uid,
         if (succeeded)
             co_return true;
 
-        if (attempt + 1 < kRetryDelaysMs.size()) {
-            // 等待延迟后再进行下一次尝试
-            co_await RetryDelay(std::chrono::milliseconds(kRetryDelaysMs[attempt]));
-        }
+        if (attempt + 1 < kRetryDelaysMs.size())
+            co_await drogon::sleepCoro(drogon::app().getLoop(),
+                                       std::chrono::milliseconds(kRetryDelaysMs[attempt]));
     }
 
     LOG_ERROR << "Redis push offline packet failed after retries for uid=" << uid;
