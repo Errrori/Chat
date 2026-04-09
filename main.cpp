@@ -6,6 +6,7 @@
 
 #include "Utils.h"
 #include "Container.h"
+#include "Service/ConnectionService.h"
 
 using namespace Utils;
 
