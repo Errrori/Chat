@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Common/ResponseHelper.h"
+#include "Common/WsResponseHelper.h"
 #include "ChatController.h"
 #include "Service/ConnectionService.h"
 #include "Service/UserService.h"
@@ -12,15 +13,44 @@
 
 #include "auth/TokenService.h"
 
-// ─────── 文件作用域辅助函数（WS 消息处理） ──────────────────────────────
+// ─────── Phase 2: 统一消息类型枚举 ──────────────────────────────────────────
+
+/// WS 入站消息类型
+enum class WsMessageType
+{
+    Heartbeat,    ///< 心跳探活（"heartbeat"）
+    TokenRefresh, ///< Token 续期（"token_refresh"）
+    ChatSend,     ///< 普通聊天消息（type="chat_send" 或老格式 thread_id）
+    AiRequest,    ///< AI 补全请求（type="ai_request" 或老格式 request_data）
+    Unknown,      ///< 无法识别，将被拒绝
+};
+
+/// 根据消息字段推断消息类型，兼容新旧两种格式：
+///   新格式：发送方显式带 "type" 字段
+///   旧格式：通过 "request_data" / "thread_id" 字段隐式推断
+static WsMessageType ParseMessageType(const Json::Value& msg)
+{
+    if (msg.isMember("type"))
+    {
+        const auto& t = msg["type"].asString();
+        if (t == Heartbeat::MsgType::Heartbeat)    return WsMessageType::Heartbeat;
+        if (t == Heartbeat::MsgType::TokenRefresh) return WsMessageType::TokenRefresh;
+        if (t == "chat_send")                      return WsMessageType::ChatSend;
+        if (t == "ai_request")                     return WsMessageType::AiRequest;
+    }
+    // ── 向后兼容：无 type 字段时根据 payload 字段推断 ──
+    if (msg.isMember("request_data")) return WsMessageType::AiRequest;
+    if (msg.isMember("thread_id"))    return WsMessageType::ChatSend;
+    return WsMessageType::Unknown;
+}
+
+// ─────── Phase 1: 拆分后的消息处理函数 ──────────────────────────────────────
 
 /// 心跳：无论 token 是否过期都立即响应，让客户端确认连接仍然存活
 static void HandleHeartbeat(const drogon::WebSocketConnectionPtr& conn)
 {
-    Json::Value ack;
-    ack["type"] = Heartbeat::MsgType::HeartbeatAck;
-    ack["server_time"] = static_cast<Json::Int64>(Utils::GetCurrentTimeStamp());
-    Utils::SendJson(conn, ack);
+    Utils::SendJson(conn, WsResponse::HeartbeatAck(
+        static_cast<Json::Int64>(Utils::GetCurrentTimeStamp())));
 }
 
 /// Token 续期：在宽限期内接受新 access_token，更新连接状态
@@ -40,37 +70,42 @@ static void HandleTokenRefresh(const drogon::WebSocketConnectionPtr& conn,
 
     if (!msg_data.isMember("access_token") || msg_data["access_token"].asString().empty())
     {
-        Json::Value fail;
-        fail["type"] = Heartbeat::MsgType::TokenRefreshFailed;
-        fail["error"] = "missing access_token field";
-        Utils::SendJson(conn, fail);
+        Utils::SendJson(conn, WsResponse::TokenRefreshFailed("missing access_token field"));
         return;
     }
 
     const auto& conn_service = Container::GetInstance().GetConnectionService();
     if (conn_service->RefreshConnectionToken(conn, msg_data["access_token"].asString()))
     {
-        Json::Value ok;
-        ok["type"] = Heartbeat::MsgType::TokenRefreshed;
+        Json::Int64 new_expiry = 0;
         if (const auto refreshed = conn_service->GetConnectionSnapshot(conn))
         {
-            ok["new_expiry"] = static_cast<Json::Int64>(
+            new_expiry = static_cast<Json::Int64>(
                 std::chrono::duration_cast<std::chrono::seconds>(
                     refreshed->expiry.time_since_epoch()).count());
         }
-        Utils::SendJson(conn, ok);
+        Utils::SendJson(conn, WsResponse::TokenRefreshed(new_expiry));
     }
     else
     {
-        Json::Value fail;
-        fail["type"] = Heartbeat::MsgType::TokenRefreshFailed;
-        fail["error"] = "invalid or mismatched access token";
-        Utils::SendJson(conn, fail);
+        Utils::SendJson(conn, WsResponse::TokenRefreshFailed("invalid or mismatched access token"));
     }
 }
 
-/// 业务消息（聊天 / AI）：token 已通过有效性检查后进入此函数
-static void HandleBusinessMessage(const drogon::WebSocketConnectionPtr& conn,
+/// AI 请求：转发给 MessageService 处理
+static void HandleAiRequest(const drogon::WebSocketConnectionPtr& conn,
+    Json::Value msg_data)
+{
+    if (!msg_data.isMember("thread_id"))
+    {
+        Utils::SendJson(conn, ResponseHelper::MakeErrorJson("lack of thread id", ChatCode::MissingField));
+        return;
+    }
+    Container::GetInstance().GetMessageService()->ProcessAIRequest(std::move(msg_data), conn);
+}
+
+/// 普通聊天消息：验证内容后异步投递
+static void HandleChatSend(const drogon::WebSocketConnectionPtr& conn,
     Json::Value msg_data,
     const ConnectionStateSnapshot& snapshot)
 {
@@ -84,15 +119,13 @@ static void HandleBusinessMessage(const drogon::WebSocketConnectionPtr& conn,
     std::optional<Json::Value> attachment;
     if (msg_data.isMember("content"))
     {
-        const auto& msg_content = msg_data["content"].asString();
-        if (!msg_content.empty())
-            content = msg_content;
+        const auto& c = msg_data["content"].asString();
+        if (!c.empty()) content = c;
     }
     if (msg_data.isMember("attachment"))
     {
-        const auto& msg_attachment = msg_data["attachment"];
-        if (!msg_attachment.isNull())
-            attachment = msg_attachment;
+        const auto& a = msg_data["attachment"];
+        if (!a.isNull()) attachment = a;
     }
 
     if (!content && !attachment)
@@ -102,17 +135,9 @@ static void HandleBusinessMessage(const drogon::WebSocketConnectionPtr& conn,
         return;
     }
 
-    int thread_id = msg_data["thread_id"].asInt();
-    auto uid = snapshot.uid;
+    const int   thread_id = msg_data["thread_id"].asInt();
+    std::string uid       = snapshot.uid;
 
-    // AI 请求：包含 request_data 字段
-    if (msg_data.isMember("request_data"))
-    {
-        Container::GetInstance().GetMessageService()->ProcessAIRequest(std::move(msg_data), conn);
-        return;
-    }
-
-    // 普通聊天消息
     try
     {
         drogon::async_run(
@@ -130,7 +155,7 @@ static void HandleBusinessMessage(const drogon::WebSocketConnectionPtr& conn,
                 }
                 if (result.partial_degraded)
                 {
-                    LOG_ERROR << "ProcessChatMsg completed with degraded offline queueing, thread_id="
+                    LOG_ERROR << "ProcessChatMsg degraded offline queueing, thread_id="
                         << thread_id << ", redis_failed_targets=" << result.redis_failed_targets;
                 }
             }
@@ -163,11 +188,12 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         const auto conn_snapshot = conn_service->GetConnectionSnapshot(conn);
         if (!conn_snapshot)
         {
-            Utils::SendJson(conn, ResponseHelper::MakeErrorJson("connection info not found", ChatCode::NotPermission));
+            Utils::SendJson(conn, ResponseHelper::MakeErrorJson(
+                "connection info not found", ChatCode::NotPermission));
             return;
         }
 
-        // 任何客户端文本消息都视为一次活跃触达，由 service 统一更新状态
+        // 任何客户端文本消息都视为一次活跃触达
         conn_service->TouchConnection(conn);
 
         Json::Value msg_data;
@@ -175,40 +201,46 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         if (!reader.parse(msg, msg_data))
         {
             LOG_ERROR << "can not parse message";
-            Utils::SendJson(conn, ResponseHelper::MakeErrorJson("fail to parse message", ChatCode::InValidJson));
+            Utils::SendJson(conn, ResponseHelper::MakeErrorJson(
+                "fail to parse message", ChatCode::InValidJson));
             return;
         }
 
-        // ── 控制消息分发 ──
-        if (msg_data.isMember("type"))
+        // ── Phase 2: 统一路由分发 ──
+        const auto msg_type = ParseMessageType(msg_data);
+
+        // 控制消息：不受 token 有效期限制
+        if (msg_type == WsMessageType::Heartbeat)
         {
-            const auto msg_type = msg_data["type"].asString();
-
-            if (msg_type == Heartbeat::MsgType::Heartbeat)
-            {
-                HandleHeartbeat(conn);
-                return;
-            }
-
-            if (msg_type == Heartbeat::MsgType::TokenRefresh)
-            {
-                HandleTokenRefresh(conn, msg_data, *conn_snapshot);
-                return;
-            }
+            HandleHeartbeat(conn);
+            return;
+        }
+        if (msg_type == WsMessageType::TokenRefresh)
+        {
+            HandleTokenRefresh(conn, msg_data, *conn_snapshot);
+            return;
         }
 
-        // ── 业务消息：token 必须在有效期内 ──
+        // 业务消息：token 必须在有效期内
         if (conn_snapshot->expiry < std::chrono::system_clock::now())
         {
-            Json::Value expired_hint;
-            expired_hint["type"] = Heartbeat::MsgType::TokenExpiring;
-            expired_hint["expires_in"] = 0;
-            expired_hint["message"] = "access token expired, please send token_refresh";
-            Utils::SendJson(conn, expired_hint);
+            Utils::SendJson(conn, WsResponse::TokenExpired());
             return;
         }
 
-        HandleBusinessMessage(conn, std::move(msg_data), *conn_snapshot);
+        switch (msg_type)
+        {
+        case WsMessageType::AiRequest:
+            HandleAiRequest(conn, std::move(msg_data));
+            break;
+        case WsMessageType::ChatSend:
+            HandleChatSend(conn, std::move(msg_data), *conn_snapshot);
+            break;
+        default:
+            Utils::SendJson(conn, ResponseHelper::MakeErrorJson(
+                "unknown message type", ChatCode::InvalidArg));
+            break;
+        }
     }
     catch (const std::exception& e)
     {
