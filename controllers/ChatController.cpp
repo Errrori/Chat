@@ -7,6 +7,7 @@
 #include "Container.h"
 #include "Service/MessageService.h"
 #include "Common/ConnectionContext.h"
+#include "Common/HeartbeatConfig.h"
 #include <drogon/utils/coroutine.h>
 
 #include "auth/TokenService.h"
@@ -32,11 +33,8 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             return;
         }
 
-        if (conn_info->expiry < std::chrono::system_clock::now())
-        {
-            conn->shutdown();
-            return;
-        }
+        // 更新最后活跃时间（任何客户端消息都算活跃）
+        conn_info->last_active_time = std::chrono::system_clock::now();
 
         Json::Value msg_data;
         Json::Reader reader;
@@ -44,6 +42,77 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         {
             LOG_ERROR << "can not parse message";
             Utils::SendJson(conn, ResponseHelper::MakeErrorJson("fail to parse message", ChatCode::InValidJson));
+            return;
+        }
+
+        // ── 控制消息分发 ──
+        if (msg_data.isMember("type"))
+        {
+            const auto msg_type = msg_data["type"].asString();
+
+            // 心跳：始终响应（即使过期，也让客户端知道连接还活着）
+            if (msg_type == Heartbeat::MsgType::Heartbeat)
+            {
+                Json::Value ack;
+                ack["type"] = Heartbeat::MsgType::HeartbeatAck;
+                ack["server_time"] = static_cast<Json::Int64>(Utils::GetCurrentTimeStamp());
+                Utils::SendJson(conn, ack);
+                return;
+            }
+
+            // Token 续期：在宽限期内允许
+            if (msg_type == Heartbeat::MsgType::TokenRefresh)
+            {
+                const auto now = std::chrono::system_clock::now();
+                const auto grace_deadline = conn_info->expiry
+                    + std::chrono::duration<double>(Heartbeat::RefreshGracePeriodSec);
+
+                if (now > grace_deadline)
+                {
+                    conn->shutdown(drogon::CloseCode::kViolation,
+                        "token expired beyond grace period");
+                    return;
+                }
+
+                if (!msg_data.isMember("access_token") || msg_data["access_token"].asString().empty())
+                {
+                    Json::Value fail;
+                    fail["type"] = Heartbeat::MsgType::TokenRefreshFailed;
+                    fail["error"] = "missing access_token field";
+                    Utils::SendJson(conn, fail);
+                    return;
+                }
+
+                const auto& conn_service = Container::GetInstance().GetConnectionService();
+                if (conn_service->RefreshConnectionToken(conn, msg_data["access_token"].asString()))
+                {
+                    auto new_ctx = conn->getContext<ConnectionContext>();
+                    Json::Value ok;
+                    ok["type"] = Heartbeat::MsgType::TokenRefreshed;
+                    ok["new_expiry"] = static_cast<Json::Int64>(
+                        std::chrono::duration_cast<std::chrono::seconds>(
+                            new_ctx->expiry.time_since_epoch()).count());
+                    Utils::SendJson(conn, ok);
+                }
+                else
+                {
+                    Json::Value fail;
+                    fail["type"] = Heartbeat::MsgType::TokenRefreshFailed;
+                    fail["error"] = "invalid or mismatched access token";
+                    Utils::SendJson(conn, fail);
+                }
+                return;
+            }
+        }
+
+        // ── 以下为业务消息，必须在有效期内 ──
+        if (conn_info->expiry < std::chrono::system_clock::now())
+        {
+            Json::Value expired_hint;
+            expired_hint["type"] = Heartbeat::MsgType::TokenExpiring;
+            expired_hint["expires_in"] = 0;
+            expired_hint["message"] = "access token expired, please send token_refresh";
+            Utils::SendJson(conn, expired_hint);
             return;
         }
 

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "ConnectionService.h"
 #include "RedisService.h"
+#include "Common/HeartbeatConfig.h"
+#include "auth/TokenService.h"
 #include <drogon/utils/coroutine.h>
 
 namespace
@@ -99,7 +101,12 @@ bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn
 			ctx->uid = uid;
 			ctx->timer_id = timer_id;
 			ctx->expiry = expiry;
+			ctx->last_active_time = std::chrono::system_clock::now();
 			conn->setContext(std::move(ctx));
+
+			// 启用 Drogon 传输层 ping/pong 保活
+			conn->setPingMessage("",
+				std::chrono::duration<double>(Heartbeat::PingIntervalSec));
 		
 
 		const auto connected_uid = conn->getContext<ConnectionContext>()->uid;
@@ -339,4 +346,165 @@ void ConnectionService::RemoveUserConn(const std::string& uid)
 	drogon::async_run([self = shared_from_this(), uid, timer_id]() -> drogon::Task<> {
 		co_await self->OnUserDisconnected(uid, timer_id);
 	});
+}
+
+// ────────────────────────────────────────────────────────────
+//  Heartbeat monitor & Token refresh
+// ────────────────────────────────────────────────────────────
+
+bool ConnectionService::ResetExpiryTimer(const drogon::WebSocketConnectionPtr& conn,
+	std::shared_ptr<ConnectionContext>& ctx,
+	std::chrono::time_point<std::chrono::system_clock> new_expiry)
+{
+	// 取消旧定时器
+	drogon::app().getLoop()->invalidateTimer(ctx->timer_id);
+
+	auto remaining = std::chrono::duration_cast<std::chrono::seconds>(
+		new_expiry - std::chrono::system_clock::now()).count();
+	if (remaining <= 10)
+		return false;
+
+	auto delay = static_cast<double>(remaining) + Utils::GetRandomJitter();
+
+	auto new_timer_id = drogon::app().getLoop()->runAfter(
+		delay, [weak_conn = std::weak_ptr(conn)]()
+		{
+			auto locked = weak_conn.lock();
+			if (locked && locked->connected())
+				locked->shutdown(drogon::CloseCode::kNormalClosure, "access token expired");
+		});
+
+	ctx->timer_id = new_timer_id;
+	ctx->expiry = new_expiry;
+	ctx->expiry_warned = false;
+	return true;
+}
+
+bool ConnectionService::RefreshConnectionToken(const drogon::WebSocketConnectionPtr& conn,
+	const std::string& new_access_token)
+{
+	auto result = Auth::TokenService::GetInstance().Verify(
+		new_access_token, Auth::TokenType::Access);
+	if (!result)
+	{
+		LOG_WARN << "[Heartbeat] Token refresh failed: invalid access token";
+		return false;
+	}
+
+	auto ctx = conn->getContext<ConnectionContext>();
+	if (!ctx)
+		return false;
+
+	// uid 必须与当前连接一致
+	if (ctx->uid != result->uid)
+	{
+		LOG_WARN << "[Heartbeat] Token refresh uid mismatch: conn=" << ctx->uid
+			<< " token=" << result->uid;
+		return false;
+	}
+
+	std::lock_guard lock(_mutex);
+	if (!ResetExpiryTimer(conn, ctx, result->expire_at))
+	{
+		LOG_WARN << "[Heartbeat] New token remaining time too short for uid=" << ctx->uid;
+		return false;
+	}
+
+	ctx->last_active_time = std::chrono::system_clock::now();
+	LOG_INFO << "[Heartbeat] Connection token refreshed for uid=" << ctx->uid
+		<< ", new expiry in "
+		<< std::chrono::duration_cast<std::chrono::seconds>(
+			result->expire_at - std::chrono::system_clock::now()).count()
+		<< "s";
+	return true;
+}
+
+void ConnectionService::StartHeartbeatMonitor()
+{
+	_monitor_timer_id = drogon::app().getLoop()->runEvery(
+		Heartbeat::MonitorIntervalSec,
+		[weak_self = weak_from_this()]()
+		{
+			auto self = weak_self.lock();
+			if (self)
+				self->RunHeartbeatCheck();
+		});
+	LOG_INFO << "[Heartbeat] Monitor started: check every "
+		<< Heartbeat::MonitorIntervalSec << "s, zombie timeout "
+		<< Heartbeat::ZombieTimeoutSec << "s, expiry warning "
+		<< Heartbeat::WarningBeforeExpirySec << "s before";
+}
+
+void ConnectionService::RunHeartbeatCheck()
+{
+	const auto now = std::chrono::system_clock::now();
+	const auto zombie_threshold = now - std::chrono::duration<double>(Heartbeat::ZombieTimeoutSec);
+	const auto warning_threshold = now + std::chrono::duration<double>(Heartbeat::WarningBeforeExpirySec);
+	const auto grace_deadline = now - std::chrono::duration<double>(Heartbeat::RefreshGracePeriodSec);
+
+	std::vector<drogon::WebSocketConnectionPtr> zombies;
+	std::vector<drogon::WebSocketConnectionPtr> grace_expired;
+	std::vector<std::pair<drogon::WebSocketConnectionPtr, int64_t>> warn_targets;
+
+	{
+		std::lock_guard lock(_mutex);
+		for (auto& [uid, conn] : _conn_to_id_map)
+		{
+			if (!conn || !conn->connected())
+				continue;
+
+			auto ctx = conn->getContext<ConnectionContext>();
+			if (!ctx)
+				continue;
+
+			// 1. 僵尸检测：长时间无任何客户端活动
+			if (ctx->last_active_time < zombie_threshold)
+			{
+				LOG_WARN << "[Heartbeat] Zombie detected: uid=" << uid
+					<< ", last active "
+					<< std::chrono::duration_cast<std::chrono::seconds>(
+						now - ctx->last_active_time).count()
+					<< "s ago";
+				zombies.push_back(conn);
+				continue;
+			}
+
+			// 2. 超过宽限期仍未刷新 token → 强制断开
+			if (ctx->expiry < grace_deadline)
+			{
+				LOG_INFO << "[Heartbeat] Grace period expired for uid=" << uid;
+				grace_expired.push_back(conn);
+				continue;
+			}
+
+			// 3. Token 即将过期 → 发送预警（仅一次）
+			if (!ctx->expiry_warned && ctx->expiry < warning_threshold && ctx->expiry > now)
+			{
+				auto remaining = std::chrono::duration_cast<std::chrono::seconds>(
+					ctx->expiry - now).count();
+				ctx->expiry_warned = true;
+				warn_targets.emplace_back(conn, remaining);
+			}
+		}
+	}
+
+	// 在锁外执行 I/O 操作
+	for (auto& conn : zombies)
+	{
+		conn->shutdown(drogon::CloseCode::kNormalClosure, "zombie: no activity");
+	}
+
+	for (auto& conn : grace_expired)
+	{
+		conn->shutdown(drogon::CloseCode::kViolation, "token expired, grace period ended");
+	}
+
+	for (auto& [conn, remaining] : warn_targets)
+	{
+		Json::Value warning;
+		warning["type"] = Heartbeat::MsgType::TokenExpiring;
+		warning["expires_in"] = static_cast<Json::Int64>(remaining);
+		warning["message"] = "access token expiring soon, please refresh";
+		Utils::SendJson(conn, warning);
+	}
 }

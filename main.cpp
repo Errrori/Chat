@@ -193,7 +193,8 @@ int main()
 	//});
 
 	drogon::app().registerBeginningAdvice([]() {
-		Container::GetInstance();   // 强制初始化 Container（DB建表 + Redis连接 + 所有 Service）
+		auto& container = Container::GetInstance();   // 强制初始化 Container（DB建表 + Redis连接 + 所有 Service）
+		container.GetConnectionService()->StartHeartbeatMonitor();
 		LOG_INFO << "Server is ready to accept requests";
 	});
 
