@@ -16,18 +16,23 @@ constexpr char kDeliveryReasonQueuedRedisFailed[] = "queued(redis_failed,db_only
 
 bool ConnectionService::SendEnvelopeOnline(const std::string& uid, const Json::Value& envelope)
 {
-	std::lock_guard lock(_mutex);
-	auto it = _conn_to_id_map.find(uid);
-	if (it == _conn_to_id_map.end())
-		return false;
-
-	if (!(it->second && it->second->connected()))
+	drogon::WebSocketConnectionPtr conn;
 	{
-		_conn_to_id_map.erase(it);
-		return false;
+		std::lock_guard lock(_mutex);
+		auto it = _conn_to_id_map.find(uid);
+		if (it == _conn_to_id_map.end())
+			return false;
+
+		if (!(it->second && it->second->connected()))
+		{
+			_conn_to_id_map.erase(it);
+			return false;
+		}
+
+		conn = it->second;
 	}
 
-	Utils::SendJson(it->second, envelope);
+	Utils::SendJson(conn, envelope);
 	return true;
 }
 
@@ -82,14 +87,12 @@ bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn
 			{
 				timer_id = drogon::app().getLoop()->runAfter(delay, [weak_conn = std::weak_ptr(conn)]()
 					{
-						auto lock = weak_conn.lock();
-
-						if (lock && lock->connected())
+						auto locked_conn = weak_conn.lock();
+						if (locked_conn && locked_conn->connected())
 						{
-							lock->shutdown();
+							locked_conn->shutdown(drogon::CloseCode::kNormalClosure,
+								"access token expired");
 						}
-						if(lock)
-							LOG_ERROR << "Timer not reclaimed in time: "<<lock->getContext<ConnectionContext>()->timer_id;
 					});
 			}
 			else
@@ -139,8 +142,12 @@ drogon::Task<> ConnectionService::OnUserConnected(std::string uid)
 		}
 
 		conn = it->second;
-		if (auto context = conn->getContext<ConnectionContext>())
-			context->is_delivering_offline = true;
+	}
+
+	if (auto context = conn ? conn->getContext<ConnectionContext>() : nullptr)
+	{
+		std::lock_guard<std::mutex> state_lock(context->mutex);
+		context->is_delivering_offline = true;
 	}
 
 	for (const auto& notice_str : notices)
@@ -166,14 +173,10 @@ drogon::Task<> ConnectionService::OnUserConnected(std::string uid)
 		}
 	}
 
+	if (auto context = conn ? conn->getContext<ConnectionContext>() : nullptr)
 	{
-		std::lock_guard lock(_mutex);
-		auto it = _conn_to_id_map.find(uid);
-		if (it != _conn_to_id_map.end() && it->second)
-		{
-			if (auto context = it->second->getContext<ConnectionContext>())
-				context->is_delivering_offline = false;
-		}
+		std::lock_guard<std::mutex> state_lock(context->mutex);
+		context->is_delivering_offline = false;
 	}
 }
 
@@ -258,7 +261,7 @@ drogon::Task<> ConnectionService::OnUserDisconnected(std::string uid, trantor::T
 
 bool ConnectionService::RemoveConnection(const drogon::WebSocketConnectionPtr& conn)
 {
-	auto context = conn->getContext<ConnectionContext>();
+	auto context = conn ? conn->getContext<ConnectionContext>() : nullptr;
 	if (!context)
 	{
 		LOG_ERROR << "Error to get ConnectionPtr context";
@@ -271,51 +274,89 @@ bool ConnectionService::RemoveConnection(const drogon::WebSocketConnectionPtr& c
 	{
 		std::lock_guard lock(_mutex);
 		auto it = _conn_to_id_map.find(uid);
-		if (it !=_conn_to_id_map.end()&&conn==it->second)
+		if (it != _conn_to_id_map.end() && conn == it->second)
 		{
 			_conn_to_id_map.erase(it);
 			removed_current = true;
 		}
 	}
 
-	drogon::app().getLoop()->invalidateTimer(context->timer_id);
+	trantor::TimerId timer_id;
+	{
+		std::lock_guard<std::mutex> state_lock(context->mutex);
+		timer_id = context->timer_id;
+	}
+	drogon::app().getLoop()->invalidateTimer(timer_id);
 	if (!removed_current)
 		return false;
 
 	LOG_INFO << "Remove Connection: " << uid;
-	drogon::async_run([self = shared_from_this(), uid,timer_id = context->timer_id]() -> drogon::Task<> {
-		co_await self->OnUserDisconnected(uid,timer_id );
+	drogon::async_run([self = shared_from_this(), uid, timer_id]() -> drogon::Task<> {
+		co_await self->OnUserDisconnected(uid, timer_id);
 	});
 	return true;
 }
 
 bool ConnectionService::RemoveConnection(const std::string& uid)
 {
-	trantor::TimerId timer_id;
+	drogon::WebSocketConnectionPtr conn;
 	{
 		std::lock_guard lock(_mutex);
 		auto it = _conn_to_id_map.find(uid);
-		if (it != _conn_to_id_map.end())
-		{
-			const auto& context = it->second->getContext<ConnectionContext>();
-			timer_id = context->timer_id;
-			_conn_to_id_map.erase(it);
-		}
-		else
+		if (it == _conn_to_id_map.end())
 			return false;
+
+		conn = it->second;
+		_conn_to_id_map.erase(it);
 	}
-	drogon::async_run([self = shared_from_this(), uid, timer_id = timer_id]() -> drogon::Task<> {
+
+	trantor::TimerId timer_id;
+	if (auto context = conn ? conn->getContext<ConnectionContext>() : nullptr)
+	{
+		std::lock_guard<std::mutex> state_lock(context->mutex);
+		timer_id = context->timer_id;
+	}
+
+	drogon::app().getLoop()->invalidateTimer(timer_id);
+	drogon::async_run([self = shared_from_this(), uid, timer_id]() -> drogon::Task<> {
 		co_await self->OnUserDisconnected(uid, timer_id);
-		});
+	});
 	return true;
 }
 
 std::shared_ptr<ConnectionContext> ConnectionService::GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const
 {
-	if (conn&&conn->connected())
+	if (conn && conn->connected())
 		return conn->getContext<ConnectionContext>();
 
 	return nullptr;
+}
+
+std::optional<ConnectionStateSnapshot> ConnectionService::GetConnectionSnapshot(
+	const drogon::WebSocketConnectionPtr& conn) const
+{
+	if (!(conn && conn->connected()))
+		return std::nullopt;
+
+	auto context = conn->getContext<ConnectionContext>();
+	if (!context)
+		return std::nullopt;
+
+	std::lock_guard<std::mutex> state_lock(context->mutex);
+	return ConnectionStateSnapshot{ context->uid, context->expiry, context->is_delivering_offline };
+}
+
+void ConnectionService::TouchConnection(const drogon::WebSocketConnectionPtr& conn) const
+{
+	if (!(conn && conn->connected()))
+		return;
+
+	auto context = conn->getContext<ConnectionContext>();
+	if (!context)
+		return;
+
+	std::lock_guard<std::mutex> state_lock(context->mutex);
+	context->last_active_time = std::chrono::system_clock::now();
 }
 
 void ConnectionService::RemoveUserConn(const std::string& uid)
@@ -329,14 +370,16 @@ void ConnectionService::RemoveUserConn(const std::string& uid)
 			return;
 
 		conn = it->second;
-		if (conn)
-		{
-			if (const auto context = conn->getContext<ConnectionContext>())
-				timer_id = context->timer_id;
-		}
 		_conn_to_id_map.erase(it);
 	}
 
+	if (auto context = conn ? conn->getContext<ConnectionContext>() : nullptr)
+	{
+		std::lock_guard<std::mutex> state_lock(context->mutex);
+		timer_id = context->timer_id;
+	}
+
+	drogon::app().getLoop()->invalidateTimer(timer_id);
 	if (conn && conn->connected())
 	{
 		conn->shutdown();
@@ -391,11 +434,10 @@ bool ConnectionService::RefreshConnectionToken(const drogon::WebSocketConnection
 		return false;
 	}
 
-	auto ctx = conn->getContext<ConnectionContext>();
+	auto ctx = conn ? conn->getContext<ConnectionContext>() : nullptr;
 	if (!ctx)
 		return false;
 
-	// uid 必须与当前连接一致
 	if (ctx->uid != result->uid)
 	{
 		LOG_WARN << "[Heartbeat] Token refresh uid mismatch: conn=" << ctx->uid
@@ -403,14 +445,28 @@ bool ConnectionService::RefreshConnectionToken(const drogon::WebSocketConnection
 		return false;
 	}
 
-	std::lock_guard lock(_mutex);
-	if (!ResetExpiryTimer(conn, ctx, result->expire_at))
 	{
-		LOG_WARN << "[Heartbeat] New token remaining time too short for uid=" << ctx->uid;
-		return false;
+		std::lock_guard lock(_mutex);
+		auto it = _conn_to_id_map.find(ctx->uid);
+		if (it == _conn_to_id_map.end() || it->second != conn)
+		{
+			LOG_WARN << "[Heartbeat] Token refresh failed: connection is no longer current for uid="
+				<< ctx->uid;
+			return false;
+		}
 	}
 
-	ctx->last_active_time = std::chrono::system_clock::now();
+	{
+		std::lock_guard<std::mutex> state_lock(ctx->mutex);
+		if (!ResetExpiryTimer(conn, ctx, result->expire_at))
+		{
+			LOG_WARN << "[Heartbeat] New token remaining time too short for uid=" << ctx->uid;
+			return false;
+		}
+
+		ctx->last_active_time = std::chrono::system_clock::now();
+	}
+
 	LOG_INFO << "[Heartbeat] Connection token refreshed for uid=" << ctx->uid
 		<< ", new expiry in "
 		<< std::chrono::duration_cast<std::chrono::seconds>(
@@ -442,53 +498,81 @@ void ConnectionService::RunHeartbeatCheck()
 	const auto warning_threshold = now + std::chrono::duration<double>(Heartbeat::WarningBeforeExpirySec);
 	const auto grace_deadline = now - std::chrono::duration<double>(Heartbeat::RefreshGracePeriodSec);
 
+	std::vector<drogon::WebSocketConnectionPtr> snapshot;
+	{
+		std::lock_guard lock(_mutex);
+		snapshot.reserve(_conn_to_id_map.size());
+		for (const auto& [uid, conn] : _conn_to_id_map)
+		{
+			if (conn)
+				snapshot.push_back(conn);
+		}
+	}
+
 	std::vector<drogon::WebSocketConnectionPtr> zombies;
 	std::vector<drogon::WebSocketConnectionPtr> grace_expired;
 	std::vector<std::pair<drogon::WebSocketConnectionPtr, int64_t>> warn_targets;
 
+	for (const auto& conn : snapshot)
 	{
-		std::lock_guard lock(_mutex);
-		for (auto& [uid, conn] : _conn_to_id_map)
+		if (!(conn && conn->connected()))
+			continue;
+
+		auto ctx = conn->getContext<ConnectionContext>();
+		if (!ctx)
+			continue;
+
+		bool is_zombie = false;
+		bool is_grace_expired = false;
+		int64_t remaining = 0;
+		bool should_warn = false;
+		std::string uid;
+		int64_t inactive_seconds = 0;
+
 		{
-			if (!conn || !conn->connected())
-				continue;
+			std::lock_guard<std::mutex> state_lock(ctx->mutex);
+			uid = ctx->uid;
 
-			auto ctx = conn->getContext<ConnectionContext>();
-			if (!ctx)
-				continue;
-
-			// 1. 僵尸检测：长时间无任何客户端活动
 			if (ctx->last_active_time < zombie_threshold)
 			{
-				LOG_WARN << "[Heartbeat] Zombie detected: uid=" << uid
-					<< ", last active "
-					<< std::chrono::duration_cast<std::chrono::seconds>(
-						now - ctx->last_active_time).count()
-					<< "s ago";
-				zombies.push_back(conn);
-				continue;
+				is_zombie = true;
+				inactive_seconds = std::chrono::duration_cast<std::chrono::seconds>(
+					now - ctx->last_active_time).count();
 			}
-
-			// 2. 超过宽限期仍未刷新 token → 强制断开
-			if (ctx->expiry < grace_deadline)
+			else if (ctx->expiry < grace_deadline)
 			{
-				LOG_INFO << "[Heartbeat] Grace period expired for uid=" << uid;
-				grace_expired.push_back(conn);
-				continue;
+				is_grace_expired = true;
 			}
-
-			// 3. Token 即将过期 → 发送预警（仅一次）
-			if (!ctx->expiry_warned && ctx->expiry < warning_threshold && ctx->expiry > now)
+			else if (!ctx->expiry_warned && ctx->expiry < warning_threshold && ctx->expiry > now)
 			{
-				auto remaining = std::chrono::duration_cast<std::chrono::seconds>(
+				remaining = std::chrono::duration_cast<std::chrono::seconds>(
 					ctx->expiry - now).count();
 				ctx->expiry_warned = true;
-				warn_targets.emplace_back(conn, remaining);
+				should_warn = true;
 			}
+		}
+
+		if (is_zombie)
+		{
+			LOG_WARN << "[Heartbeat] Zombie detected: uid=" << uid
+				<< ", last active " << inactive_seconds << "s ago";
+			zombies.push_back(conn);
+			continue;
+		}
+
+		if (is_grace_expired)
+		{
+			LOG_INFO << "[Heartbeat] Grace period expired for uid=" << uid;
+			grace_expired.push_back(conn);
+			continue;
+		}
+
+		if (should_warn)
+		{
+			warn_targets.emplace_back(conn, remaining);
 		}
 	}
 
-	// 在锁外执行 I/O 操作
 	for (auto& conn : zombies)
 	{
 		conn->shutdown(drogon::CloseCode::kNormalClosure, "zombie: no activity");

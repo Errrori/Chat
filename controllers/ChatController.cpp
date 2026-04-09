@@ -26,15 +26,16 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             return;
         }
 
-        const auto& conn_info = Container::GetInstance().GetConnectionService()->GetConnInfo(conn);
-        if (!conn_info)
+        const auto& conn_service = Container::GetInstance().GetConnectionService();
+        const auto conn_snapshot = conn_service->GetConnectionSnapshot(conn);
+        if (!conn_snapshot)
         {
             Utils::SendJson(conn, ResponseHelper::MakeErrorJson("connection info not found", ChatCode::NotPermission));
             return;
         }
 
-        // 更新最后活跃时间（任何客户端消息都算活跃）
-        conn_info->last_active_time = std::chrono::system_clock::now();
+        // 任何客户端文本消息都视为一次活跃触达，由 service 统一更新状态
+        conn_service->TouchConnection(conn);
 
         Json::Value msg_data;
         Json::Reader reader;
@@ -64,7 +65,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             if (msg_type == Heartbeat::MsgType::TokenRefresh)
             {
                 const auto now = std::chrono::system_clock::now();
-                const auto grace_deadline = conn_info->expiry
+                const auto grace_deadline = conn_snapshot->expiry
                     + std::chrono::duration<double>(Heartbeat::RefreshGracePeriodSec);
 
                 if (now > grace_deadline)
@@ -83,15 +84,16 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
                     return;
                 }
 
-                const auto& conn_service = Container::GetInstance().GetConnectionService();
                 if (conn_service->RefreshConnectionToken(conn, msg_data["access_token"].asString()))
                 {
-                    auto new_ctx = conn->getContext<ConnectionContext>();
                     Json::Value ok;
                     ok["type"] = Heartbeat::MsgType::TokenRefreshed;
-                    ok["new_expiry"] = static_cast<Json::Int64>(
-                        std::chrono::duration_cast<std::chrono::seconds>(
-                            new_ctx->expiry.time_since_epoch()).count());
+                    if (const auto refreshed_snapshot = conn_service->GetConnectionSnapshot(conn))
+                    {
+                        ok["new_expiry"] = static_cast<Json::Int64>(
+                            std::chrono::duration_cast<std::chrono::seconds>(
+                                refreshed_snapshot->expiry.time_since_epoch()).count());
+                    }
                     Utils::SendJson(conn, ok);
                 }
                 else
@@ -106,7 +108,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         }
 
         // ── 以下为业务消息，必须在有效期内 ──
-        if (conn_info->expiry < std::chrono::system_clock::now())
+        if (conn_snapshot->expiry < std::chrono::system_clock::now())
         {
             Json::Value expired_hint;
             expired_hint["type"] = Heartbeat::MsgType::TokenExpiring;
@@ -146,7 +148,7 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
 		int thread_id = msg_data["thread_id"].asInt();
 
 
-        auto uid = conn_info->uid;
+        auto uid = conn_snapshot->uid;
 
         if (msg_data.isMember("request_data"))
         {

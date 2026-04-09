@@ -1,10 +1,18 @@
 #pragma once
+#include <optional>
 #include <unordered_map>
 #include <drogon/WebSocketConnection.h>
 #include <drogon/utils/coroutine.h>
 #include "Common/ConnectionContext.h"
 #include "Common/OutboundMessage.h"
 class RedisService;
+
+struct ConnectionStateSnapshot
+{
+	std::string uid;
+	std::chrono::time_point<std::chrono::system_clock> expiry;
+	bool is_delivering_offline{false};
+};
 
 class ConnectionService:public std::enable_shared_from_this<ConnectionService>
 {
@@ -26,6 +34,9 @@ public:
 		const ChatDelivery::OutboundMessage& message);
 
 	std::shared_ptr<ConnectionContext> GetConnInfo(const drogon::WebSocketConnectionPtr& conn) const;
+	std::optional<ConnectionStateSnapshot> GetConnectionSnapshot(
+		const drogon::WebSocketConnectionPtr& conn) const;
+	void TouchConnection(const drogon::WebSocketConnectionPtr& conn) const;
 	void RemoveUserConn(const std::string& uid);
 
 	/// Refresh the connection's access token via WebSocket, update expiry and reset disconnect timer
@@ -50,7 +61,7 @@ private:
 
 	//id to connection
 	std::unordered_map<std::string, drogon::WebSocketConnectionPtr> _conn_to_id_map;
-	std::recursive_mutex _mutex;
+	std::mutex _mutex;
 	std::shared_ptr<RedisService> _redis_service;
 	trantor::TimerId _monitor_timer_id{};
 
