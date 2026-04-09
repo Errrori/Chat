@@ -1,6 +1,4 @@
 #pragma once
-#include <curl/curl.h>
-
 #include "Common/AIMessage.h"
 #include "Data/IMessageRepository.h"
 
@@ -51,30 +49,10 @@ public:
 	                                                std::optional<Json::Value> attachment) const;
 
 	void ProcessAIRequest(Json::Value msg, drogon::WebSocketConnectionPtr conn) const;
-	void ProcessRequest(const std::string& url, const std::string& token, int thread_id,
-	                    const RequestMsg& req_msg, drogon::WebSocketConnectionPtr conn) const;
 
 
 
 	drogon::Task<Json::Value> GetChatOverviews(int64_t existing_id, const std::string& uid) const;
-
-private:
-	class AIRequestProcessor
-	{
-	public:
-		typedef std::function<void(const Json::Value&)> SendCallback;
-		AIRequestProcessor();
-		~AIRequestProcessor();
-
-		drogon::Task<AIMessage> operator()(const std::string& url, const std::string& token,int thread_id,
-			const RequestMsg& req, const SendCallback& send_cb);
-	private:
-		static size_t SyncWriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
-		static size_t StreamWriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
-
-		CURL* _curl = nullptr;
-		curl_slist* _headers = nullptr;
-	};
 
 private:
 	std::shared_ptr<IMessageRepository> _msg_repo;

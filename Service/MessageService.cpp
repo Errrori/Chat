@@ -1,4 +1,6 @@
 #include "pch.h"
+#include <drogon/HttpClient.h>
+#include <sstream>
 #include "Common/ResponseHelper.h"
 #include "MessageService.h"
 #include "models/Messages.h"
@@ -275,110 +277,197 @@ drogon::Task<MsgProcessedResult> MessageService::ProcessChatMsg(int thread_id, c
 }
 
 
+// ── 文件作用域 AI 响应解析辅助函数 ─────────────────────────────────────────
+
+namespace
+{
+constexpr auto kAiHost = "https://open.bigmodel.cn";
+constexpr auto kAiPath = "/api/paas/v4/chat/completions";
+
+using AISendCb = std::function<void(const Json::Value&)>;
+
+/// 解析 AI 同步（非流式）JSON 响应，填充 out_msg 并推送结果给客户端
+void ParseNonStreamResponse(const std::string& body,
+    const std::string& req_id, int thread_id,
+    const AISendCb& send_cb, AIMessage& out_msg)
+{
+    Json::Value json_resp;
+    Json::Reader reader;
+    if (!reader.parse(body, json_resp))
+    {
+        send_cb(ResponseHelper::MakeErrorJson("can not parse AI response", ChatCode::InValidJson, req_id));
+        throw std::invalid_argument("can not parse AI response");
+    }
+
+    if (json_resp.isMember("error"))
+    {
+        const auto err = json_resp["error"]["message"].asString();
+        send_cb(ResponseHelper::MakeErrorJson(err, ChatCode::BadAIRequest, req_id));
+        throw std::runtime_error("AI API error: " + err);
+    }
+
+    auto resp_content = json_resp["choices"][0]["message"];
+    resp_content["thread_id"]  = thread_id;
+    resp_content["message_id"] = req_id;
+    LOG_INFO << "AI response: " << resp_content.toStyledString();
+
+    send_cb(resp_content);
+    out_msg.setContent(resp_content["content"].asString());
+    out_msg.setReasoningContent(resp_content["reasoning_content"].asString());
+}
+
+/// 解析 SSE 流式响应 body（HttpClient 一次性返回），逐 chunk 推送给客户端
+void ParseSseBodyResponse(const std::string& body,
+    const std::string& req_id, int thread_id,
+    const AISendCb& send_cb, AIMessage& out_msg)
+{
+    static const std::string kDone = "[DONE]";
+    std::istringstream stream(body);
+    std::string line;
+    std::string acc_content;
+    std::string acc_reason;
+
+    while (std::getline(stream, line))
+    {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+        if (line.size() < 6 || line.substr(0, 6) != "data: ")
+            continue;
+
+        const std::string data = line.substr(6);
+
+        if (data == kDone)
+        {
+            Json::Value final_msg;
+            final_msg["is_complete"]      = true;
+            final_msg["thread_id"]        = thread_id;
+            final_msg["message_id"]       = req_id;
+            final_msg["complete_content"] = acc_content;
+            final_msg["complete_reason"]  = acc_reason;
+            send_cb(final_msg);
+            break;
+        }
+
+        Json::Value chunk;
+        Json::Reader reader;
+        if (!reader.parse(data, chunk))
+        {
+            send_cb(ResponseHelper::MakeErrorJson("can not parse SSE chunk", ChatCode::InValidJson, req_id));
+            continue;
+        }
+
+        if (chunk.isMember("error"))
+        {
+            send_cb(ResponseHelper::MakeErrorJson(
+                chunk["error"]["message"].asString(), ChatCode::BadAIRequest, req_id));
+            break;
+        }
+
+        if (chunk.isMember("choices") && chunk["choices"].isArray() && !chunk["choices"].empty())
+        {
+            const auto& delta = chunk["choices"][0]["delta"];
+            Json::Value resp;
+            resp["message"]    = delta;
+            resp["request_id"] = req_id;
+            resp["thread_id"]  = thread_id;
+            send_cb(resp);
+
+            if (delta.isMember("content"))
+                acc_content += delta["content"].asString();
+            if (delta.isMember("reasoning_content"))
+                acc_reason  += delta["reasoning_content"].asString();
+        }
+    }
+
+    out_msg.setContent(acc_content);
+    out_msg.setReasoningContent(acc_reason);
+}
+} // anonymous namespace
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 void MessageService::ProcessAIRequest(Json::Value msg, drogon::WebSocketConnectionPtr conn) const
 {
+    drogon::async_run([msg = std::move(msg), conn = std::move(conn), this]() -> drogon::Task<>
+    {
+        try
+        {
+            AIMessage ai_msg = AIMessage::FromJson(msg);
 
-	drogon::async_run([msg = std::move(msg),conn = std::move(conn),this]()->drogon::Task<>
-	{
-		try
-		{
-			AIMessage ai_msg = AIMessage::FromJson(msg);
-
-			auto type = co_await _thread_service->GetThreadType(ai_msg.getThreadId());
-			if (type != ChatThread::AI)
-			{
-				LOG_ERROR << "thread id is not corresponding to an AI thread";
+            auto type = co_await _thread_service->GetThreadType(ai_msg.getThreadId());
+            if (type != ChatThread::AI)
+            {
+                LOG_ERROR << "thread id is not corresponding to an AI thread";
                 Utils::SendJson(conn, ResponseHelper::MakeErrorJson("unmatched type", ChatCode::UnMatchedType));
-				co_return;
-			}
+                co_return;
+            }
 
-			ai_msg.setMessageId(Utils::Authentication::GenerateUid());
-			//role should be set by server
-			ai_msg.setRole(AIMessage::Role::user);
-			//request should not have reasoning content
-			ai_msg.setReasoningContent({});
+            ai_msg.setMessageId(Utils::Authentication::GenerateUid());
+            ai_msg.setRole(AIMessage::Role::user);
+            ai_msg.setReasoningContent({});
 
-			if (!ai_msg.IsValid())
-			{
-				LOG_ERROR << "AI message is not valid";
+            if (!ai_msg.IsValid())
+            {
+                LOG_ERROR << "AI message is not valid";
                 Utils::SendJson(conn, ResponseHelper::MakeErrorJson("invalid AI message", ChatCode::MissingField));
-				co_return;//handle
-			}
+                co_return;
+            }
 
-			//get context before record new message
-			auto json_context = co_await _msg_repo->GetAIContext(ai_msg.getThreadId());
-			//push message to database
-			co_await _msg_repo->RecordAIMessage(ai_msg);
+            // 记录用户消息前先获取历史上下文
+            auto json_context = co_await _msg_repo->GetAIContext(ai_msg.getThreadId());
+            co_await _msg_repo->RecordAIMessage(ai_msg);
 
-			RequestMsg req_msg(Utils::Authentication::GenerateUid(),msg["content"].asString(),RequestMsg::Role::User);
-			//build request msg , if has context ,append
-			//here need to check request data fields
-			//.....
+            RequestMsg req_msg(Utils::Authentication::GenerateUid(),
+                               msg["content"].asString(), RequestMsg::Role::User);
 
-			const auto& req_data = msg["request_data"];
-			if (req_data.isMember("is_stream") && req_data["is_stream"].isBool())
-				req_msg.SetStream(req_data["is_stream"].asBool());
-			if (req_data.isMember("is_thinking")&&req_data["is_thinking"].isBool())
-				req_msg.SetThinking(req_data["is_thinking"].asBool());
-			
-			req_msg.SetContext(json_context);
+            const auto& req_data = msg["request_data"];
+            if (req_data.isMember("is_stream") && req_data["is_stream"].isBool())
+                req_msg.SetStream(req_data["is_stream"].asBool());
+            if (req_data.isMember("is_thinking") && req_data["is_thinking"].isBool())
+                req_msg.SetThinking(req_data["is_thinking"].asBool());
 
+            req_msg.SetContext(json_context);
+
+            // 向客户端回显请求体（预览）
             Utils::SendJson(conn, req_msg.ToJsonReq());
 
+            // ── Phase 4/5: drogon::HttpClient 替换 cURL ──────────────────
+            auto client   = drogon::HttpClient::newHttpClient(kAiHost);
+            auto http_req = drogon::HttpRequest::newHttpJsonRequest(req_msg.ToJsonReq());
+            http_req->setMethod(drogon::Post);
+            http_req->setPath(kAiPath);
+            http_req->addHeader("Authorization", API_KEY::key1);
 
-			auto response = co_await AIRequestProcessor()
-				("https://open.bigmodel.cn/api/paas/v4/chat/completions", "45664786303e46ca9caa8dc3d82ce7c4.VzuV8oSl4Nb2H3GU"
-					, ai_msg.getThreadId(), req_msg, [conn](const Json::Value& resp)
-					{
-                        Utils::SendJson(conn, resp);
-					});
-			co_await _msg_repo->RecordAIMessage(response);
-		}
-		catch (const std::exception& e)
-		{
-			LOG_ERROR << "exception: " << e.what();
-            Utils::SendJson(conn, ResponseHelper::MakeErrorJson("server exception: "+std::string(e.what()),ChatCode::SystemException));
-		}
-	}
-	);
+            auto resp    = co_await client->sendRequestCoro(http_req, 60.0);
+            const auto body    = std::string(resp->getBody());
+            const auto req_id  = req_msg.GetRequestId();
+            const int  tid     = ai_msg.getThreadId();
+
+            AIMessage response_msg(tid, req_id, "", Utils::GetCurrentTimeStamp(), AIMessage::Role::assistant);
+            const auto send_cb = [&conn](const Json::Value& v) { Utils::SendJson(conn, v); };
+
+            if (req_msg.IsStream())
+                ParseSseBodyResponse(body, req_id, tid, send_cb, response_msg);
+            else
+                ParseNonStreamResponse(body, req_id, tid, send_cb, response_msg);
+
+            co_await _msg_repo->RecordAIMessage(response_msg);
+        }
+        catch (const drogon::HttpException& e)
+        {
+            LOG_ERROR << "HttpClient exception in ProcessAIRequest: " << e.what();
+            Utils::SendJson(conn, ResponseHelper::MakeErrorJson(
+                std::string("AI service error: ") + e.what(), ChatCode::BadAIRequest));
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR << "exception in ProcessAIRequest: " << e.what();
+            Utils::SendJson(conn, ResponseHelper::MakeErrorJson(
+                "server exception: " + std::string(e.what()), ChatCode::SystemException));
+        }
+    });
 }
 
-void MessageService::ProcessRequest(const std::string& url, const std::string& token, int thread_id,
-                                    const RequestMsg& req_data, drogon::WebSocketConnectionPtr conn) const
-{
-	try
-	{
-		// ������ URL ��ȡ����ַ��·��
-		const auto scheme_pos = url.find("://");
-		const auto host_start = (scheme_pos == std::string::npos) ? 0 : scheme_pos + 3;
-		const auto path_pos = url.find('/', host_start);
-		const std::string base = (path_pos == std::string::npos) ? url : url.substr(0, path_pos);
-		const std::string path = (path_pos == std::string::npos) ? "/" : url.substr(path_pos);
-
-		// ����ͻ��˽�ʹ�û�ַ���� https://open.bigmodel.cn��
-		auto client = drogon::HttpClient::newHttpClient(base);
-
-		// ���� POST JSON ��������·����ͷ��
-		auto req = drogon::HttpRequest::newHttpJsonRequest(req_data.ToJsonReq());
-		req->setMethod(drogon::Post);
-		req->setPath(path); // �� /api/paas/v4/chat/completions
-		req->addHeader("Content-Type", "application/json");
-		req->addHeader("Authorization", "Bearer " + token);
-		req->addHeader("Accept", "application/json"); // ��ѡ
-
-		auto is_stream = req_data.IsStream();
-
-        client->sendRequest(req, [is_stream,conn](drogon::ReqResult ret, const drogon::HttpResponsePtr& resp)
-            {
-                conn->send(std::string(resp->getBody()), drogon::WebSocketMessageType::Text);
-            });
-
-
-	}catch (const std::exception& e)
-	{
-		throw;
-	}
-}
 
 drogon::Task<Json::Value> MessageService::GetChatOverviews(int64_t existing_id, const std::string& uid) const
 {
@@ -390,209 +479,4 @@ drogon::Task<Json::Value> MessageService::GetChatOverviews(int64_t existing_id, 
 	{
 		throw;
 	}
-}
-
-
-MessageService::AIRequestProcessor::AIRequestProcessor()
-{
-	_curl = curl_easy_init();
-}
-
-drogon::Task<AIMessage> MessageService::AIRequestProcessor::operator()(const std::string& url, const std::string& token,int thread_id,
-	const RequestMsg& req, const SendCallback& send_cb)
-{
-	try
-	{
-		curl_easy_setopt(_curl, CURLOPT_POST, 1L);
-		curl_easy_setopt(_curl, CURLOPT_URL, url.c_str());
-
-		Json::StreamWriterBuilder builder;
-		builder["indentation"] = "";
-		if (req.ToJsonReq() == Json::nullValue)
-		{
-			LOG_ERROR << "request data is not valid";
-			throw std::invalid_argument("request data is not valid");
-		}
-		const auto& req_body = Json::writeString(builder, req.ToJsonReq());
-
-		LOG_INFO << "send request: " << req_body;
-
-		curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, req_body.c_str());
-		curl_easy_setopt(_curl, CURLOPT_POSTFIELDSIZE, req_body.length());
-
-		_headers = curl_slist_append(_headers, ("Authorization: " + token).c_str());
-		_headers = curl_slist_append(_headers, "Content-Type: application/json");
-		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _headers);
-
-		if (req.IsStream())
-		{
-			curl_easy_setopt(_curl, CURLOPT_BUFFERSIZE, 1024L);
-			curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L);
-
-			StreamContent content(send_cb,thread_id,req.GetRequestId());
-			curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, StreamWriteCallback);
-			curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &content);
-			CURLcode res_code = curl_easy_perform(_curl);
-
-			if (res_code != CURLE_OK)
-			{
-				LOG_ERROR << "curl error: " << std::string(curl_easy_strerror(res_code));
-				send_cb(ResponseHelper::MakeErrorJson("request perform fail ", ChatCode::BadAIRequest,req.GetRequestId()));
-				throw std::runtime_error("request perform fail");
-			}
-
-			AIMessage response(thread_id,req.GetRequestId(),content._acc_content,
-				Utils::GetCurrentTimeStamp(),AIMessage::Role::assistant);
-			response.setReasoningContent(content._acc_reason);
-
-			co_return response;
-		}
-
-		std::string resp;
-		const auto& req_id = req.GetRequestId();
-
-		curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, SyncWriteCallback);
-		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &resp);
-		CURLcode res_code = curl_easy_perform(_curl);
-		if (res_code != CURLE_OK)
-		{
-			LOG_ERROR << "curl error: " << std::string(curl_easy_strerror(res_code));
-			send_cb(ResponseHelper::MakeErrorJson("request perform fail ", ChatCode::BadAIRequest, req_id));
-			throw std::runtime_error("request perform fail");
-		}
-		//lack of process Json
-		Json::Value json_resp;
-		Json::Reader reader;
-		if (!reader.parse(resp, json_resp))
-		{
-			send_cb(ResponseHelper::MakeErrorJson("can not parse response", ChatCode::InValidJson,req_id));
-			throw std::invalid_argument("can not parse response");
-		}
-
-		if (json_resp.isMember("error"))
-		{
-			send_cb(ResponseHelper::MakeErrorJson(json_resp["error"]["message"].toStyledString(), ChatCode::BadAIRequest, req_id));
-			throw std::runtime_error("request error: "+ json_resp["error"]["message"].asString());
-		}
-
-		auto resp_content = json_resp["choices"][0]["message"];
-		resp_content["thread_id"] = thread_id;
-		resp_content["message_id"] = req.GetRequestId();
-		LOG_INFO << "response:" << resp_content.toStyledString();
-
-		send_cb(resp_content);
-
-		AIMessage response(thread_id, req.GetRequestId(), resp_content["content"].asString(),
-			Utils::GetCurrentTimeStamp(), AIMessage::Role::assistant);
-
-		response.setReasoningContent(resp_content["reasoning_content"].asString());
-
-		co_return response;
-
-	}catch (const std::exception& e)
-	{
-		LOG_ERROR << "exception in AIRequestProcessor: " << e.what();
-		throw;
-	}
-}
-
-
-MessageService::AIRequestProcessor::~AIRequestProcessor()
-{
-	if (_curl) {
-		curl_easy_cleanup(_curl);
-		_curl = nullptr;
-	}
-	if (_headers)
-	{
-		curl_slist_free_all(_headers);
-		_headers = nullptr;
-	}
-}
-
-size_t MessageService::AIRequestProcessor::SyncWriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
-{
-	(static_cast<std::string*>(userp))->append(static_cast<char*>(contents), size * nmemb);
-	return size * nmemb;
-}
-
-size_t MessageService::AIRequestProcessor::StreamWriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
-{
-	auto* context = static_cast<StreamContent*>(userp);
-
-	if (context->_is_complete)
-	{
-		LOG_INFO << "response is completed";
-		return size * nmemb;
-	}
-
-	auto total_size = size * nmemb;
-	std::string chunk(static_cast<char*>(contents), total_size);
-	context->_buffer += chunk;
-
-	auto& buf = context->_buffer;
-	size_t pos = 0;
-
-	while ((pos = buf.find('\n')) != std::string::npos)
-	{
-		std::string line = buf.substr(0, pos);
-		buf.erase(0, pos + 1);
-
-		if (line.substr(0, 6) == "data: ")
-		{
-			std::string data = line.substr(6);
-			if (data == terminator)
-			{
-				context->_is_complete = true;
-				Json::Value final_msg;
-				final_msg["is_complete"] = true;
-				final_msg["thread_id"] = context->_thread_id;
-				final_msg["message_id"] = context->_req_id;
-				final_msg["complete_content"] = context->_acc_content;
-				final_msg["complete_reason"] = context->_acc_reason;
-				context->_cb(final_msg);
-				return total_size;
-			}
-
-			try
-			{
-				Json::Value chunk_data;
-				Json::Reader reader;
-				if (reader.parse(data, chunk_data))
-				{
-					if (chunk_data.isMember("error"))
-					{
-						context->_cb(ResponseHelper::MakeErrorJson(chunk_data["error"]["message"].asString(),ChatCode::BadAIRequest));
-					}
-					else if (chunk_data.isMember("choices") &&
-						chunk_data["choices"].isArray() &&
-						!chunk_data["choices"].empty())
-					{
-
-						//add uid to verify the message
-						Json::Value resp;
-						resp["message"] = chunk_data["choices"][0]["delta"];
-						resp["request_id"] = context->_req_id;
-						resp["thread_id"] = context->_thread_id;
-
-						if (chunk_data["choices"][0]["delta"].isMember("content"))
-							context->_acc_content += chunk_data["choices"][0]["delta"]["content"].asString();
-						if (chunk_data["choices"][0]["delta"].isMember("reasoning_content"))
-							context->_acc_reason += chunk_data["choices"][0]["delta"]["reasoning_content"].asString();
-
-						context->_cb(resp);
-					}
-				}
-				else
-				{
-					context->_cb(ResponseHelper::MakeErrorJson("can not parse response",ChatCode::InValidJson));
-				}
-			}
-			catch (std::exception& e) {
-				LOG_ERROR << "exception in parsing stream chunk: " << e.what();
-				context->_cb(ResponseHelper::MakeErrorJson(e.what(), ChatCode::SystemException,context->_req_id));
-			}
-		}
-	}
-	return total_size;
 }
