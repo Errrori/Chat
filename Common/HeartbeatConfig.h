@@ -18,14 +18,4 @@ namespace Heartbeat {
     // Token 过期后允许 RefreshGracePeriodSec 秒内通过 WS 刷新
     constexpr double RefreshGracePeriodSec = 120.0;
 
-    // ── WebSocket 控制消息 type 字段 ──
-    namespace MsgType {
-        constexpr auto Heartbeat           = "heartbeat";
-        constexpr auto HeartbeatAck        = "heartbeat_ack";
-        constexpr auto TokenRefresh        = "token_refresh";
-        constexpr auto TokenRefreshed      = "token_refreshed";
-        constexpr auto TokenRefreshFailed  = "token_refresh_failed";
-        constexpr auto TokenExpiring       = "token_expiring";
-    }
-
 } // namespace Heartbeat

@@ -2,6 +2,7 @@
 #include "ConnectionService.h"
 #include "RedisService.h"
 #include "Common/HeartbeatConfig.h"
+#include "Common/WsResponseHelper.h"
 #include "auth/TokenService.h"
 #include <drogon/utils/coroutine.h>
 
@@ -585,10 +586,6 @@ void ConnectionService::RunHeartbeatCheck()
 
 	for (auto& [conn, remaining] : warn_targets)
 	{
-		Json::Value warning;
-		warning["type"] = Heartbeat::MsgType::TokenExpiring;
-		warning["expires_in"] = static_cast<Json::Int64>(remaining);
-		warning["message"] = "access token expiring soon, please refresh";
-		Utils::SendJson(conn, warning);
+		Utils::SendJson(conn, WsResponse::ErrorTokenExpiring(static_cast<Json::Int64>(remaining)));
 	}
 }

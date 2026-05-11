@@ -1,4 +1,7 @@
 # Build directories
+/test/**/*.csv
+/test/**/*.html
+/static/
 /build/
 /bin/
 /obj/

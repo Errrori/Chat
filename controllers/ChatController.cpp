@@ -9,42 +9,30 @@
 #include "Service/MessageService.h"
 #include "Common/ConnectionContext.h"
 #include "Common/HeartbeatConfig.h"
+#include "Common/WsProtocol.h"
 #include <drogon/utils/coroutine.h>
 
 #include "auth/TokenService.h"
 
-// ─────── Phase 2: 统一消息类型枚举 ──────────────────────────────────────────
-
-/// WS 入站消息类型
-enum class WsMessageType
+/// 根据消息整数 type 字段路由，不保留旧字符串格式兼容
+static WsMsg::Type ParseMessageType(const Json::Value& msg)
 {
-    Heartbeat,    ///< 心跳探活（"heartbeat"）
-    TokenRefresh, ///< Token 续期（"token_refresh"）
-    ChatSend,     ///< 普通聊天消息（type="chat_send" 或老格式 thread_id）
-    AiRequest,    ///< AI 补全请求（type="ai_request" 或老格式 request_data）
-    Unknown,      ///< 无法识别，将被拒绝
-};
-
-/// 根据消息字段推断消息类型，兼容新旧两种格式：
-///   新格式：发送方显式带 "type" 字段
-///   旧格式：通过 "request_data" / "thread_id" 字段隐式推断
-static WsMessageType ParseMessageType(const Json::Value& msg)
-{
-    if (msg.isMember("type"))
+    if (msg.isMember("type") && msg["type"].isInt())
     {
-        const auto& t = msg["type"].asString();
-        if (t == Heartbeat::MsgType::Heartbeat)    return WsMessageType::Heartbeat;
-        if (t == Heartbeat::MsgType::TokenRefresh) return WsMessageType::TokenRefresh;
-        if (t == "chat_send")                      return WsMessageType::ChatSend;
-        if (t == "ai_request")                     return WsMessageType::AiRequest;
+        const int t = msg["type"].asInt();
+        switch (t)
+        {
+        case static_cast<int>(WsMsg::Type::Heartbeat):    return WsMsg::Type::Heartbeat;
+        case static_cast<int>(WsMsg::Type::TokenRefresh): return WsMsg::Type::TokenRefresh;
+        case static_cast<int>(WsMsg::Type::ChatSend):     return WsMsg::Type::ChatSend;
+        case static_cast<int>(WsMsg::Type::AiRequest):    return WsMsg::Type::AiRequest;
+        default: break;
+        }
     }
-    // ── 向后兼容：无 type 字段时根据 payload 字段推断 ──
-    if (msg.isMember("request_data")) return WsMessageType::AiRequest;
-    if (msg.isMember("thread_id"))    return WsMessageType::ChatSend;
-    return WsMessageType::Unknown;
+    return WsMsg::Type::Error; // 无法识别
 }
 
-// ─────── Phase 1: 拆分后的消息处理函数 ──────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 /// 心跳：无论 token 是否过期都立即响应，让客户端确认连接仍然存活
 static void HandleHeartbeat(const drogon::WebSocketConnectionPtr& conn)
@@ -70,7 +58,7 @@ static void HandleTokenRefresh(const drogon::WebSocketConnectionPtr& conn,
 
     if (!msg_data.isMember("access_token") || msg_data["access_token"].asString().empty())
     {
-        Utils::SendJson(conn, WsResponse::TokenRefreshFailed("missing access_token field"));
+        Utils::SendJson(conn, WsResponse::ErrorTokenRefreshFail("missing access_token field"));
         return;
     }
 
@@ -88,7 +76,7 @@ static void HandleTokenRefresh(const drogon::WebSocketConnectionPtr& conn,
     }
     else
     {
-        Utils::SendJson(conn, WsResponse::TokenRefreshFailed("invalid or mismatched access token"));
+        Utils::SendJson(conn, WsResponse::ErrorTokenRefreshFail("invalid or mismatched access token"));
     }
 }
 
@@ -206,16 +194,15 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
             return;
         }
 
-        // ── Phase 2: 统一路由分发 ──
         const auto msg_type = ParseMessageType(msg_data);
 
         // 控制消息：不受 token 有效期限制
-        if (msg_type == WsMessageType::Heartbeat)
+        if (msg_type == WsMsg::Type::Heartbeat)
         {
             HandleHeartbeat(conn);
             return;
         }
-        if (msg_type == WsMessageType::TokenRefresh)
+        if (msg_type == WsMsg::Type::TokenRefresh)
         {
             HandleTokenRefresh(conn, msg_data, *conn_snapshot);
             return;
@@ -224,16 +211,16 @@ void ChatController::handleNewMessage(const drogon::WebSocketConnectionPtr& conn
         // 业务消息：token 必须在有效期内
         if (conn_snapshot->expiry < std::chrono::system_clock::now())
         {
-            Utils::SendJson(conn, WsResponse::TokenExpired());
+            Utils::SendJson(conn, WsResponse::ErrorTokenExpiring(0));
             return;
         }
 
         switch (msg_type)
         {
-        case WsMessageType::AiRequest:
+        case WsMsg::Type::AiRequest:
             HandleAiRequest(conn, std::move(msg_data));
             break;
-        case WsMessageType::ChatSend:
+        case WsMsg::Type::ChatSend:
             HandleChatSend(conn, std::move(msg_data), *conn_snapshot);
             break;
         default:

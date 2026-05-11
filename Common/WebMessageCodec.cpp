@@ -3,7 +3,7 @@
 
 #include "ChatMessage.h"
 #include "Notice.h"
-#include "Enums.h"
+#include "WsProtocol.h"
 
 namespace ChatCodec
 {
@@ -22,7 +22,7 @@ namespace ChatCodec
         msg_data["update_time"] = static_cast<Json::Value::Int64>(message.getUpdateTime());
 
         Json::Value msg;
-        msg["type"] = static_cast<int>(ChatEnums::WebMessageType::ChatMessage);
+        msg["type"] = static_cast<int>(WsMsg::Type::ChatMessage);
         msg["data"] = msg_data;
         return msg;
     }
@@ -36,10 +36,10 @@ namespace ChatCodec
         data["payload"] = notice.getMessage();
         data["created_time"] = notice.getCreatedTime();
         data["notice_id"] = notice.getNoticeId();
-        data["type"] = static_cast<int>(notice.getType());
+        data["sub_type"] = static_cast<int>(notice.getType());
 
         Json::Value wrapped;
-        wrapped["type"] = static_cast<int>(ChatEnums::WebMessageType::Notice);
+        wrapped["type"] = static_cast<int>(WsMsg::Type::Notice);
         wrapped["data"] = data;
         return wrapped;
     }

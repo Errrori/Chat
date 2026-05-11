@@ -6,6 +6,7 @@
 #include "Service/ConnectionService.h"
 #include "Common/Notice.h"
 #include "Utils.h"
+#include "Common/WsProtocol.h"
 #include "Common/Enums.h"
 
 using namespace ChatEnums;
@@ -35,7 +36,7 @@ drogon::Task<> RelationshipService::SendFriendRequest(const std::string& request
 		notice.setMessage(message);
 		notice.setCreatedTime(Utils::GetCurrentTimeStamp());
 		notice.setNoticeId(event_id);
-		notice.setType(NoticeType::RequestReceived);
+notice.setType(WsMsg::NoticeSubType::FriendRequestReceived);
 
 		Json::Value json_notice = notice.ToJson();
 		auto result = co_await _conn_service->DeliverToUser(
@@ -77,9 +78,9 @@ drogon::Task<int64_t> RelationshipService::ProcessFriendRequest(const std::strin
 		notice.setSenderAvatar(acceptor_info.GetAvatar().value_or(""));
 		notice.setCreatedTime(Utils::GetCurrentTimeStamp());
         if (status == static_cast<int>(FriendRequestStatus::Accepted)) // Accepted
-            notice.setType(NoticeType::RequestAccepted);
+            notice.setType(WsMsg::NoticeSubType::FriendRequestAccepted);
         else if (status == static_cast<int>(FriendRequestStatus::Refused))
-			notice.setType(NoticeType::RequestRejected);
+notice.setType(WsMsg::NoticeSubType::FriendRequestRejected);
 
 		auto result = co_await _conn_service->DeliverToUser(
 			requester_uid,

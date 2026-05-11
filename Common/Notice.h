@@ -1,7 +1,7 @@
 #pragma once
 #include <json/json.h>
 #include <string>
-#include "Enums.h"
+#include "WsProtocol.h"
 
 class Notice
 {
@@ -23,7 +23,7 @@ public:
 	const std::string& getMessage() const { return _message; }
 	int64_t getCreatedTime() const { return _created_time; }
 	int64_t getNoticeId() const { return _notice_id; }
-	ChatEnums::NoticeType getType() const { return _type; }
+	WsMsg::NoticeSubType getType() const { return _type; }
 
 	// Setters
 	void setSenderUid(const std::string& uid) { _sender_uid = uid; }
@@ -32,7 +32,7 @@ public:
 	void setMessage(const std::string& msg) { _message = msg; }
 	void setCreatedTime(int64_t time) { _created_time = time; }
 	void setNoticeId(int64_t event_id) { _notice_id = event_id; }
-	void setType(ChatEnums::NoticeType type) { _type = type; }
+	void setType(WsMsg::NoticeSubType type) { _type = type; }
 
 private:
 	std::string _sender_uid;
@@ -41,5 +41,5 @@ private:
 	std::string _message;
 	int64_t _created_time = -1;
 	int64_t _notice_id = -1;
-	ChatEnums::NoticeType _type = ChatEnums::NoticeType::RequestReceived;
+	WsMsg::NoticeSubType _type = WsMsg::NoticeSubType::FriendRequestReceived;
 };

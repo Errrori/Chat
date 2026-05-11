@@ -21,7 +21,8 @@ Notice Notice::FromJson(const Json::Value& json)
     if (dataNode->isMember("message")) notice.setMessage((*dataNode)["message"].asString());
     if (dataNode->isMember("created_time")) notice.setCreatedTime((*dataNode)["created_time"].asInt64());
     if (dataNode->isMember("event_id")) notice.setNoticeId((*dataNode)["event_id"].asInt64());
-    if (dataNode->isMember("type")) notice.setType(static_cast<ChatEnums::NoticeType>((*dataNode)["type"].asInt()));
+    if (dataNode->isMember("sub_type")) notice.setType(static_cast<WsMsg::NoticeSubType>((*dataNode)["sub_type"].asInt()));
+    else if (dataNode->isMember("type")) notice.setType(static_cast<WsMsg::NoticeSubType>((*dataNode)["type"].asInt()));
 
     return notice;
 }

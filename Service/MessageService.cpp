@@ -2,6 +2,7 @@
 #include <drogon/HttpClient.h>
 #include <sstream>
 #include "Common/ResponseHelper.h"
+#include "Common/WsProtocol.h"
 #include "MessageService.h"
 #include "models/Messages.h"
 #include "Common/ChatMessage.h"
@@ -307,6 +308,7 @@ void ParseNonStreamResponse(const std::string& body,
     }
 
     auto resp_content = json_resp["choices"][0]["message"];
+    resp_content["type"]       = static_cast<int>(WsMsg::Type::AiResponse);
     resp_content["thread_id"]  = thread_id;
     resp_content["message_id"] = req_id;
     LOG_INFO << "AI response: " << resp_content.toStyledString();
@@ -339,6 +341,7 @@ void ParseSseBodyResponse(const std::string& body,
         if (data == kDone)
         {
             Json::Value final_msg;
+            final_msg["type"]             = static_cast<int>(WsMsg::Type::AiResponse);
             final_msg["is_complete"]      = true;
             final_msg["thread_id"]        = thread_id;
             final_msg["message_id"]       = req_id;
@@ -367,6 +370,7 @@ void ParseSseBodyResponse(const std::string& body,
         {
             const auto& delta = chunk["choices"][0]["delta"];
             Json::Value resp;
+            resp["type"]       = static_cast<int>(WsMsg::Type::AiResponse);
             resp["message"]    = delta;
             resp["request_id"] = req_id;
             resp["thread_id"]  = thread_id;

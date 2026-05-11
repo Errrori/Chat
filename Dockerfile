@@ -100,7 +100,6 @@ WORKDIR /app
 COPY --from=builder /app/build/Test /app/
 COPY --from=builder /app/config.json /app/
 COPY --from=builder /app/jwt_secret.json /app/
-COPY --from=builder /app/static /app/static
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libhiredis.so* /usr/lib/x86_64-linux-gnu/
 
 # 创建必要目录

@@ -7,17 +7,4 @@ namespace ChatEnums {
         Accepted = 1,
         Refused = 2
     };
-
-    // Defines the type of a notification.
-    enum class NoticeType {
-        RequestReceived = 0,
-        RequestAccepted = 1,
-        RequestRejected = 2
-    };
-
-    enum class WebMessageType
-    {
-        Notice = 0,
-        ChatMessage = 1
-    };
 }

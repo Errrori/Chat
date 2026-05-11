@@ -158,7 +158,7 @@ int main()
 		}
 	}
 
-	std::string documentRoot = "static";
+	std::string documentRoot = ".";  // 默认使用当前目录，如果static目录不存在的话
 	for (const auto& candidate : {
 		std::filesystem::path("static"),
 		std::filesystem::path("ChatServer") / "static",
@@ -174,11 +174,14 @@ int main()
 
 	try
 	{
-		drogon::app().setLogLevel(trantor::Logger::kDebug)
-			.loadConfigFile(configPath)
-			.setDocumentRoot(documentRoot)
-			.setHomePage("index.html")
-			.setThreadNum(16);
+		auto app = drogon::app().setLogLevel(trantor::Logger::kDebug)
+			.loadConfigFile(configPath);
+		
+		if (documentRoot != ".") {  // 只有当static目录确实存在时才设置文档根目录
+			app.setDocumentRoot(documentRoot);
+		}
+		// .setHomePage("index.html")  // 移除默认首页设置，让API路由优先处理根路径
+		app.setThreadNum(16);
 	}
 	catch (const std::exception& e)
 	{

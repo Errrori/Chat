@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "PostgresRelationshipRepository.h"
+#include "Common/WsProtocol.h"
 
 
 #include "models/FriendRequests.h"
@@ -74,7 +75,7 @@ drogon::Task<int64_t> PostgresRelationshipRepository::WriteFriendRequest(const s
 		Notifications notice;
 		notice.setSenderUid(requester_uid);
 		notice.setRecipientUid(acceptor_uid);
-		notice.setType(static_cast<int>(NoticeType::RequestReceived));
+		notice.setType(static_cast<int>(WsMsg::NoticeSubType::FriendRequestReceived));
 		notice.setPayload(payload);
 
 		CoroMapper<Notifications> notice_mapper(trans);

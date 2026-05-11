@@ -1,45 +1,59 @@
 #pragma once
 #include <json/json.h>
-#include "Common/HeartbeatConfig.h"
+#include "Common/WsProtocol.h"
+#include "const.h"
 
 /// WS 协议响应构建器
 /// 所有发往客户端的 WebSocket JSON 消息都通过此处构造，避免在各处散落字面量。
 namespace WsResponse
 {
-    /// 心跳确认（heartbeat_ack）
+    /// 心跳确认（type=2）
     inline Json::Value HeartbeatAck(Json::Int64 server_time)
     {
         Json::Value msg;
-        msg["type"]        = Heartbeat::MsgType::HeartbeatAck;
+        msg["type"]        = static_cast<int>(WsMsg::Type::HeartbeatAck);
         msg["server_time"] = server_time;
         return msg;
     }
 
-    /// Token 刷新成功（token_refreshed）
-    inline Json::Value TokenRefreshed(Json::Int64 new_expiry_epoch_sec)
+    /// Token 续期成功（type=4）
+    inline Json::Value TokenRefreshed(Json::Int64 expires_at)
     {
         Json::Value msg;
-        msg["type"]       = Heartbeat::MsgType::TokenRefreshed;
-        msg["new_expiry"] = new_expiry_epoch_sec;
+        msg["type"]       = static_cast<int>(WsMsg::Type::TokenRefreshed);
+        msg["expires_at"] = expires_at;
         return msg;
     }
 
-    /// Token 刷新失败（token_refresh_failed）
-    inline Json::Value TokenRefreshFailed(const std::string& reason)
+    /// Token 续期失败（type=10, sub_type=2）
+    inline Json::Value ErrorTokenRefreshFail(const std::string& reason)
     {
         Json::Value msg;
-        msg["type"]  = Heartbeat::MsgType::TokenRefreshFailed;
-        msg["error"] = reason;
+        msg["type"]     = static_cast<int>(WsMsg::Type::Error);
+        msg["sub_type"] = static_cast<int>(WsMsg::ErrorSubType::TokenRefreshFail);
+        msg["error"]    = reason;
         return msg;
     }
 
-    /// Token 已过期提示（token_expiring，expires_in=0 表示立即过期）
-    inline Json::Value TokenExpired()
+    /// Token 过期提示（type=10, sub_type=1）
+    /// expires_in=0 表示已过期，>0 表示剩余秒数
+    inline Json::Value ErrorTokenExpiring(Json::Int64 expires_in)
     {
         Json::Value msg;
-        msg["type"]       = Heartbeat::MsgType::TokenExpiring;
-        msg["expires_in"] = 0;
-        msg["message"]    = "access token expired, please send token_refresh";
+        msg["type"]       = static_cast<int>(WsMsg::Type::Error);
+        msg["sub_type"]   = static_cast<int>(WsMsg::ErrorSubType::TokenExpiring);
+        msg["expires_in"] = expires_in;
+        return msg;
+    }
+
+    /// 通用错误（type=10, sub_type=0）
+    inline Json::Value ErrorGeneral(ChatCode::Code code, const std::string& error)
+    {
+        Json::Value msg;
+        msg["type"]     = static_cast<int>(WsMsg::Type::Error);
+        msg["sub_type"] = static_cast<int>(WsMsg::ErrorSubType::General);
+        msg["code"]     = static_cast<int>(code);
+        msg["error"]    = error;
         return msg;
     }
 
