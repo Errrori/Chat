@@ -22,6 +22,7 @@ struct DeliverySummary
 	int sent_count{0};
 	int queued_count{0};
 	int dropped_count{0};
+	int routed_count{0};
 	int redis_failed_queue_count{0};
 	std::vector<std::string> failed_uids;
 
@@ -37,6 +38,9 @@ struct DeliverySummary
 			break;
 		case ChatDelivery::DeliveryState::Dropped:
 			++dropped_count;
+			break;
+		case ChatDelivery::DeliveryState::Routed:
+			++routed_count;
 			break;
 		}
 

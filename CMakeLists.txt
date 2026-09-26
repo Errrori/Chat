@@ -5,6 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Source files are UTF-8 without BOM; force MSVC to treat them as UTF-8 so that
+# Chinese comments/strings are not mis-decoded under the system code page (936).
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 # 添加当前目录及子目录到包含路径
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -63,6 +69,7 @@ set(SOURCES
     Service/MessageService.cpp
     Service/ThreadService.cpp
     Service/ConnectionService.cpp
+    Service/ClusterService.cpp
     Service/FileService.cpp
     Service/RelationshipService.cpp
     Service/RedisService.cpp

@@ -26,7 +26,8 @@ namespace ChatDelivery
     {
         Sent,
         Queued,
-        Dropped
+        Dropped,
+        Routed
     };
 
     struct DeliveryResult
@@ -38,6 +39,7 @@ namespace ChatDelivery
 
         bool IsSent() const { return state == DeliveryState::Sent; }
         bool IsQueued() const { return state == DeliveryState::Queued; }
+        bool IsRouted() const { return state == DeliveryState::Routed; }
         bool IsRedisQueueFailed() const { return redisQueueFailed; }
     };
 

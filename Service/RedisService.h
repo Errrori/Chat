@@ -17,6 +17,8 @@ namespace RedisKeys {
     constexpr auto OfflineNoticeQueue  = "offline:notice:{}";  // LIST offline:notice:{uid}
     constexpr auto PendingDeliveryQueue = "pending:delivery:{}"; // LIST pending:delivery:{uid}
     constexpr auto RefreshSession = "auth:refresh:{}"; // STRING auth:refresh:{uid} = jti
+    constexpr auto NodeAlive      = "node:alive:{}";   // STRING node:alive:{nodeId} = 1 EX ttl
+    constexpr auto UserRoute      = "route:user:{}";   // STRING route:user:{uid} = nodeId
 
     // TTL（秒）
     constexpr int OnlineTTL       = 86400;   // 1 天
@@ -108,6 +110,33 @@ public:
 
     /// 登出：删除当前设备 refresh session
     drogon::Task<> RevokeRefreshSession(const std::string& uid);
+
+    // ──────────────────────────────────────────────
+    // E. 集群节点注册与跨节点消息路由
+    //    Key: node:alive:{nodeId}  存在即代表节点存活（带 TTL）
+    //         route:user:{uid}     该用户当前连接的节点
+    // ──────────────────────────────────────────────
+
+    /// 节点心跳续期，写入 node:alive:{nodeId}，TTL = Cluster::NodeAliveTTL
+    drogon::Task<> RegisterNode(const std::string& node_id);
+
+    /// 查询节点是否存活
+    drogon::Task<bool> IsNodeAlive(const std::string& node_id);
+
+    /// 写入用户路由 uid -> node_id（TTL = Cluster::UserRouteTTL）
+    drogon::Task<> SetUserRoute(const std::string& uid, const std::string& node_id);
+
+    /// 查询用户所在节点；无路由返回 nullopt
+    drogon::Task<std::optional<std::string>> GetUserRoute(const std::string& uid);
+
+    /// 清除用户路由（用户断开连接时调用）
+    drogon::Task<> ClearUserRoute(const std::string& uid);
+
+    /// 向指定节点的订阅通道发布消息体
+    drogon::Task<bool> PublishToNode(const std::string& node_id, const std::string& payload);
+
+    /// 暴露底层客户端，供 ClusterService 创建订阅者
+    drogon::nosql::RedisClientPtr GetClient() const { return _client; }
 
 private:
     drogon::nosql::RedisClientPtr _client;

@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "Container.h"
 #include "Service/ConnectionService.h"
+#include "Service/ClusterService.h"
 
 using namespace Utils;
 
@@ -174,7 +175,7 @@ int main()
 
 	try
 	{
-		auto app = drogon::app().setLogLevel(trantor::Logger::kDebug)
+		auto& app = drogon::app().setLogLevel(trantor::Logger::kDebug)
 			.loadConfigFile(configPath);
 		
 		if (documentRoot != ".") {  // 只有当static目录确实存在时才设置文档根目录
@@ -199,6 +200,7 @@ int main()
 	drogon::app().registerBeginningAdvice([]() {
 		auto& container = Container::GetInstance();   // 强制初始化 Container（DB建表 + Redis连接 + 所有 Service）
 		container.GetConnectionService()->StartHeartbeatMonitor();
+		container.GetClusterService()->Start();       // 节点注册 + 心跳 + 订阅本节点通道
 		LOG_INFO << "Server is ready to accept requests";
 	});
 

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Container.h"
 #include <drogon/nosql/RedisClient.h>
+#include <drogon/utils/coroutine.h>
 #include <cstring>
 #include "Data/IDbInitializer.h"
 
@@ -14,6 +15,7 @@
     #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <netdb.h>
+    #include <unistd.h>
 #endif
 
 #include "Data/PostgresMessageRepository.h"
@@ -26,6 +28,7 @@
 #include "Service/ConnectionService.h"
 #include "Service/RelationshipService.h"
 #include "Service/RedisService.h"
+#include "Service/ClusterService.h"
 #include "const.h"
 #include "Data/PostgreSQLInitializer.h"
 #include "Data/SQLiteInitializer.h"
@@ -46,6 +49,45 @@ namespace {
 		const char* value = std::getenv(name);
 		return value ? std::string(value) : "";
 #endif
+	}
+
+	// Best-effort hostname lookup; used to derive a default node id.
+	std::string GetHostname()
+	{
+		char buf[256]{};
+		if (gethostname(buf, sizeof(buf) - 1) == 0)
+			return std::string(buf);
+		return "node";
+	}
+
+	// Node id precedence: NODE_ID env > config.json node.id > hostname + random suffix.
+	// The random suffix keeps multiple local processes on one host distinct; in
+	// Docker each replica already has a unique hostname.
+	std::string ResolveNodeId()
+	{
+		std::string id = SafeGetEnv("NODE_ID");
+		if (id.empty())
+		{
+			try
+			{
+				const auto custom_config = drogon::app().getCustomConfig();
+				if (custom_config.isMember("node") && custom_config["node"].isMember("id"))
+					id = custom_config["node"]["id"].asString();
+			}
+			catch (const std::exception& e)
+			{
+				LOG_WARN << "Failed to read node id from config: " << e.what();
+			}
+		}
+
+		if (!id.empty())
+			return id;
+
+		id = GetHostname();
+		const auto rnd = Utils::Authentication::GenerateUid();
+		if (rnd.size() >= 8)
+			id += "-" + rnd.substr(0, 8);
+		return id;
 	}
 
 	std::string ResolveHostname(const std::string& hostname) 
@@ -173,6 +215,28 @@ Container::Container()
 	_user_service         = std::make_shared<UserService>(_user_repo, _redis_service);
 	_thread_service       = std::make_shared<ThreadService>(_thread_repo);
 	_conn_service         = std::make_shared<ConnectionService>(_redis_service);
+
+	// 集群通信层：订阅本节点通道，接收其他节点转发来的消息后本地投递。
+	_cluster_service = std::make_shared<ClusterService>(_redis_service, ResolveNodeId());
+	_conn_service->SetClusterService(_cluster_service);
+	{
+		std::weak_ptr<ConnectionService> weak_conn = _conn_service;
+		_cluster_service->SetLocalDeliverer(
+			[weak_conn](const std::string& uid, const Json::Value& envelope,
+				ChatDelivery::DeliveryPolicy policy, ChatDelivery::OfflineChannel channel)
+			{
+				auto conn = weak_conn.lock();
+				if (!conn)
+					return;
+
+				drogon::async_run([conn, uid, envelope, policy, channel]() -> drogon::Task<>
+				{
+					co_await conn->DeliverLocal(uid,
+						ChatDelivery::OutboundMessage::Envelope(envelope, policy, channel));
+				});
+			});
+	}
+
 	_message_service      = std::make_shared<MessageService>(_message_repo, _conn_service, _thread_service, _redis_service);
 	_relationship_service = std::make_shared<RelationshipService>(_relationship_repo, _conn_service);
 

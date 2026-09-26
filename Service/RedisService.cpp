@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "RedisService.h"
+#include "Common/ClusterConfig.h"
 #include <array>
 #include <drogon/utils/coroutine.h>
 
@@ -328,5 +329,99 @@ drogon::Task<> RedisService::RevokeRefreshSession(const std::string& uid)
     catch (const std::exception& e)
     {
         LOG_ERROR << "RedisService::RevokeRefreshSession error: " << e.what();
+    }
+}
+
+// ──────────────────────────────────────────────
+// E. 集群节点注册与跨节点消息路由
+// ──────────────────────────────────────────────
+
+drogon::Task<> RedisService::RegisterNode(const std::string& node_id)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::NodeAlive, node_id);
+        co_await _client->execCommandCoro("SET %s 1 EX %d",
+                                          key.c_str(), Cluster::NodeAliveTTL);
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::RegisterNode error: " << e.what();
+    }
+}
+
+drogon::Task<bool> RedisService::IsNodeAlive(const std::string& node_id)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::NodeAlive, node_id);
+        auto result = co_await _client->execCommandCoro("EXISTS %s", key.c_str());
+        co_return result.asInteger() > 0;
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::IsNodeAlive error: " << e.what();
+        co_return false;
+    }
+}
+
+drogon::Task<> RedisService::SetUserRoute(const std::string& uid, const std::string& node_id)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::UserRoute, uid);
+        co_await _client->execCommandCoro("SET %s %s EX %d",
+                                          key.c_str(), node_id.c_str(), Cluster::UserRouteTTL);
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::SetUserRoute error: " << e.what();
+    }
+}
+
+drogon::Task<std::optional<std::string>> RedisService::GetUserRoute(const std::string& uid)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::UserRoute, uid);
+        auto result = co_await _client->execCommandCoro("GET %s", key.c_str());
+        if (result.isNil())
+            co_return std::nullopt;
+        co_return result.asString();
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::GetUserRoute error: " << e.what();
+        co_return std::nullopt;
+    }
+}
+
+drogon::Task<> RedisService::ClearUserRoute(const std::string& uid)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::UserRoute, uid);
+        co_await _client->execCommandCoro("DEL %s", key.c_str());
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::ClearUserRoute error: " << e.what();
+    }
+}
+
+drogon::Task<bool> RedisService::PublishToNode(const std::string& node_id, const std::string& payload)
+{
+    try
+    {
+        auto channel = Cluster::Channel(node_id);
+        // PUBLISH 返回接收该消息的订阅者数量。目标节点存活时其订阅者恰好为 1；
+        // 返回 0 说明目标节点已宕机（路由表尚未过期），此时应回退离线队列而非丢弃。
+        auto result = co_await _client->execCommandCoro("PUBLISH %s %s", channel.c_str(), payload.c_str());
+        co_return result.asInteger() > 0;
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::PublishToNode error: " << e.what();
+        co_return false;
     }
 }

@@ -11,6 +11,7 @@ class ConnectionService;
 class RelationshipService;
 class IRelationshipRepository;
 class RedisService;
+class ClusterService;
 
 class Container
 {
@@ -30,6 +31,7 @@ public:
 	std::shared_ptr<ConnectionService>   GetConnectionService()   const { return _conn_service; }
 	std::shared_ptr<RelationshipService> GetRelationshipService() const { return _relationship_service; }
 	std::shared_ptr<RedisService>        GetRedisService()        const { return _redis_service; }
+	std::shared_ptr<ClusterService>      GetClusterService()      const { return _cluster_service; }
 
 private:
 	Container();
@@ -45,4 +47,5 @@ private:
 	std::shared_ptr<IRelationshipRepository> _relationship_repo;
 	std::shared_ptr<RelationshipService> _relationship_service;
 	std::shared_ptr<RedisService> _redis_service;
+	std::shared_ptr<ClusterService> _cluster_service;
 };

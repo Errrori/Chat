@@ -33,9 +33,11 @@ services:
       context: .
       dockerfile: Dockerfile
     image: chat:latest
-    container_name: chat-server
-    ports:
-      - "10086:10086"
+    # 无固定 container_name / host 端口，支持水平扩展：
+    #   docker compose up -d --scale chat=3
+    # 每个副本用容器 hostname 自动生成唯一 node id（可用 NODE_ID 覆盖）
+    expose:
+      - "10086"
     restart: unless-stopped
     environment:
       TZ: Asia/Shanghai
@@ -59,6 +61,8 @@ services:
     container_name: chat-nginx
     ports:
       - "80:80"
+      # 保留对外 10086，客户端/压测无需感知后端副本数量
+      - "10086:10086"
     restart: unless-stopped
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

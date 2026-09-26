@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ConnectionService.h"
 #include "RedisService.h"
+#include "ClusterService.h"
 #include "Common/HeartbeatConfig.h"
 #include "Common/WsResponseHelper.h"
 #include "auth/TokenService.h"
@@ -13,6 +14,7 @@ constexpr char kDeliveryReasonSent[] = "sent";
 constexpr char kDeliveryReasonOfflineDropped[] = "offline dropped";
 constexpr char kDeliveryReasonQueued[] = "queued";
 constexpr char kDeliveryReasonQueuedRedisFailed[] = "queued(redis_failed,db_only)";
+constexpr char kDeliveryReasonRouted[] = "routed to remote node";
 }
 
 bool ConnectionService::SendEnvelopeOnline(const std::string& uid, const Json::Value& envelope)
@@ -130,6 +132,8 @@ bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn
 drogon::Task<> ConnectionService::OnUserConnected(std::string uid)
 {
 	co_await _redis_service->SetOnline(uid);
+	if (_cluster_service)
+		co_await _redis_service->SetUserRoute(uid, _cluster_service->NodeId());
 	auto notices = co_await _redis_service->PopAllOfflineNotices(uid);
 	drogon::WebSocketConnectionPtr conn;
 	{
@@ -195,22 +199,64 @@ drogon::Task<ChatDelivery::DeliveryResult> ConnectionService::DeliverToUser(
 		co_return result;
 	}
 
-	drogon::WebSocketConnectionPtr conn;
+	// 1. 本地在线：直接下发
+	if (SendEnvelopeOnline(uid, envelope))
 	{
-		std::lock_guard lock(_mutex);
-		auto it = _conn_to_id_map.find(uid);
-		if (it != _conn_to_id_map.end())
+		result.state = ChatDelivery::DeliveryState::Sent;
+		result.reason = kDeliveryReasonSent;
+		co_return result;
+	}
+
+	// 在线即焚策略：不在本地且不允许离线保存
+	if (message.policy == ChatDelivery::DeliveryPolicy::OnlineOnly)
+	{
+		result.reason = kDeliveryReasonOfflineDropped;
+		co_return result;
+	}
+
+	// 2. 跨节点路由：查询用户所在节点，节点存活则转发
+	if (_cluster_service)
+	{
+		auto route = co_await _cluster_service->LocateUser(uid);
+		if (route && *route != _cluster_service->NodeId())
 		{
-			if (it->second && it->second->connected())
-				conn = it->second;
+			if (co_await _cluster_service->IsNodeAlive(*route))
+			{
+				if (co_await _cluster_service->RouteToNode(*route, uid, message))
+				{
+					result.state = ChatDelivery::DeliveryState::Routed;
+					result.reason = std::string(kDeliveryReasonRouted) + ": " + *route;
+					co_return result;
+				}
+			}
 			else
-				_conn_to_id_map.erase(it);
+			{
+				LOG_WARN << "[Delivery] stale route uid=" << uid << " -> node=" << *route
+					<< " (node not alive), falling back to offline queue";
+			}
 		}
 	}
 
-	if (conn)
+	// 3. 离线入队（或写库兜底）
+	co_return co_await QueueOffline(uid, message, envelope);
+}
+
+drogon::Task<ChatDelivery::DeliveryResult> ConnectionService::DeliverLocal(
+	const std::string& uid,
+	const ChatDelivery::OutboundMessage& message)
+{
+	ChatDelivery::DeliveryResult result;
+	result.state = ChatDelivery::DeliveryState::Dropped;
+
+	const auto envelope = message.ToEnvelope();
+	if (envelope.isNull())
 	{
-		Utils::SendJson(conn, envelope);
+		result.reason = kDeliveryReasonInvalidEnvelope;
+		co_return result;
+	}
+
+	if (SendEnvelopeOnline(uid, envelope))
+	{
 		result.state = ChatDelivery::DeliveryState::Sent;
 		result.reason = kDeliveryReasonSent;
 		co_return result;
@@ -222,6 +268,15 @@ drogon::Task<ChatDelivery::DeliveryResult> ConnectionService::DeliverToUser(
 		co_return result;
 	}
 
+	co_return co_await QueueOffline(uid, message, envelope);
+}
+
+drogon::Task<ChatDelivery::DeliveryResult> ConnectionService::QueueOffline(
+	const std::string& uid,
+	const ChatDelivery::OutboundMessage& message,
+	const Json::Value& envelope)
+{
+	ChatDelivery::DeliveryResult result;
 	Json::StreamWriterBuilder builder;
 	builder["indentation"] = "";
 	const auto serialized = Json::writeString(builder, envelope);
@@ -257,6 +312,8 @@ drogon::Task<> ConnectionService::OnUserDisconnected(std::string uid, trantor::T
 
 	drogon::app().getLoop()->invalidateTimer(timer_id);
 	co_await _redis_service->SetOffline(uid);
+	if (_cluster_service)
+		co_await _redis_service->ClearUserRoute(uid);
 	co_await _redis_service->RestorePendingOfflineMessages(uid);
 }
 
