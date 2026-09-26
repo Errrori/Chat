@@ -1,5 +1,6 @@
 #include "pch.h"
 #include <drogon/drogon.h>
+#include <atomic>
 #include <csignal>
 #include <curl/curl.h>
 #include <filesystem>
@@ -16,7 +17,35 @@ constexpr int FAIL = 400;
 
 void SignalHandler(int signals)
 {
-	drogon::app().quit();
+	// 优雅退出：停止心跳、删除本节点存活标记并清理本地路由，
+	// 让对端立即把消息回退到离线队列，而不是继续投递到本进程。
+	static std::atomic<bool> shutting_down{false};
+	if (shutting_down.exchange(true))
+		return;
+
+	auto loop = drogon::app().getLoop();
+	if (!loop)
+	{
+		drogon::app().quit();
+		return;
+	}
+
+	loop->runInLoop([]()
+	{
+		try
+		{
+			auto& container = Container::GetInstance();
+			container.GetClusterService()->BeginDrain();
+			container.GetConnectionService()->ClearLocalRoutes();
+		}
+		catch (const std::exception& e)
+		{
+			LOG_ERROR << "shutdown cleanup failed: " << e.what();
+		}
+
+		// 给异步 Redis 清理留出时间，再退出事件循环。
+		drogon::app().getLoop()->runAfter(0.5, []() { drogon::app().quit(); });
+	});
 }
 
 void AddCorsHeaders(const drogon::HttpRequestPtr& req, const drogon::HttpResponsePtr& resp)
@@ -139,9 +168,6 @@ int main()
 
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 
-	signal(SIGINT, SignalHandler);
-	signal(SIGTERM, SignalHandler);
-
 	// 注册跨域支持
 	//AddOptionHandle();
 
@@ -201,6 +227,12 @@ int main()
 		auto& container = Container::GetInstance();   // 强制初始化 Container（DB建表 + Redis连接 + 所有 Service）
 		container.GetConnectionService()->StartHeartbeatMonitor();
 		container.GetClusterService()->Start();       // 节点注册 + 心跳 + 订阅本节点通道
+
+		// Drogon 在 run() 内部会安装它自己的 SIGTERM/SIGINT 处理器（收到即直接 quit），
+		// 必须在事件循环就绪后重新接管，才能先做集群 drain 再退出。
+		signal(SIGTERM, SignalHandler);
+		signal(SIGINT, SignalHandler);
+
 		LOG_INFO << "Server is ready to accept requests";
 	});
 

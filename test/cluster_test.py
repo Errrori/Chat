@@ -26,6 +26,13 @@ import time
 import requests
 import websocket
 
+# Windows 控制台默认 GBK，无法输出 ✔/✗/→ 等符号
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 GREEN = "\033[92m"
 RED = "\033[91m"
 YELLOW = "\033[93m"
@@ -41,6 +48,11 @@ def warn(msg): print(f"  {YELLOW}! {msg}{RESET}")
 def header(msg): print(f"\n{BOLD}{YELLOW}{'─'*50}\n  {msg}\n{'─'*50}{RESET}")
 
 
+def gen_account(prefix):
+    """账号必须匹配 ^[a-zA-Z0-9]{6,16}$，用前缀+时间戳后8位保证唯一且合法。"""
+    return f"{prefix}{str(int(time.time()))[-8:]}"
+
+
 # ───────────────────────── HTTP 会话 ─────────────────────────
 class HttpSession:
     def __init__(self, base_url, account, password, username=""):
@@ -52,10 +64,13 @@ class HttpSession:
         self.uid = ""
 
     def register(self):
+        # 注册为 best-effort：账号已存在时登录仍会成功，真正的门槛是 login。
         r = requests.post(f"{self.base}/auth/register", json={
             "account": self.account, "password": self.password, "username": self.username,
         })
-        return r.status_code in (200, 400, 409)
+        if r.status_code not in (200, 409):
+            info(f"[{self.account}] register: {r.status_code} {r.text[:120]}")
+        return True
 
     def login(self):
         r = requests.post(f"{self.base}/auth/login", json={
@@ -217,8 +232,8 @@ def ensure_private_thread(alice, bob):
 def test_cross_node_delivery(nodes):
     header("TEST: 跨节点消息投递")
     ts = str(int(time.time()))
-    alice = HttpSession(nodes[0], f"cluster_a_{ts}", "test123456", "ClusterA")
-    bob = HttpSession(nodes[-1], f"cluster_b_{ts}", "test123456", "ClusterB")
+    alice = HttpSession(nodes[0], gen_account("clka"), "test123456", "ClusterA")
+    bob = HttpSession(nodes[-1], gen_account("clkb"), "test123456", "ClusterB")
     alice.register(); bob.register()
     if not (alice.login() and bob.login()):
         fail("登录失败，跳过")
@@ -251,6 +266,8 @@ def test_cross_node_delivery(nodes):
         result = False
     else:
         fail("bob 未在超时内收到跨节点消息")
+        info(f"alice 收到: {json.dumps(ws_alice.messages, ensure_ascii=False)[:400]}")
+        info(f"bob   收到: {json.dumps(ws_bob.messages, ensure_ascii=False)[:400]}")
         result = False
 
     ws_alice.close(); ws_bob.close()
@@ -260,7 +277,7 @@ def test_cross_node_delivery(nodes):
 def test_cas_route_cleanup(nodes):
     header("TEST: 路由 CAS 清理（重复上线后路由仍指向在线节点）")
     ts = str(int(time.time()))
-    sess = HttpSession(nodes[0], f"cluster_c_{ts}", "test123456", "ClusterC")
+    sess = HttpSession(nodes[0], gen_account("clkc"), "test123456", "ClusterC")
     sess.register()
     if not sess.login():
         fail("登录失败，跳过")
@@ -299,7 +316,7 @@ def main():
 
     results = {}
     test_cluster_info(nodes)
-    results["strict_single_login"] = test_strict_single_login(nodes, f"cluster_kick_{int(time.time())}")
+    results["strict_single_login"] = test_strict_single_login(nodes, gen_account("clkk"))
     if not args.skip_delivery:
         results["cross_node_delivery"] = test_cross_node_delivery(nodes)
     results["cas_route_cleanup"] = test_cas_route_cleanup(nodes)

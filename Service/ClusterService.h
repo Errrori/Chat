@@ -1,6 +1,7 @@
 #pragma once
 #include <drogon/nosql/RedisClient.h>
 #include <drogon/utils/coroutine.h>
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -45,6 +46,10 @@ public:
     /// 启动：注册节点 + 启动心跳 + 订阅本节点通道。需在事件循环就绪后调用。
     void Start();
 
+    /// 优雅退出：停止心跳并删除本节点存活标记，让对端立即回退路由。
+    /// 幂等，须在事件循环线程调用。
+    void BeginDrain();
+
     const std::string& NodeId() const { return _node_id; }
 
     /// 将消息发布到目标节点通道
@@ -76,4 +81,5 @@ private:
     LocalDeliverFn _local_deliverer;
     ControlFn _control_handler;
     trantor::TimerId _heartbeat_timer{};
+    std::atomic<bool> _draining{false};
 };

@@ -123,6 +123,9 @@ public:
     /// 查询节点是否存活
     drogon::Task<bool> IsNodeAlive(const std::string& node_id);
 
+    /// 删除节点存活标记（优雅退出时调用，令对端立即回退路由）
+    drogon::Task<> RemoveNode(const std::string& node_id);
+
     /// 写入用户路由 uid -> node_id（TTL = Cluster::UserRouteTTL）
     drogon::Task<> SetUserRoute(const std::string& uid, const std::string& node_id);
 

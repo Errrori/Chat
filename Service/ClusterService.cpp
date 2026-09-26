@@ -21,6 +21,21 @@ void ClusterService::Start()
         << "s, alive_ttl=" << Cluster::NodeAliveTTL << "s";
 }
 
+void ClusterService::BeginDrain()
+{
+    if (_draining.exchange(true))
+        return;
+
+    drogon::app().getLoop()->invalidateTimer(_heartbeat_timer);
+    LOG_INFO << "[Cluster] draining node=" << _node_id;
+
+    drogon::async_run([self = shared_from_this()]() -> drogon::Task<>
+    {
+        co_await self->_redis_service->RemoveNode(self->_node_id);
+        LOG_INFO << "[Cluster] node aliveness marker removed: " << self->_node_id;
+    });
+}
+
 void ClusterService::RegisterSelf()
 {
     drogon::async_run([self = shared_from_this()]() -> drogon::Task<>

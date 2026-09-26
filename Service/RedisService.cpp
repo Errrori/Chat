@@ -365,6 +365,19 @@ drogon::Task<bool> RedisService::IsNodeAlive(const std::string& node_id)
     }
 }
 
+drogon::Task<> RedisService::RemoveNode(const std::string& node_id)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::NodeAlive, node_id);
+        co_await _client->execCommandCoro("DEL %s", key.c_str());
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::RemoveNode error: " << e.what();
+    }
+}
+
 drogon::Task<> RedisService::SetUserRoute(const std::string& uid, const std::string& node_id)
 {
     try

@@ -489,6 +489,28 @@ size_t ConnectionService::LocalConnectionCount()
 	return _conn_to_id_map.size();
 }
 
+void ConnectionService::ClearLocalRoutes()
+{
+	if (!_cluster_service)
+		return;
+
+	std::vector<std::string> uids;
+	{
+		std::lock_guard lock(_mutex);
+		uids.reserve(_conn_to_id_map.size());
+		for (const auto& [uid, conn] : _conn_to_id_map)
+			uids.push_back(uid);
+	}
+
+	const auto node_id = _cluster_service->NodeId();
+	drogon::async_run([self = shared_from_this(), uids = std::move(uids), node_id]() -> drogon::Task<>
+	{
+		for (const auto& uid : uids)
+			co_await self->_redis_service->ClearUserRoute(uid, node_id);
+		LOG_INFO << "[Cluster] cleared " << uids.size() << " local routes on shutdown";
+	});
+}
+
 void ConnectionService::KickLocalSession(const std::string& uid, const std::string& reason)
 {
 	drogon::WebSocketConnectionPtr conn;

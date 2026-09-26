@@ -61,6 +61,9 @@ public:
 	/// 本节点当前持有的本地连接数（可观测性）
 	size_t LocalConnectionCount();
 
+	/// 优雅退出：CAS 清空本节点所有在线用户的 route:user，幂等副作用交给对端。
+	void ClearLocalRoutes();
+
 	/// Refresh the connection's access token via WebSocket, update expiry and reset disconnect timer
 	bool RefreshConnectionToken(const drogon::WebSocketConnectionPtr& conn,
 		const std::string& new_access_token);
