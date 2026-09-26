@@ -26,6 +26,11 @@ public:
                                               ChatDelivery::DeliveryPolicy policy,
                                               ChatDelivery::OfflineChannel channel)>;
 
+    /// 收到其他节点控制消息时的回调（action, target_uid, reason）
+    using ControlFn = std::function<void(const std::string& action,
+                                         const std::string& target_uid,
+                                         const std::string& reason)>;
+
     ClusterService(std::shared_ptr<RedisService> redis, std::string node_id);
 
     ClusterService(const ClusterService&) = delete;
@@ -33,6 +38,9 @@ public:
 
     /// 设置本地投递回调（由 ConnectionService 注入）
     void SetLocalDeliverer(LocalDeliverFn fn) { _local_deliverer = std::move(fn); }
+
+    /// 设置控制消息回调（由 ConnectionService 注入）
+    void SetControlHandler(ControlFn fn) { _control_handler = std::move(fn); }
 
     /// 启动：注册节点 + 启动心跳 + 订阅本节点通道。需在事件循环就绪后调用。
     void Start();
@@ -43,6 +51,12 @@ public:
     drogon::Task<bool> RouteToNode(const std::string& node_id,
                                    const std::string& target_uid,
                                    const ChatDelivery::OutboundMessage& message) const;
+
+    /// 向目标节点发送控制消息（kick/drain/presence），不进入离线队列
+    drogon::Task<bool> SendControl(const std::string& node_id,
+                                   const std::string& action,
+                                   const std::string& target_uid,
+                                   const std::string& reason) const;
 
     /// 查询用户当前所在节点
     drogon::Task<std::optional<std::string>> LocateUser(const std::string& uid) const;
@@ -60,5 +74,6 @@ private:
     std::string _node_id;
     std::shared_ptr<drogon::nosql::RedisSubscriber> _subscriber;
     LocalDeliverFn _local_deliverer;
+    ControlFn _control_handler;
     trantor::TimerId _heartbeat_timer{};
 };

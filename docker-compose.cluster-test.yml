@@ -1,0 +1,51 @@
+# 多节点路由测试用 override（不经过 nginx，直接访问两个副本）。
+# 复用 docker-compose.yml 中的 postgres / redis，仅额外启动两个固定端口的 chat 副本。
+#
+#   docker compose -f docker-compose.yml -f docker-compose.cluster-test.yml up -d postgres redis chat1 chat2
+#   python test/cluster_test.py --nodes http://127.0.0.1:20086,http://127.0.0.1:20087
+#
+# 需要先构建好 chat:latest 镜像（docker compose build chat 或 Dockerfile.local）。
+services:
+  chat1:
+    image: chat:latest
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      NODE_ID: chat1
+    ports:
+      - "20086:10086"
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./jwt_secret.json:/app/jwt_secret.json:ro
+      - ./uploads:/app/uploads
+      - ./database.db:/app/database.db
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    working_dir: /app
+
+  chat2:
+    image: chat:latest
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      NODE_ID: chat2
+    ports:
+      - "20087:10086"
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./jwt_secret.json:/app/jwt_secret.json:ro
+      - ./uploads:/app/uploads
+      - ./database.db:/app/database.db
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    working_dir: /app

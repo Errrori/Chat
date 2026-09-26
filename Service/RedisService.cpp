@@ -396,12 +396,18 @@ drogon::Task<std::optional<std::string>> RedisService::GetUserRoute(const std::s
     }
 }
 
-drogon::Task<> RedisService::ClearUserRoute(const std::string& uid)
+drogon::Task<> RedisService::ClearUserRoute(const std::string& uid, const std::string& node_id)
 {
+    // 仅当 route:user:{uid} 仍等于本节点时才删除，避免误删新节点写入的路由。
+    static constexpr char kCompareAndDelScript[] =
+        "if redis.call('GET', KEYS[1]) == ARGV[1] then "
+        "return redis.call('DEL', KEYS[1]) "
+        "else return 0 end";
     try
     {
         auto key = MakeKey(RedisKeys::UserRoute, uid);
-        co_await _client->execCommandCoro("DEL %s", key.c_str());
+        co_await _client->execCommandCoro("EVAL %s 1 %s %s",
+                                          kCompareAndDelScript, key.c_str(), node_id.c_str());
     }
     catch (const std::exception& e)
     {
@@ -424,4 +430,35 @@ drogon::Task<bool> RedisService::PublishToNode(const std::string& node_id, const
         LOG_ERROR << "RedisService::PublishToNode error: " << e.what();
         co_return false;
     }
+}
+
+drogon::Task<std::vector<std::string>> RedisService::GetAliveNodes()
+{
+    static constexpr char kNodeAlivePrefix[] = "node:alive:";
+    std::vector<std::string> nodes;
+    try
+    {
+        std::string cursor = "0";
+        do
+        {
+            auto result = co_await _client->execCommandCoro(
+                "SCAN %s MATCH node:alive:* COUNT 100", cursor.c_str());
+            const auto arr = result.asArray();
+            if (arr.size() < 2)
+                break;
+
+            cursor = arr[0].asString();
+            for (const auto& key : arr[1].asArray())
+            {
+                const auto k = key.asString();
+                if (k.rfind(kNodeAlivePrefix, 0) == 0)
+                    nodes.push_back(k.substr(sizeof(kNodeAlivePrefix) - 1));
+            }
+        } while (cursor != "0");
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::GetAliveNodes error: " << e.what();
+    }
+    co_return nodes;
 }

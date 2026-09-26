@@ -8,6 +8,8 @@
 #include <drogon/utils/coroutine.h>
 
 #include "Service/ConnectionService.h"
+#include "Service/ClusterService.h"
+#include "Service/RedisService.h"
 
 drogon::Task<drogon::HttpResponsePtr> UserController::GetUserProfile(drogon::HttpRequestPtr req)
 {
@@ -76,4 +78,28 @@ drogon::Task<drogon::HttpResponsePtr> UserController::CloseUserConn(drogon::Http
     Container::GetInstance().GetConnectionService()->RemoveUserConn(uid);
 
     co_return ResponseHelper::MakeResponse(200, 200, "success to remove",Json::nullValue);
+}
+
+drogon::Task<drogon::HttpResponsePtr> UserController::GetClusterInfo(drogon::HttpRequestPtr req)
+{
+    auto& container = Container::GetInstance();
+    auto cluster     = container.GetClusterService();
+    auto conn_service = container.GetConnectionService();
+    auto redis       = container.GetRedisService();
+
+    std::vector<std::string> alive_nodes;
+    if (redis)
+        alive_nodes = co_await redis->GetAliveNodes();
+
+    Json::Value alive(Json::arrayValue);
+    for (const auto& node : alive_nodes)
+        alive.append(node);
+
+    Json::Value data;
+    data["node_id"]           = cluster ? cluster->NodeId() : std::string();
+    data["alive_nodes"]       = alive;
+    data["local_connections"] = static_cast<Json::UInt64>(
+        conn_service ? conn_service->LocalConnectionCount() : 0);
+
+    co_return ResponseHelper::MakeResponse(200, 200, "success to get cluster info", data);
 }

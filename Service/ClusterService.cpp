@@ -72,6 +72,27 @@ void ClusterService::OnClusterMessage(const std::string& channel, const std::str
         return;
     }
 
+    // 控制面：kind 缺省视为 data，保证滚动升级兼容
+    const auto kind = payload.get("kind", Cluster::Kind::Data).asString();
+    if (kind == Cluster::Kind::Control)
+    {
+        if (!payload.isMember("action") || !payload.isMember("target_uid"))
+        {
+            LOG_ERROR << "[Cluster] malformed control message on channel " << channel;
+            return;
+        }
+
+        const auto action = payload["action"].asString();
+        const auto uid = payload["target_uid"].asString();
+        const auto reason = payload.get("reason", "").asString();
+        LOG_INFO << "[Cluster] received control action=" << action
+            << " uid=" << uid << " from=" << payload.get("origin_node", "").asString();
+
+        if (_control_handler)
+            _control_handler(action, uid, reason);
+        return;
+    }
+
     if (!payload.isMember("target_uid") || !payload.isMember("envelope"))
     {
         LOG_ERROR << "[Cluster] malformed cross-node message on channel " << channel;
@@ -118,6 +139,36 @@ drogon::Task<bool> ClusterService::RouteToNode(const std::string& node_id,
     {
         LOG_WARN << "[Cluster] failed to route message for uid=" << target_uid
             << " to node=" << node_id;
+    }
+    co_return ok;
+}
+
+drogon::Task<bool> ClusterService::SendControl(const std::string& node_id,
+                                               const std::string& action,
+                                               const std::string& target_uid,
+                                               const std::string& reason) const
+{
+    Json::Value payload;
+    payload["kind"] = Cluster::Kind::Control;
+    payload["action"] = action;
+    payload["target_uid"] = target_uid;
+    payload["reason"] = reason;
+    payload["origin_node"] = _node_id;
+
+    Json::StreamWriterBuilder builder;
+    builder["indentation"] = "";
+    const auto serialized = Json::writeString(builder, payload);
+
+    const auto ok = co_await _redis_service->PublishToNode(node_id, serialized);
+    if (ok)
+    {
+        LOG_INFO << "[Cluster] sent control action=" << action
+            << " uid=" << target_uid << " to node=" << node_id;
+    }
+    else
+    {
+        LOG_WARN << "[Cluster] failed to send control action=" << action
+            << " uid=" << target_uid << " to node=" << node_id;
     }
     co_return ok;
 }

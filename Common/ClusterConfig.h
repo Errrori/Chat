@@ -20,4 +20,22 @@ namespace Cluster
     {
         return "node:channel:" + node_id;
     }
+
+    /// 跨节点消息种类。缺省（不含该字段）按 Data 处理，保证滚动升级兼容。
+    namespace Kind
+    {
+        constexpr auto Data = "data";
+        constexpr auto Control = "control";
+    }
+
+    /// 控制面动作（kind == Control 时生效）
+    namespace Control
+    {
+        /// 要求目标节点关闭该用户的本地连接（严格单端登录）
+        constexpr auto Kick = "kick";
+        /// 节点即将退出，通知对端尽快回退路由
+        constexpr auto Drain = "drain";
+        /// 预留：在线状态变更广播
+        constexpr auto Presence = "presence";
+    }
 } // namespace Cluster

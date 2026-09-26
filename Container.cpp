@@ -29,6 +29,7 @@
 #include "Service/RelationshipService.h"
 #include "Service/RedisService.h"
 #include "Service/ClusterService.h"
+#include "Common/ClusterConfig.h"
 #include "const.h"
 #include "Data/PostgreSQLInitializer.h"
 #include "Data/SQLiteInitializer.h"
@@ -234,6 +235,31 @@ Container::Container()
 					co_await conn->DeliverLocal(uid,
 						ChatDelivery::OutboundMessage::Envelope(envelope, policy, channel));
 				});
+			});
+	}
+
+	// 控制面：其他节点要求踢用户 / 通知节点状态变化。
+	{
+		std::weak_ptr<ConnectionService> weak_conn = _conn_service;
+		_cluster_service->SetControlHandler(
+			[weak_conn](const std::string& action, const std::string& uid, const std::string& reason)
+			{
+				auto conn = weak_conn.lock();
+				if (!conn)
+					return;
+
+				if (action == Cluster::Control::Kick)
+				{
+					drogon::async_run([conn, uid, reason]() -> drogon::Task<>
+					{
+						conn->KickLocalSession(uid, "kicked: " + reason);
+						co_return;
+					});
+				}
+				else
+				{
+					LOG_INFO << "[Cluster] unhandled control action: " << action;
+				}
 			});
 	}
 

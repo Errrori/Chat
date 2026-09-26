@@ -3,6 +3,7 @@
 #include "RedisService.h"
 #include "ClusterService.h"
 #include "Common/HeartbeatConfig.h"
+#include "Common/ClusterConfig.h"
 #include "Common/WsResponseHelper.h"
 #include "auth/TokenService.h"
 #include <drogon/utils/coroutine.h>
@@ -131,9 +132,23 @@ bool ConnectionService::AddConnection(const drogon::WebSocketConnectionPtr& conn
 
 drogon::Task<> ConnectionService::OnUserConnected(std::string uid)
 {
-	co_await _redis_service->SetOnline(uid);
+	// 严格单端登录：先把路由指向本节点，再踢掉其他节点上的旧连接。
+	// 先写路由可确保对方节点稍后的 CAS 清理不会误删本节点刚写入的路由；
+	// SetOnline 放到路由之后，避免旧节点延迟的断开设销本节点刚建立的在线状态。
 	if (_cluster_service)
-		co_await _redis_service->SetUserRoute(uid, _cluster_service->NodeId());
+	{
+		const auto node_id = _cluster_service->NodeId();
+		const auto previous = co_await _cluster_service->LocateUser(uid);
+		co_await _redis_service->SetUserRoute(uid, node_id);
+		if (previous && *previous != node_id)
+		{
+			LOG_INFO << "[Cluster] strict single-login: uid=" << uid
+				<< " reconnected on node=" << node_id << ", kicking old node=" << *previous;
+			co_await _cluster_service->SendControl(
+				*previous, Cluster::Control::Kick, uid, "another device login");
+		}
+	}
+	co_await _redis_service->SetOnline(uid);
 	auto notices = co_await _redis_service->PopAllOfflineNotices(uid);
 	drogon::WebSocketConnectionPtr conn;
 	{
@@ -311,9 +326,28 @@ drogon::Task<> ConnectionService::OnUserDisconnected(std::string uid, trantor::T
 	}
 
 	drogon::app().getLoop()->invalidateTimer(timer_id);
-	co_await _redis_service->SetOffline(uid);
+
+	// 仅当路由仍指向本节点（或已无路由）时才处理下线副作用。
+	// 若用户已在其他节点重新上线，路由会指向对方，此处必须放行，
+	// 否则旧节点的延迟断开会销掉新节点的在线状态并清空其离线队列。
+	bool owned_by_self = true;
 	if (_cluster_service)
-		co_await _redis_service->ClearUserRoute(uid);
+	{
+		const auto node_id = _cluster_service->NodeId();
+		const auto route = co_await _cluster_service->LocateUser(uid);
+		owned_by_self = (!route || *route == node_id);
+		if (owned_by_self)
+			co_await _redis_service->ClearUserRoute(uid, node_id);
+	}
+
+	if (!owned_by_self)
+	{
+		LOG_INFO << "[Cluster] skip offline side-effects for uid=" << uid
+			<< ": route now owned by another node";
+		co_return;
+	}
+
+	co_await _redis_service->SetOffline(uid);
 	co_await _redis_service->RestorePendingOfflineMessages(uid);
 }
 
@@ -447,6 +481,44 @@ void ConnectionService::RemoveUserConn(const std::string& uid)
 	drogon::async_run([self = shared_from_this(), uid, timer_id]() -> drogon::Task<> {
 		co_await self->OnUserDisconnected(uid, timer_id);
 	});
+}
+
+size_t ConnectionService::LocalConnectionCount()
+{
+	std::lock_guard lock(_mutex);
+	return _conn_to_id_map.size();
+}
+
+void ConnectionService::KickLocalSession(const std::string& uid, const std::string& reason)
+{
+	drogon::WebSocketConnectionPtr conn;
+	trantor::TimerId timer_id;
+	{
+		std::lock_guard lock(_mutex);
+		auto it = _conn_to_id_map.find(uid);
+		if (it == _conn_to_id_map.end())
+			return;
+
+		conn = it->second;
+		_conn_to_id_map.erase(it);
+	}
+
+	if (auto context = conn ? conn->getContext<ConnectionContext>() : nullptr)
+	{
+		std::lock_guard<std::mutex> state_lock(context->mutex);
+		timer_id = context->timer_id;
+	}
+
+	drogon::app().getLoop()->invalidateTimer(timer_id);
+
+	if (conn && conn->connected())
+	{
+		conn->shutdown(drogon::CloseCode::kViolation, reason);
+	}
+
+	// 故意不调用 OnUserDisconnected：用户已在新节点上线，
+	// 不能在这里标记离线 / 清理路由 / 回滚离线队列。
+	LOG_INFO << "[Cluster] kicked local session for uid=" << uid << ", reason=" << reason;
 }
 
 // ────────────────────────────────────────────────────────────

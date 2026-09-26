@@ -129,11 +129,15 @@ public:
     /// 查询用户所在节点；无路由返回 nullopt
     drogon::Task<std::optional<std::string>> GetUserRoute(const std::string& uid);
 
-    /// 清除用户路由（用户断开连接时调用）
-    drogon::Task<> ClearUserRoute(const std::string& uid);
+    /// 清除用户路由：仅当当前路由指向 node_id 时才删除（Lua COMPARE-AND-DEL）。
+    /// 避免旧节点延迟的断开回调误删新节点刚写入的路由。
+    drogon::Task<> ClearUserRoute(const std::string& uid, const std::string& node_id);
 
     /// 向指定节点的订阅通道发布消息体
     drogon::Task<bool> PublishToNode(const std::string& node_id, const std::string& payload);
+
+    /// 列出当前存活节点 id（SCAN node:alive:*），用于集群可观测性
+    drogon::Task<std::vector<std::string>> GetAliveNodes();
 
     /// 暴露底层客户端，供 ClusterService 创建订阅者
     drogon::nosql::RedisClientPtr GetClient() const { return _client; }

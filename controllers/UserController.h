@@ -12,6 +12,8 @@ public:
         ADD_METHOD_TO(UserController::UpdateUserProfile,"/user/modify/info",drogon::Post, "TokenVerifyFilter");
 
         ADD_METHOD_TO(UserController::CloseUserConn, "/user/remove", drogon::Get, "TokenVerifyFilter");
+
+        ADD_METHOD_TO(UserController::GetClusterInfo, "/debug/cluster", drogon::Get);
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> GetUserProfile(drogon::HttpRequestPtr req);
@@ -19,4 +21,5 @@ public:
     drogon::Task<drogon::HttpResponsePtr> UpdateUserProfile(drogon::HttpRequestPtr req);
 
     drogon::Task<drogon::HttpResponsePtr> CloseUserConn(drogon::HttpRequestPtr req);
+    drogon::Task<drogon::HttpResponsePtr> GetClusterInfo(drogon::HttpRequestPtr req);
 };

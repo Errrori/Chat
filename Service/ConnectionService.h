@@ -54,6 +54,13 @@ public:
 	void TouchConnection(const drogon::WebSocketConnectionPtr& conn) const;
 	void RemoveUserConn(const std::string& uid);
 
+	/// 跨节点强踢：仅关闭本机该用户的连接，不改变在线状态、路由与离线队列。
+	/// 供 ClusterService 收到其他节点的 kick 控制消息时调用。
+	void KickLocalSession(const std::string& uid, const std::string& reason);
+
+	/// 本节点当前持有的本地连接数（可观测性）
+	size_t LocalConnectionCount();
+
 	/// Refresh the connection's access token via WebSocket, update expiry and reset disconnect timer
 	bool RefreshConnectionToken(const drogon::WebSocketConnectionPtr& conn,
 		const std::string& new_access_token);
