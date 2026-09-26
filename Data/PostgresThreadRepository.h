@@ -15,13 +15,13 @@ public:
 	drogon::Task<int> CreateAIThread(AIThread info) override;
 	drogon::Task<bool> AddToGroup(const MemberData& member) override;
 
-	drogon::Task<Json::Value> GetThreadInfo(int thread_id) override;
-	drogon::Task<std::vector<std::string>> GetThreadMember(int thread_id) override ;
-	drogon::Task<ChatThread::ThreadType> GetThreadType(int thread_id) override;
+	drogon::Task<Json::Value> GetThreadInfo(int64_t thread_id) override;
+	drogon::Task<std::vector<std::string>> GetThreadMember(int64_t thread_id) override ;
+	drogon::Task<ChatThread::ThreadType> GetThreadType(int64_t thread_id) override;
 
-	drogon::Task<bool> IsThreadMember(int thread_id, const std::string& uid) override;
-	drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetTypeAndMembers(int thread_id) override;
-	drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetMembersAndType(int thread_id) override;
+	drogon::Task<bool> IsThreadMember(int64_t thread_id, const std::string& uid) override;
+	drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetTypeAndMembers(int64_t thread_id) override;
+	drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>> GetMembersAndType(int64_t thread_id) override;
 
 private:
 	drogon::orm::DbClientPtr _db;

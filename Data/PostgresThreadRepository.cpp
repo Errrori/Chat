@@ -185,7 +185,7 @@ drogon::Task<int> PostgresThreadRepository::CreateAIThread(AIThread info)
 	}
 }
 
-drogon::Task<Json::Value> PostgresThreadRepository::GetThreadInfo(int thread_id)
+drogon::Task<Json::Value> PostgresThreadRepository::GetThreadInfo(int64_t thread_id)
 {
 	CoroMapper<Threads> mapper(_db);
 
@@ -265,7 +265,7 @@ drogon::Task<bool> PostgresThreadRepository::AddToGroup(const MemberData& member
 
 }
 
-drogon::Task<bool> PostgresThreadRepository::IsThreadMember(int thread_id, const std::string& uid)
+drogon::Task<bool> PostgresThreadRepository::IsThreadMember(int64_t thread_id, const std::string& uid)
 {
 	CoroMapper<Threads> mapper(_db);
 	auto members = co_await GetThreadMember(thread_id);
@@ -273,7 +273,7 @@ drogon::Task<bool> PostgresThreadRepository::IsThreadMember(int thread_id, const
 }
 
 drogon::Task<std::vector<std::string>> PostgresThreadRepository::GetThreadMember(
-	int thread_id)
+	int64_t thread_id)
 {
 	try
 	{
@@ -328,7 +328,7 @@ drogon::Task<std::vector<std::string>> PostgresThreadRepository::GetThreadMember
 	
 }
 
-drogon::Task<ChatThread::ThreadType> PostgresThreadRepository::GetThreadType(int thread_id)
+drogon::Task<ChatThread::ThreadType> PostgresThreadRepository::GetThreadType(int64_t thread_id)
 {
 	try
 	{
@@ -346,7 +346,7 @@ drogon::Task<ChatThread::ThreadType> PostgresThreadRepository::GetThreadType(int
 }
 
 drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>>
-PostgresThreadRepository::GetTypeAndMembers(int thread_id)
+PostgresThreadRepository::GetTypeAndMembers(int64_t thread_id)
 {
 	try
 	{
@@ -402,7 +402,7 @@ PostgresThreadRepository::GetTypeAndMembers(int thread_id)
 }
 
 drogon::Task<std::pair<ChatThread::ThreadType, std::vector<std::string>>>
-PostgresThreadRepository::GetMembersAndType(int thread_id)
+PostgresThreadRepository::GetMembersAndType(int64_t thread_id)
 {
 	co_return co_await GetTypeAndMembers(thread_id);
 }

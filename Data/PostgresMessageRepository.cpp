@@ -106,7 +106,7 @@ drogon::Task<> PostgresMessageRepository::RecordAIMessage(const AIMessage& messa
 	}
 }
 
-drogon::Task<Json::Value> PostgresMessageRepository::GetMessageRecords(int thread_id, int64_t existed_id, int num)
+drogon::Task<Json::Value> PostgresMessageRepository::GetMessageRecords(int64_t thread_id, int64_t existed_id, int num)
 {
 	try
 	{
@@ -139,7 +139,7 @@ drogon::Task<Json::Value> PostgresMessageRepository::GetMessageRecords(int threa
 }
 
 
-drogon::Task<Json::Value> PostgresMessageRepository::GetAIContext(int thread_id, int64_t timestamp)
+drogon::Task<Json::Value> PostgresMessageRepository::GetAIContext(int64_t thread_id, int64_t timestamp)
 {
 	try
 	{
