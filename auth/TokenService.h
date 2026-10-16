@@ -13,6 +13,7 @@ namespace Auth {
 		std::string uid;
         std::string jti;
 		std::chrono::time_point<std::chrono::system_clock> expire_at;
+		long long issued_at = 0;  // iat，Unix 秒；用于用户级吊销比对
     };
 /**
  * TokenService - Low-level JWT signing and verification.

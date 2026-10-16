@@ -18,6 +18,7 @@ namespace RedisKeys {
     constexpr auto OfflineNoticeQueue  = "offline:notice:{}";  // LIST offline:notice:{uid}
     constexpr auto PendingDeliveryQueue = "pending:delivery:{}"; // LIST pending:delivery:{uid}
     constexpr auto RefreshSession = "auth:refresh:{}"; // STRING auth:refresh:{uid} = jti
+    constexpr auto AccessRevoke   = "auth:revoke:{}";  // STRING auth:revoke:{uid} = 吊销时间戳(Unix秒)
     constexpr auto NodeAlive      = "node:alive:{}";   // STRING node:alive:{nodeId} = 1 EX ttl
     constexpr auto UserRoute      = "route:user:{}";   // STRING route:user:{uid} = nodeId
 
@@ -121,6 +122,14 @@ public:
 
     /// 登出：删除当前设备 refresh session
     drogon::Task<> RevokeRefreshSession(const std::string& uid);
+
+    /// 用户级吊销：作废该 uid 在「当前时刻」之前签发的所有 access token。
+    /// 写入 auth:revoke:{uid} = now，TTL 仅需覆盖 access token 最长寿命。
+    drogon::Task<> RevokeAccessTokens(const std::string& uid);
+
+    /// 判断某 access token（按签发时间 iat，Unix 秒）是否已被用户级吊销。
+    /// iat < 已记录的吊销时间戳 即为已吊销。
+    drogon::Task<bool> IsAccessTokenRevoked(const std::string& uid, long long issued_at);
 
     // ──────────────────────────────────────────────
     // E. 集群节点注册与跨节点消息路由

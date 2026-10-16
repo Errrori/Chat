@@ -311,6 +311,9 @@ drogon::Task<drogon::HttpResponsePtr> UserService::Logout(
     // Revoke refresh session if user exists
     co_await _redis_service->RevokeRefreshSession(token->uid);
 
+    // 用户级吊销：作废该用户在登出前签发的所有 access token
+    co_await _redis_service->RevokeAccessTokens(token->uid);
+
     auto resp = ResponseHelper::MakeResponse(200, 200, "logged out");
     resp->addCookie(BuildClearedRefreshTokenCookie());
     co_return resp;

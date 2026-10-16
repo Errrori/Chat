@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "RedisService.h"
 #include "Common/ClusterConfig.h"
+#include "auth/TokenConstants.h"
 #include <array>
+#include <ctime>
 #include <drogon/utils/coroutine.h>
 
 std::string RedisService::MakeKey(const char* pattern, const std::string& uid)
@@ -384,6 +386,44 @@ drogon::Task<> RedisService::RevokeRefreshSession(const std::string& uid)
     catch (const std::exception& e)
     {
         LOG_ERROR << "RedisService::RevokeRefreshSession error: " << e.what();
+    }
+}
+
+drogon::Task<> RedisService::RevokeAccessTokens(const std::string& uid)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::AccessRevoke, uid);
+        const auto now = std::to_string(static_cast<long long>(std::time(nullptr)));
+        // TTL 只需覆盖 access token 最长寿命：键过期后，之前签发的 access token
+        // 也早已自然过期，无需长期保留吊销记录。
+        co_await _client->execCommandCoro("SET %s %s EX %d",
+                                          key.c_str(), now.c_str(),
+                                          static_cast<int>(Auth::AccessTokenTTL));
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::RevokeAccessTokens error: " << e.what();
+    }
+}
+
+drogon::Task<bool> RedisService::IsAccessTokenRevoked(const std::string& uid, long long issued_at)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::AccessRevoke, uid);
+        auto result = co_await _client->execCommandCoro("GET %s", key.c_str());
+        if (result.isNil())
+            co_return false;
+
+        const long long revoked_at = std::stoll(result.asString());
+        co_return issued_at < revoked_at;
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::IsAccessTokenRevoked error: " << e.what();
+        // 失败时放行（fail-open），避免 Redis 抖动导致全站 401。
+        co_return false;
     }
 }
 

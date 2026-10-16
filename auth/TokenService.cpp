@@ -73,6 +73,12 @@ std::optional<TokenData> TokenService::Verify(const std::string& token,
             return std::nullopt;
         }
 
+        if (decoded.has_issued_at())
+        {
+            data.issued_at = std::chrono::duration_cast<std::chrono::seconds>(
+                decoded.get_issued_at().time_since_epoch()).count();
+        }
+
         const char* expected_typ = (expected_type == TokenType::Access)
             ? AccessTokenType
             : RefreshTokenType;
