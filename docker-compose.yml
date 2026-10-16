@@ -5,6 +5,9 @@ services:
     image: postgres:16-alpine
     container_name: chat-postgres
     restart: unless-stopped
+    # 预加载 pg_stat_statements：压测前 pg_stat_statements_reset()，压测后按
+    # total_exec_time 排序定位慢查询（见 test/load/README.md 的慢查询分析）。
+    command: postgres -c shared_preload_libraries=pg_stat_statements
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -12,6 +15,8 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # 仅在数据卷为空（首次初始化）时执行，自动建好扩展
+      - ./initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
