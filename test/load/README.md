@@ -201,32 +201,58 @@ export LOAD_TEST_POOL_SIZE=1000  # Linux/macOS
 
 ## 数据库慢查询分析
 
-压测时同步开启 PostgreSQL 慢查询日志，可精确定位瓶颈查询：
+用 PostgreSQL 的 `pg_stat_statements` 扩展统计每条 SQL 的调用次数与耗时，
+在压测后定位瓶颈查询。
 
-### 1. 启用 pg_stat_statements
+> compose 里的 postgres 已预加载该扩展（`docker-compose.yml` 的
+> `command: postgres -c shared_preload_libraries=pg_stat_statements`），并在
+> `initdb/` 中自动执行 `CREATE EXTENSION`。**首次初始化后即可直接使用，无需手工建扩展。**
+> 若查询时报 `must be loaded via shared_preload_libraries`，说明旧数据卷没带该配置，
+> 需 `docker compose up -d postgres` 重建一次。
 
-```sql
--- 在 PostgreSQL 执行
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+### 使用流程（三命令）
 
--- 重置统计（压测前执行）
-SELECT pg_stat_statements_reset();
+都在 PowerShell 中执行：
+
+```powershell
+# ① 压测前：清零统计
+docker exec chat-postgres psql -U postgres -d postgres -c "SELECT pg_stat_statements_reset();"
+
+# ② 跑压测
+cd ChatServer/test/load
+locust -f clean_locustfile.py --headless --users 1000 --spawn-rate 50 --run-time 3m --host http://127.0.0.1:10086
+
+# ③ 压测后：按累计耗时排 Top-10（谁最拖累 DB）
+docker exec chat-postgres psql -U postgres -d postgres -c "SELECT calls, round(mean_exec_time::numeric,2) AS avg_ms, round(total_exec_time::numeric,0) AS total_ms, rows, left(regexp_replace(query,'\s+',' ','g'),70) AS query FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 10;"
 ```
 
-### 2. 压测结束后查看 Top-10 慢查询
+也可以进入交互式 psql 连续查询（提示符 `postgres=#` 内只敲 SQL，`\q` 退出）：
+
+```powershell
+docker exec -it chat-postgres psql -U postgres -d postgres
+```
 
 ```sql
-SELECT
-    calls,
-    round(mean_exec_time::numeric, 2)  AS avg_ms,
-    round(total_exec_time::numeric, 2) AS total_ms,
-    round((stddev_exec_time)::numeric, 2) AS stddev_ms,
-    rows,
-    left(query, 120) AS query_snippet
+-- 单次平均最慢的 SQL（过滤掉调用次数太少的抖动）
+SELECT calls, round(mean_exec_time::numeric,3) AS avg_ms, round(max_exec_time::numeric,1) AS max_ms,
+       left(regexp_replace(query,'\s+',' ','g'),70) AS query
 FROM pg_stat_statements
-ORDER BY total_exec_time DESC
+WHERE calls > 50
+ORDER BY mean_exec_time DESC
 LIMIT 10;
 ```
+
+### 判读与决策
+
+- **`total_exec_time` 排序**：累计耗时最高 = 最该优化的 SQL（调用次数 × 单次耗时）。
+- **`mean_exec_time` 排序**：单次最慢的 SQL。
+- 对可疑 SQL 跑 `EXPLAIN ANALYZE`，看是 `Index Scan`（走索引）还是 `Seq Scan`（全表扫）：
+  ```powershell
+  docker exec chat-postgres psql -U postgres -d postgres -c "EXPLAIN ANALYZE SELECT * FROM users WHERE account='some_user' LIMIT 1;"
+  ```
+- 注意：**小表即使有索引也可能走 Seq Scan**（planner 认为全扫更快），属正常；
+  数据量增长后自动改走索引。可用 `SET enable_seqscan=off;` 强制验证索引是否可用。
+- 加索引前后各跑一轮（`pg_stat_statements_reset` → 压测 → 读结果）即可量化收益。
 
 ### 3. 常见瓶颈表现与排查
 
