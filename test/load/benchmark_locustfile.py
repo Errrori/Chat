@@ -151,7 +151,8 @@ class DBBenchUser(_BenchBase):
         """
         GET /user/profile
         优化前：每次直接查 users 表（WHERE uid = ?）
-        优化后：先查 Redis HGETALL，命中则跳过 DB（理论延迟 <1ms vs ~5ms）
+        优化后：先查 Redis user:profile:{uid}（JSON），命中则跳过 DB
+        关闭缓存做对照：服务端设 PROFILE_CACHE=0 后重启
         """
         self._get("/user/profile", params={"uid": self._uid})
 

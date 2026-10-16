@@ -108,6 +108,61 @@ drogon::Task<> RedisService::InvalidateDisplayProfile(const std::string& uid)
     }
 }
 
+drogon::Task<> RedisService::CacheUserProfile(const std::string& uid, const UserInfo& profile)
+{
+    try
+    {
+        if (!profile.IsValid())
+            co_return;
+
+        auto key = MakeKey(RedisKeys::UserProfileKey, uid);
+        Json::StreamWriterBuilder builder;
+        const auto json = Json::writeString(builder, profile.ToJson());
+        co_await _client->execCommandCoro("SET %s %s EX %d",
+                                          key.c_str(), json.c_str(), RedisKeys::UserInfoTTL);
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::CacheUserProfile error: " << e.what();
+    }
+}
+
+drogon::Task<UserInfo> RedisService::GetCachedUserProfile(const std::string& uid)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::UserProfileKey, uid);
+        auto result = co_await _client->execCommandCoro("GET %s", key.c_str());
+        if (result.isNil())
+            co_return UserInfo{};
+
+        Json::Reader reader;
+        Json::Value  json;
+        if (!reader.parse(result.asString(), json))
+            co_return UserInfo{};
+
+        co_return UserInfoBuilder::BuildProfile(json);
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::GetCachedUserProfile error: " << e.what();
+        co_return UserInfo{};
+    }
+}
+
+drogon::Task<> RedisService::InvalidateUserProfile(const std::string& uid)
+{
+    try
+    {
+        auto key = MakeKey(RedisKeys::UserProfileKey, uid);
+        co_await _client->execCommandCoro("DEL %s", key.c_str());
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR << "RedisService::InvalidateUserProfile error: " << e.what();
+    }
+}
+
 drogon::Task<bool> RedisService::PushOfflinePacket(const std::string& uid,
                                                    const std::string& packet_json,
                                                    ChatDelivery::OfflineChannel channel)

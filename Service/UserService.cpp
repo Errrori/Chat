@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <cstdlib>
 #include "Common/ResponseHelper.h"
 #include "UserService.h"
 #include "Common/User.h"
@@ -15,6 +16,38 @@ namespace
 {
 
     constexpr const char* kRefreshTokenCookieName = "refresh_token";
+
+    // 跨平台读取环境变量（避免 MSVC 对 std::getenv 的安全告警）
+    std::string GetEnvVar(const char* name)
+    {
+#ifdef _WIN32
+        char* value = nullptr;
+        size_t len = 0;
+        if (_dupenv_s(&value, &len, name) == 0 && value != nullptr)
+        {
+            std::string result(value);
+            free(value);
+            return result;
+        }
+        return {};
+#else
+        const char* value = std::getenv(name);
+        return value ? std::string(value) : std::string{};
+#endif
+    }
+
+    // /user/profile 读缓存开关：默认开启；设置 PROFILE_CACHE=0/false/off/no 可关闭，
+    // 用于压测时做「缓存开 vs 关」的对照实验。
+    bool ProfileCacheEnabled()
+    {
+        static const bool enabled = []() {
+            const std::string v = GetEnvVar("PROFILE_CACHE");
+            if (v.empty())
+                return true;
+            return !(v == "0" || v == "false" || v == "off" || v == "no");
+        }();
+        return enabled;
+    }
 
     drogon::Cookie BuildRefreshTokenCookie(const std::string& token, unsigned ttl_seconds)
     {
@@ -144,7 +177,22 @@ drogon::Task<UserInfo> UserService::GetUserProfileByUid(const std::string& uid) 
 
     try
     {
+        const bool cache_on = ProfileCacheEnabled();
+
+        // 先查缓存，命中直接返回，避免每次请求都打库
+        if (cache_on)
+        {
+            auto cached = co_await _redis_service->GetCachedUserProfile(uid);
+            if (cached.IsValid())
+                co_return cached;
+        }
+
         auto record = co_await _user_repo->GetUserProfileByUid(uid);
+
+        // 回填缓存（cache-aside），TTL = UserInfoTTL
+        if (cache_on && record.IsValid())
+            co_await _redis_service->CacheUserProfile(uid, record);
+
         co_return record;
     }
     catch (const std::exception& e)
@@ -189,6 +237,9 @@ drogon::Task<UserInfo> UserService::UpdateUserProfile(
         auto ok = co_await _user_repo->UpdateUserProfile(uid, update_info);
         if (!ok)
             co_return UserInfo{};
+
+        // username/avatar/signature 均在完整资料缓存中，任一更新都要失效
+        co_await _redis_service->InvalidateUserProfile(uid);
 
         if (update_info.AffectsDisplayProfile())
             co_await _redis_service->InvalidateDisplayProfile(uid);

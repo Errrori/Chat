@@ -13,6 +13,7 @@
 namespace RedisKeys {
     constexpr auto OnlineUser    = "online:{}";        // SET  online:{uid} 1 EX ttl
     constexpr auto UserDisplayHash = "user:display:{}"; // HASH user:display:{uid}
+    constexpr auto UserProfileKey  = "user:profile:{}"; // STRING user:profile:{uid} = JSON 完整资料
     constexpr auto OfflineMessageQueue = "offline:message:{}"; // LIST offline:message:{uid}
     constexpr auto OfflineNoticeQueue  = "offline:notice:{}";  // LIST offline:notice:{uid}
     constexpr auto PendingDeliveryQueue = "pending:delivery:{}"; // LIST pending:delivery:{uid}
@@ -31,7 +32,8 @@ namespace RedisKeys {
  *
  * 三大职责：
  *   A. 用户在线状态：SetOnline / SetOffline / IsOnline
- *   B. 展示资料缓存：CacheDisplayProfile / GetCachedDisplayProfile / InvalidateDisplayProfile
+ *   B. 资料缓存：展示资料 CacheDisplayProfile / GetCachedDisplayProfile / InvalidateDisplayProfile
+ *                  完整资料 CacheUserProfile / GetCachedUserProfile / InvalidateUserProfile
  *   C. 离线消息队列：PushOfflinePacket / PopAllOfflineMessages / PopAllOfflineNotices
  */
 class RedisService
@@ -68,6 +70,15 @@ public:
 
     /// 使缓存失效（用户修改资料时调用）
     drogon::Task<> InvalidateDisplayProfile(const std::string& uid);
+
+    /// 将完整用户资料以 JSON 写入 Redis，TTL = UserInfoTTL
+    drogon::Task<> CacheUserProfile(const std::string& uid, const UserInfo& profile);
+
+    /// 从缓存读取完整用户资料；cache miss 返回空 UserInfo
+    drogon::Task<UserInfo> GetCachedUserProfile(const std::string& uid);
+
+    /// 使完整用户资料缓存失效（用户修改资料时调用）
+    drogon::Task<> InvalidateUserProfile(const std::string& uid);
 
     // ──────────────────────────────────────────────
     // C. 离线消息队列（List 类型）
