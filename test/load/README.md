@@ -9,6 +9,7 @@ test/load/
 ├── requirements.txt    依赖声明
 ├── user_pool.py        测试账号池（环境变量可配置）
 ├── locustfile.py       HTTP 场景（AuthUser + ApiUser）
+├── clean_locustfile.py HTTP 场景（同 locustfile，但 401 自动续期重试，报告零噪声）
 ├── ws_locustfile.py    WebSocket 并发场景
 └── README.md           本文件
 ```
@@ -145,6 +146,15 @@ export LOAD_TEST_POOL_SIZE=1000  # Linux/macOS
 |---|---|---|---|
 | `AuthUser` | 1 | 0.2~1.0s | JWT 签发速度、密码验证延迟、Redis refresh token 读写 |
 | `ApiUser` | 3 | 0.3~1.5s | 多表 JOIN 查询、Redis 缓存命中率、接口整体吞吐 |
+
+> 若要一份"零失败"的干净报告，用 `clean_locustfile.py`（场景/权重/路由与
+> `locustfile.py` 完全一致，仅增加：登录重试 + 业务请求遇 401 自动续期重试）。
+> ```bash
+> locust -f clean_locustfile.py --master --headless --users 1000 --spawn-rate 50 \
+>        --run-time 3m --expect-workers 3 --host http://127.0.0.1:10086 \
+>        --html report.html --csv results
+> # 另开 3 个终端：locust -f clean_locustfile.py --worker --master-host 127.0.0.1
+> ```
 
 **ApiUser 任务权重分布：**
 
