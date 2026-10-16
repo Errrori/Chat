@@ -15,7 +15,9 @@
     - [3. 查看运行状态](#3-查看运行状态)
     - [4. 可自定义配置](#4-可自定义配置)
   - [测试](#测试)
-  - [在线文档](#在线文档)
+    - [第1步：清除之前记录的影响](#第1步清除之前记录的影响)
+    - [第2步：如上，运行压测](#第2步如上运行压测)
+    - [第3步：结果（限制10条记录）](#第3步结果限制10条记录)
 
 ## 性能数据
 
@@ -124,18 +126,21 @@ drogon框架提供了配置文件功能，可使用 [config.json](https://github
 
 ## 测试
 
-项目包含了一些简单测试，包括 API 测试和负载测试：
+项目包含了核心HTTP路由的负载测试：
 
 ```bash
-# API 测试
-python test/api_test.py
 # 负载测试
 cd test/load
 locust -f ws_locustfile.py --headless --users 500 --spawn-rate 10 --run-time 10m --host http://127.0.0.1:10086
 ```
 
-## 在线文档
+PostgreSQL官方提供了一个扩展，可以在运行时查看SQL语句的执行信息：
+### 第1步：清除之前记录的影响
+docker exec chat-postgres psql -U postgres -d postgres -c "SELECT pg_stat_statements_reset();"
 
-开发文档: [开发文档](https://veryshuai666.github.io/ChatDocs/)
+### 第2步：如上，运行压测
+cd C:\Repository0428\ChatServer\ChatServer\test\load
+python -m locust -f clean_locustfile.py --headless --users 1000 --spawn-rate 50 --run-time 1m --host http://127.0.0.1:10086
 
-接口文档: [接口文档](https://veryshuai666.github.io/ChatDocs/%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3/%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3/)
+### 第3步：结果（限制10条记录）
+docker exec chat-postgres psql -U postgres -d postgres -c "SELECT calls, round(mean_exec_time::numeric,2) AS avg_ms, round(total_exec_time::numeric,0) AS total_ms, left(regexp_replace(query,'\s+',' ','g'),70) AS query FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 10;"
